@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Vinyl Record Store Backend
 
-## Getting Started
+This folder owns the backend side of the Vinyl Record Store Recommender System.
 
-First, run the development server:
+The backend is planned as a Next.js server-side application that exposes API routes, stores data in MongoDB Atlas, logs user interactions, and runs recommendation services for the separate React frontend.
+
+## Current Status
+
+Planning/setup stage.
+
+This folder currently contains a Next.js starter, but product backend behavior has not been implemented. Do not treat the starter page as a finished app feature.
+
+## Backend Responsibilities
+
+- Product catalog API.
+- Product detail API.
+- Search and filter API.
+- User interaction logging.
+- Wishlist, cart, and order-related API behavior.
+- MongoDB Atlas data access.
+- Content-based recommendation service.
+- Recommendation explanations.
+- Recommendation evaluation support.
+
+Frontend UI and customer-facing components belong in `../vinyl_record_store_frontend`.
+
+## Planned Tech Stack
+
+- Backend framework: Next.js.
+- Database: MongoDB Atlas.
+- Recommender: content-based MVP, with collaborative or hybrid recommendation later if enough interaction data exists.
+- Frontend consumer: separate React frontend.
+
+## Before Working Here
+
+Read these files first:
+
+1. `LESSONS.md`
+2. `AGENTS.md`
+3. `CLAUDE.md`
+4. Relevant files in `docs/`
+
+## Environment Variables
+
+Use `.env.local` for real local values. Do not commit real secrets.
+
+See `.env.example` for placeholders.
+
+## Scripts
+
+Current scripts come from the Next.js starter:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm run start
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Run lint/build checks when backend implementation changes make those checks relevant.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Documentation Index
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `docs/PROJECT_CONTEXT.md`: backend source of truth.
+- `docs/BACKEND_REQUIREMENTS.md`: backend requirements.
+- `docs/API_CONTRACT_PLAN.md`: planned API contracts.
+- `docs/DATA_MODEL_PLAN.md`: MongoDB Atlas data model plan.
+- `docs/RECOMMENDER_SYSTEM_PLAN.md`: backend recommender plan.
+- `docs/ARCHITECTURE_PLAN.md`: backend architecture and boundaries.
+- `docs/ROADMAP.md`: backend phase plan.
+- `docs/TASK_BACKLOG.md`: backend task list.
+- `docs/DECISION_LOG.md`: backend decisions.
+- `docs/EVALUATION_PLAN.md`: backend evaluation plan.
+- `docs/RISK_REGISTER.md`: backend risks.
+- `docs/SETUP_LATER.md`: future setup notes.
 
-## Learn More
+## Documentation Rule
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Update backend docs when backend setup, behavior, architecture, API contracts, data models, recommender logic, environment variables, packages, validation, risks, or scope change.
