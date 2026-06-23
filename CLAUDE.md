@@ -151,3 +151,12 @@ After each backend task, summarize:
 - Validation performed or why it was skipped.
 - Assumptions and TODOs.
 - Recommended next task.
+
+
+---
+
+## No Emojis (global rule — never skip)
+
+- MUST NOT use emojis anywhere: responses, explanations, code comments, commit messages, documentation, file contents, agent or skill definitions, or any other output.
+- MUST use plain text instead ("MUST / SHOULD / OPTIONAL", "Priority 1 / 2 / 3", plain words).
+- MUST NOT reintroduce emojis when editing files that previously contained them.
