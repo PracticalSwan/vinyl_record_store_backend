@@ -1,5 +1,5 @@
-# Recommender Folder
+# Recommender Library
 
-Planned location for backend recommender logic.
+`contentBased.js` implements deterministic product, synthetic demo-profile, and cold-start ranking. `evaluate.js` contains pure top-k metric helpers.
 
-Future code here should own candidate selection, scoring, explanation generation, diversity rules, and algorithm versioning.
+Do not report metric values without the leakage-safe protocol in `../../../docs/EVALUATION_PLAN.md`.

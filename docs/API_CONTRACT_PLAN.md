@@ -1,169 +1,58 @@
-# Backend API Contract Plan
+# Backend API Contract
 
-This file plans backend routes. It does not implement API code.
+This contract defines the read-only routes used by the integrated storefront.
 
-## API Principles
+## Envelopes
 
-- Keep response shapes predictable.
-- Validate input before using it.
-- Return clear errors.
-- Keep private data out of public responses.
-- Version breaking changes through documentation before implementation.
+Success responses use `{ "data": {}, "meta": {} }`; `meta` is omitted when not needed. Errors use `{ "error": { "code": "...", "message": "..." } }`.
 
-## Common Response Shape
+## Implemented Routes
 
-Planned success shape:
+All routes below are implemented and use the common envelopes.
 
-```json
-{
-  "data": {},
-  "meta": {}
-}
-```
+### `GET /api/health`
 
-Planned error shape:
+Returns service status, catalog mode, and algorithm version.
 
-```json
-{
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human-readable message"
-  }
-}
-```
+### `GET /api/products`
 
-## Planned Endpoints
+Query parameters:
 
-### Product Listing
+- `page` (default 1), `limit` (default 24, maximum 100).
+- `q`, `genre`, `artist`, `label`, `condition`, `era`.
+- `minPrice`, `maxPrice`, `inStock=true|false`.
 
-| Field | Plan |
-| --- | --- |
-| Method | `GET` |
-| Path | `/api/products` |
-| Purpose | Return paginated vinyl records. |
-| Request shape | Query params: `page`, `limit`, `genre`, `artist`, `label`, `era`, `minPrice`, `maxPrice`, `inStock`. |
-| Response shape | `{ data: { items }, meta: { page, limit, total } }` |
-| Validation notes | Validate numeric page, limit, and price filters. |
-| Error cases | Invalid filters, database unavailable. |
-| Related collections | `vinylRecords`, `artists`, `genres` |
+Response: `{ data: { items }, meta: { page, limit, total } }`.
 
-### Product Detail
+### `GET /api/products/:id`
 
-| Field | Plan |
-| --- | --- |
-| Method | `GET` |
-| Path | `/api/products/:id` |
-| Purpose | Return one vinyl record with metadata. |
-| Request shape | Product ID in path. |
-| Response shape | `{ data: { product } }` |
-| Validation notes | Validate product ID format. |
-| Error cases | Not found, invalid ID, database unavailable. |
-| Related collections | `vinylRecords`, `artists`, `genres` |
+Accepts a positive numeric product ID. Response: `{ data: { product } }`. Missing records return `404 NOT_FOUND`.
 
-### Search And Filter
+### `GET /api/search`
 
-| Field | Plan |
-| --- | --- |
-| Method | `GET` |
-| Path | `/api/search` |
-| Purpose | Search records by text and filters. |
-| Request shape | Query params: `q`, `genre`, `artist`, `tag`, `era`, `label`, `condition`. |
-| Response shape | `{ data: { items }, meta: { query, filters, total } }` |
-| Validation notes | Trim search text, limit query length, validate filters. |
-| Error cases | Invalid query, database unavailable. |
-| Related collections | `vinylRecords`, `artists`, `genres` |
+Accepts the product filters plus `q`. Response includes `{ page, limit, total, query }` metadata.
 
-### User Interaction Logging
+### `GET /api/recommendations/product/:id`
 
-| Field | Plan |
-| --- | --- |
-| Method | `POST` |
-| Path | `/api/interactions` |
-| Purpose | Record user behavior for recommendation signals. |
-| Request shape | `{ userId, recordId, type, value, metadata }` |
-| Response shape | `{ data: { saved: true, interactionId } }` |
-| Validation notes | Validate user, record, and allowed interaction type. |
-| Error cases | Invalid type, missing user, missing product, database unavailable. |
-| Related collections | `interactions`, `users`, `vinylRecords` |
+Optional `limit` defaults to 6 and is capped at 20.
 
-### Recommendation By Product
+Response data: `{ sourceProductId, mode, recommendations, algorithmVersion }`, where each item contains `{ product, score, reasons, algorithmVersion, rank }`.
 
-| Field | Plan |
-| --- | --- |
-| Method | `GET` |
-| Path | `/api/recommendations/product/:id` |
-| Purpose | Return records similar to one product. |
-| Request shape | Product ID in path, optional `limit`. |
-| Response shape | `{ data: { sourceProductId, recommendations: [{ product, score, reasons }] } }` |
-| Validation notes | Validate product ID and limit. |
-| Error cases | Product not found, no candidates, database unavailable. |
-| Related collections | `vinylRecords`, `artists`, `genres`, `recommendationLogs` |
+### `GET /api/recommendations/user/:userId`
 
-### Recommendation By User
+User IDs allow letters, numbers, underscores, and hyphens. Optional `limit` defaults to 8 and is capped at 20.
 
-| Field | Plan |
-| --- | --- |
-| Method | `GET` |
-| Path | `/api/recommendations/user/:userId` |
-| Purpose | Return recommendations based on user behavior. |
-| Request shape | User ID in path, optional `limit`. |
-| Response shape | `{ data: { userId, recommendations: [{ product, score, reasons }] } }` |
-| Validation notes | Validate user ID and limit. |
-| Error cases | User not found, no history, database unavailable. |
-| Related collections | `users`, `interactions`, `orders`, `wishlists`, `vinylRecords`, `recommendationLogs` |
+- `demo-user` returns `mode: "demo-profile"` and a synthetic profile summary.
+- Other valid IDs return `mode: "cold-start"` without claiming user history.
 
-### Wishlist Interaction
+## Deferred Routes
 
-| Field | Plan |
-| --- | --- |
-| Method | `POST` or `DELETE` |
-| Path | `/api/wishlist/:recordId` |
-| Purpose | Add or remove a record from a wishlist. |
-| Request shape | User identity from future auth/session, record ID in path. |
-| Response shape | `{ data: { wishlist } }` |
-| Validation notes | Validate record exists and user is known. |
-| Error cases | Record not found, user not found, database unavailable. |
-| Related collections | `wishlists`, `interactions`, `vinylRecords` |
+Interaction, wishlist, cart, order, authentication, recommendation-log, and admin write routes are not implemented.
 
-### Cart Interaction
+## CORS
 
-| Field | Plan |
-| --- | --- |
-| Method | `POST` or `DELETE` |
-| Path | `/api/cart/:recordId` |
-| Purpose | Track add/remove cart behavior for recommendations. |
-| Request shape | User identity from future auth/session, record ID in path. |
-| Response shape | `{ data: { cart } }` |
-| Validation notes | Validate stock and record exists. |
-| Error cases | Out of stock, record not found, database unavailable. |
-| Related collections | `interactions`, `vinylRecords` |
+API responses allow the single origin configured by `FRONTEND_ORIGIN`, defaulting to `http://localhost:5173`.
 
-### Order-Related Interaction
+## Change Rule
 
-| Field | Plan |
-| --- | --- |
-| Method | `POST` |
-| Path | `/api/orders` |
-| Purpose | Record planned purchase data for recommendation signals. |
-| Request shape | `{ userId, items }` |
-| Response shape | `{ data: { orderId, status } }` |
-| Validation notes | Validate items, stock, and user. |
-| Error cases | Empty order, out of stock, invalid user, database unavailable. |
-| Related collections | `orders`, `interactions`, `vinylRecords` |
-
-### Admin Product Management
-
-| Field | Plan |
-| --- | --- |
-| Method | `POST`, `PATCH`, `DELETE` |
-| Path | `/api/admin/products` and `/api/admin/products/:id` |
-| Purpose | Optional catalog management. |
-| Request shape | Product fields from `docs/DATA_MODEL_PLAN.md`. |
-| Response shape | `{ data: { product } }` or `{ data: { deleted: true } }` |
-| Validation notes | Validate role, required fields, price, stock, and metadata. |
-| Error cases | Unauthorized, invalid payload, not found, database unavailable. |
-| Related collections | `vinylRecords`, `artists`, `genres` |
-
-## Documentation Update Notes
-
-Update this file whenever route names, methods, request shapes, response shapes, validation, errors, or related collections change. Update the frontend API consumption docs when a contract changes.
+Update this contract, the frontend contract, tests, and the frontend API client together for breaking changes.

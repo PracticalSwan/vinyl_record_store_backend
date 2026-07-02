@@ -1,5 +1,5 @@
-# Validation Folder
+# Validation
 
-Planned location for request and data validation helpers.
+`catalog.js` validates public IDs, user IDs, limits, pagination, and numeric query values before service or recommender work.
 
-Future backend APIs should validate input before using MongoDB Atlas or recommender services.
+Add future body schemas here before implementing write routes.

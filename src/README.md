@@ -1,5 +1,5 @@
-# Backend Source Folder
+# Backend Source
 
-This folder contains the future backend source code.
+The active backend source contains Next.js route handlers, catalog services, validation, an approved demo seed, and explainable recommender helpers.
 
-Keep backend responsibilities here: API routes, server helpers, validation, MongoDB Atlas access, recommender services, and backend-only data handling.
+Keep transport, service, validation, recommendation, and future database concerns in their documented boundaries.

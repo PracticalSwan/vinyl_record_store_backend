@@ -1,123 +1,39 @@
-# Backend Recommender System Plan
+# Backend Recommender System
 
-## Problem Definition
+This document specifies the current deterministic demo algorithm.
 
-The backend recommender ranks vinyl records for the frontend and returns explanation reasons. The goal is to support user decisions, not only sort products.
+## Implemented Method
 
-## MVP Method
+The current recommender is deterministic content-based ranking over the approved demo catalog.
 
-Start with content-based recommendation.
+### Pairwise Weights
 
-Inputs:
+| Signal | Weight | Explanation |
+| --- | --- | --- |
+| Same artist | 6 | `Same artist as <title>.` |
+| Same genre | 4 | `Shares the <genre> genre.` |
+| Same decade | 2 | `Released in the same decade as <title>.` |
+| Same label | 1 | `Released by <label>.` |
+| In stock | 1 | Availability boost. |
+| Low stock | 0.5 | Smaller availability boost. |
 
-- Source product ID for product-based recommendations.
-- User ID and interaction history for user-based recommendations.
-- Vinyl record metadata.
-- Stock status.
+Out-of-stock candidates are excluded. Product recommendations exclude the source item. Demo-profile recommendations exclude all seed profile items. Final lists allow at most two records per artist.
 
-Outputs:
+## Product Recommendations
 
-- Ranked records.
-- Scores or ranks.
-- Explanation reasons.
-- Algorithm version.
+`recommendForProduct` compares every available candidate with one source record, sorts by score and title, applies the artist cap, and returns ranks, reasons, and the algorithm version.
 
-## Planned Signals
+## User Recommendations
 
-- Views.
-- Purchases.
-- Wishlist additions.
-- Cart additions.
-- Ratings.
-- Likes and dislikes.
-- Searches.
+- `demo-user`: aggregate similarity to one synthetic purchase, three synthetic wishlist items, and documented favorite genres.
+- Other valid IDs: explicit `cold-start` mode using recent available demo catalog items with a generic reason.
 
-## Planned Metadata
+The system does not read real user history or claim production personalization.
 
-- Title.
-- Artist.
-- Album.
-- Genre.
-- Subgenre.
-- Label.
-- Release year.
-- Release era.
-- Country.
-- Tags.
-- Mood.
-- Format.
-- Condition.
-- Price.
-- Stock.
+## Algorithm Version
 
-## Suggested Scoring
+The default is `content-demo-v1`; `RECOMMENDER_ALGORITHM_VERSION` can override the label for controlled comparisons.
 
-| Match | Suggested Effect |
-| --- | --- |
-| Same artist | High score |
-| Related artist | Medium/high score if mapped later |
-| Shared genre | High score |
-| Shared subgenre | High score |
-| Shared tags, mood, era, or label | Medium score |
-| In stock | Required or strong boost |
-| Already bought | Exclude by default |
-| Popular or highly rated | Small boost |
-| Diversity | Avoid one-artist or one-genre lists |
+## Deferred Methods
 
-Scoring weights are not final. Document actual weights before implementation.
-
-## Pseudocode Only
-
-```text
-Build a preference profile from a product or user history.
-Find candidate records from MongoDB Atlas.
-Remove records already purchased by the user.
-Prefer in-stock records.
-Score candidates by artist, genre, subgenre, tags, mood, era, label, rating, and stock.
-Generate explanation reasons from the strongest matches.
-Sort by score.
-Apply diversity rules.
-Log the recommendation output with algorithm version.
-Return top records to the API layer.
-```
-
-## Explanation Strategy
-
-The backend should return explanation reasons that the frontend can display:
-
-- Same artist.
-- Similar artist.
-- Same genre or subgenre.
-- Same release era.
-- Same label.
-- Shared mood or tags.
-- Similar to wishlist, cart, rating history, or purchase history.
-- In stock.
-
-## Cold-Start Strategy
-
-For a new user:
-
-- Use popular in-stock records.
-- Use onboarding preferences if added later.
-- Use browsing behavior as soon as it exists.
-
-For a new record:
-
-- Use metadata similarity.
-- Do not require interaction data before it can be recommended.
-
-## Diversity Strategy
-
-- Limit repeated artists in one recommendation list.
-- Avoid only one genre unless the user requested that genre.
-- Include close matches and related alternatives.
-- Do not let popularity fully override relevance.
-
-## Future Hybrid Method
-
-Add collaborative or hybrid recommendation only when interaction data is large enough to support it. Record the evidence and decision in `docs/DECISION_LOG.md`.
-
-## Documentation Update Rules
-
-Update this file when backend recommendation signals, scoring, exclusions, candidate generation, explanation output, diversity rules, algorithm versioning, or evaluation methods change.
+Collaborative filtering, matrix factorization, hybrid ranking, learned weights, popularity signals, and recommendation logs require persistent interactions and a separate explicit task.

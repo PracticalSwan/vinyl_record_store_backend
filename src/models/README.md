@@ -1,5 +1,5 @@
-# Models Folder
+# Models Boundary
 
-Planned location for backend model or schema definitions.
+The current demo uses plain JavaScript records from `../data/records.js`; no ORM or MongoDB models are active.
 
-Keep this folder aligned with `docs/DATA_MODEL_PLAN.md`.
+Add schema or model definitions here only when persistent storage is explicitly implemented and documented.

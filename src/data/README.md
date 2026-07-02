@@ -1,5 +1,5 @@
-# Data Folder
+# Demo Data
 
-Planned location for approved backend seed or sample data.
+`records.js` is the current approved catalog seed shared conceptually with the frontend design fixture. Public API responses normalize it through `src/services/catalog.js` and omit seed-only reasons.
 
-Do not add copied product data from external websites. Use original, mock, or explicitly approved data only.
+Do not add scraped, copied, private, or unlicensed product data.

@@ -1,5 +1,3 @@
-# Services Folder
+# Services
 
-Planned location for backend service modules.
-
-Use services to keep route handlers small and to separate API transport from business logic.
+`catalog.js` owns product lookup, filtering, pagination, sorting, and the public product shape. Route handlers should not duplicate this logic.

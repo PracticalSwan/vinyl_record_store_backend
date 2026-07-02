@@ -2,13 +2,15 @@
   "name": "vinyl_record_store_backend",
   "version": "0.1.0",
   "private": true,
-  "description": "Backend API and recommender planning for an academic vinyl record store recommender system.",
+  "description": "Backend API and explainable demo recommender for an academic vinyl record store.",
   "license": "MIT",
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test"
   },
   "dependencies": {
     "next": "16.2.9",

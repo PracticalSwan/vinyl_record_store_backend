@@ -1,55 +1,41 @@
-# Backend Evaluation Plan
+# Backend Evaluation
 
-## Evaluation Goals
+This plan separates deterministic behavior evidence from unsupported quality claims.
 
-- Prove recommendation output is relevant.
-- Prove explanations match backend data.
-- Check diversity and coverage.
-- Check API behavior and validation.
-- Produce evidence for the academic project.
+## Current Automated Evidence
 
-## API Evaluation
+| Check | Evidence on 2026-07-02 |
+| --- | --- |
+| Catalog filter behavior | Passing Node test. |
+| Public product shape | Passing Node test. |
+| Unsupported era validation | Passing Node test. |
+| Same-artist ranking and explanation | Passing Node test. |
+| Source/out-of-stock exclusions | Passing Node test. |
+| Demo-profile exclusion and mode | Passing Node test. |
+| Cold-start mode and language | Passing Node test. |
+| Ideal-order NDCG sanity | Passing Node test equals 1.0. |
+| Frontend CORS origin rule | Passing Node test. |
+| ESLint | Passed. |
+| Next.js production build | Passed with all six API routes. |
 
-Planned checks:
+Run:
 
-- Valid requests return documented success shapes.
-- Invalid requests return documented error shapes.
-- Missing products return not-found errors.
-- Invalid IDs are rejected before database queries.
-- Private user data is not exposed unnecessarily.
+```bash
+npm test
+npm run lint
+npm run build
+```
 
-## Recommender Evaluation
+## What These Tests Do Not Prove
 
-Planned checks:
+Behavior tests do not show that recommendations are relevant to real users. No ranking-quality result is reported because there is no timestamped interaction dataset, held-out relevance definition, train/test split, or fair baseline comparison.
 
-- Same-artist candidates rank high.
-- Shared genre and subgenre affect ranking.
-- Already purchased records are excluded.
-- In-stock records are preferred.
-- Explanation reasons match actual metadata.
-- Diversity rules avoid only one artist or one genre.
+## Required Offline Protocol Before Reporting Quality
 
-## Recommendation Log Review
+1. Define relevance explicitly, such as held-out purchases or ratings of at least 4 of 5.
+2. Use a temporal or leave-one-out split without leakage.
+3. Compare random, popularity, and content-based models on the same candidates and value of `k`.
+4. Report at least NDCG@k and MAP@k plus catalog coverage and one of novelty, diversity, or serendipity.
+5. Report the evaluated user count and state whether ranking used the full catalog or sampled negatives.
 
-Future `recommendationLogs` should help answer:
-
-- Which algorithm version produced the result?
-- What source product or user profile was used?
-- Which records were recommended?
-- What reasons were returned?
-- Did the result change after a scoring update?
-
-## Example Test Cases
-
-| ID | Input | Expected Backend Result |
-| --- | --- | --- |
-| BE-001 | Product with same-artist candidates | Same-artist records rank near the top. |
-| BE-002 | Product with no same-artist candidates | Shared genre, tags, era, or label drive ranking. |
-| BE-003 | User already bought candidate | Candidate is excluded by default. |
-| BE-004 | New user | Popular in-stock records appear without false personalization. |
-| BE-005 | Invalid product ID | API returns validation error. |
-| BE-006 | Database unavailable | API returns safe backend error. |
-
-## Documentation Update Rules
-
-Update this file when backend API checks, recommender scoring, explanation logic, diversity rules, evaluation metrics, or test cases change.
+Metric helpers in `src/lib/recommender/evaluate.js` support precision, recall, hit rate, MAP components, NDCG, macro averaging, and coverage. Do not publish metrics until the protocol above is satisfied.

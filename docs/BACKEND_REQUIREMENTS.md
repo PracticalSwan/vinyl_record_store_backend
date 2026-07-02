@@ -1,64 +1,30 @@
 # Backend Requirements
 
-## Goals
+Requirement status reflects the integrated academic demo as of 2026-07-02.
 
-- Provide API data for the separate frontend.
-- Store vinyl record and user interaction data in MongoDB Atlas.
-- Produce explainable recommendations.
-- Support academic evaluation of the recommender system.
-- Keep backend code safe, testable, and beginner-readable.
+## Requirement Status
 
-## Backend Users
-
-| User | Need |
-| --- | --- |
-| Frontend app | Stable API contracts and predictable errors. |
-| Customer | Fast and correct data through the frontend. |
-| Store admin | Future catalog management APIs. |
-| Academic reviewer | Clear recommendation and evaluation evidence. |
-| Developer | Safe setup, clear boundaries, and documented decisions. |
-
-## Functional Requirements
-
-| ID | Requirement | Priority |
-| --- | --- | --- |
-| BR-001 | Provide product listing data. | Must |
-| BR-002 | Provide product detail data. | Must |
-| BR-003 | Support search and filters. | Must |
-| BR-004 | Log user interactions. | Must |
-| BR-005 | Store wishlist, cart, and order-related events. | Must |
-| BR-006 | Generate product-based recommendations. | Must |
-| BR-007 | Generate user-based recommendations when user history exists. | Should |
-| BR-008 | Return recommendation explanations. | Must |
-| BR-009 | Log recommendation outputs for evaluation. | Should |
-| BR-010 | Support admin product management later. | Optional |
+| ID | Requirement | Status | Evidence |
+| --- | --- | --- | --- |
+| BR-001 | Product listing data. | Implemented | `/api/products`. |
+| BR-002 | Product detail data. | Implemented | `/api/products/:id`. |
+| BR-003 | Search and filters. | Implemented | `/api/search` and product query filters. |
+| BR-004 | Interaction logging. | Deferred | Requires identity and persistence. |
+| BR-005 | Wishlist, cart, and order writes. | Deferred | Frontend remains local demo state. |
+| BR-006 | Product-based recommendations. | Implemented | Content similarity endpoint. |
+| BR-007 | User-based recommendations. | Demo only | Synthetic profile or cold-start result. |
+| BR-008 | Recommendation explanations. | Implemented | Generated from matched metadata. |
+| BR-009 | Recommendation output logging. | Deferred | Requires persistent evaluation store. |
+| BR-010 | Admin product management. | Deferred | Outside current demo scope. |
 
 ## Non-Functional Requirements
 
-- Keep secrets server-only.
-- Validate all request input.
-- Return consistent errors.
-- Avoid exposing raw private interaction logs to the frontend.
-- Keep route handlers small.
-- Keep data access and recommender logic in separate modules.
-- Run targeted lint/build checks when implementation changes.
+- Validate public inputs and return predictable safe errors.
+- Keep route handlers thin and scoring pure/testable.
+- Keep secrets server-only and private user data out of public responses.
+- Label algorithms and recommendation modes.
+- Pass tests, lint, and production build.
 
-## Out Of Scope
+## Success Boundary
 
-- Frontend component implementation.
-- Production payment processing.
-- Production authentication unless approved later.
-- External scraping.
-- Real collaborative filtering before enough data exists.
-
-## Success Criteria
-
-- The frontend can consume stable backend contracts.
-- Recommendation results include reasons.
-- Backend data models support product browsing and recommender scoring.
-- Evaluation logs can show why recommendations were produced.
-- Backend docs stay synchronized with backend changes.
-
-## Change Tracking
-
-Update this file when backend scope, users, requirements, non-functional requirements, or success criteria change.
+The frontend can consume stable read routes and understand why items were ranked. Current implementation does not claim persistent commerce or measured recommendation quality.

@@ -1,5 +1,5 @@
-# API Folder
+# API Routes
 
-Planned location for Next.js API route handlers.
+Implemented routes live in this tree for health, products, search, product recommendations, and user recommendations.
 
-No product API, interaction API, database API, or recommender API logic is implemented here yet.
+Keep handlers thin: validate or call a service, then return through `src/lib/http.js`.

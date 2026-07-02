@@ -1,5 +1,5 @@
-# Types Folder
+# Backend Types
 
-Planned location for shared backend type definitions if TypeScript is added later.
+The current backend uses JavaScript modules. API and data shapes are documented under `../../docs/` and validated at the request boundary.
 
-TODO: Decide whether backend implementation will stay JavaScript or move to TypeScript.
+If TypeScript is explicitly adopted later, keep shared server types here and align them with both repositories' API contracts.

@@ -1,5 +1,6 @@
-# Backend Library Folder
+# Backend Library
 
-Planned location for shared backend helpers.
-
-Keep database helpers, recommender helpers, validation helpers, and service helpers in separate modules when implementation begins.
+- `errors.js`: typed service errors.
+- `http.js`: common JSON envelopes.
+- `recommender/`: scoring and metric helpers.
+- `db/`: reserved server-only persistence boundary.

@@ -1,15 +1,14 @@
 # Backend Risk Register
 
-| ID | Risk | Impact | Likelihood | Mitigation | Status |
-| --- | --- | --- | --- | --- | --- |
-| BR-001 | MongoDB credentials leak. | High | Medium | Keep real credentials in `.env.local`; never commit them. | open |
-| BR-002 | Backend exposes private interaction data. | High | Medium | Filter responses and avoid raw logs in public APIs. | open |
-| BR-003 | API contracts drift from frontend expectations. | Medium | High | Update backend and frontend docs together when contracts change. | open |
-| BR-004 | Sparse interaction data weakens recommendations. | Medium | High | Start content-based and add collaborative methods later. | open |
-| BR-005 | Bad metadata weakens scoring. | Medium | Medium | Validate product data and document required fields. | open |
-| BR-006 | Recommendation bias toward one artist or genre. | Medium | Medium | Add diversity checks and log outputs for review. | open |
-| BR-007 | Scope creep into auth, payments, scraping, or admin tools. | High | Medium | Keep MVP focused and defer broad features unless approved. | open |
-| BR-008 | Framework version drift. | Medium | Medium | Verify latest React and Next.js versions before dependency work. | open |
-| BR-009 | Inconsistent agent instructions. | Medium | Medium | Keep `AGENTS.md` and `CLAUDE.md` similar in context. | open |
-| BR-010 | Missing validation causes bad writes. | High | Medium | Add validation before database operations. | open |
-| BR-011 | Accidental deletion during cleanup. | High | Low | Remove only exact intended files after path verification inside the backend folder. | open |
+| ID | Risk | Impact | Mitigation | Status |
+| --- | --- | --- | --- | --- |
+| BR-001 | Credentials leak. | High | No active DB credentials; keep `.env.local` ignored. | controlled |
+| BR-002 | Private interaction data is exposed. | High | No real interaction store; public routes return products and safe summaries only. | controlled |
+| BR-003 | API contract drifts. | High | Update both repos and validate builds together. | controlled |
+| BR-004 | Demo output is presented as real personalization. | High | Explicit demo-profile/cold-start modes. | controlled |
+| BR-005 | Fixed weights produce weak relevance. | Medium | Document weights and require offline baseline evaluation before quality claims. | open |
+| BR-006 | Catalog metadata is incomplete or biased. | Medium | Use approved demo data and validate future imports. | open |
+| BR-007 | One artist dominates a list. | Medium | Cap at two results per artist. | controlled |
+| BR-008 | In-memory seed is mistaken for persistence. | Medium | Document read-only demo status and defer writes. | controlled |
+| BR-009 | CORS origin is misconfigured. | Medium | Configure `FRONTEND_ORIGIN` and verify live when environment permits. | open |
+| BR-010 | Invalid input creates unsafe work. | High | Bound IDs, limits, pagination, prices, booleans, and user ID syntax. | controlled |

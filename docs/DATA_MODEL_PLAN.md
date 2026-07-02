@@ -1,143 +1,31 @@
-# Backend Data Model Plan
+# Backend Data Model
 
-This file plans MongoDB Atlas collections for backend implementation. It does not define working database code.
+This document distinguishes the active in-memory seed from deferred persistence.
 
-## Planned Collections
+## Current Demo Product
 
-- `users`
-- `vinylRecords`
-- `artists`
-- `genres`
-- `interactions`
-- `orders`
-- `wishlists`
-- `recommendationLogs`
-- `designReferences`, only if approved design research notes need storage
-
-## users
+The active seed in `src/data/records.js` contains:
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `_id` | ObjectId | MongoDB ID. |
-| `name` | string | Display name. |
-| `email` | string | Unique if authentication is added. |
-| `role` | string | `customer` or `admin`. |
-| `favoriteGenres` | string[] | Optional onboarding data. |
-| `createdAt` | date | Created timestamp. |
-| `updatedAt` | date | Updated timestamp. |
+| `id` | number | Stable demo identifier. |
+| `title`, `artist`, `genre`, `label` | string | Catalog and similarity metadata. |
+| `year` | number | Release/pressing context and decade match. |
+| `price` | number | Current USD demo price. |
+| `stock` | `in`, `low`, or `out` | Availability and ranking preference. |
+| `condition`, `format`, `pressing`, `description` | string | Display metadata. |
+| `reason` | string | Legacy seed fixture only; removed from public product responses. |
 
-## vinylRecords
+Public products add `currency: "USD"` and `imageUrl: null`.
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `_id` | ObjectId | MongoDB ID. |
-| `title` | string | Product title. |
-| `artistId` | ObjectId | Link to `artists`. |
-| `album` | string | Album name. |
-| `genreIds` | ObjectId[] | Links to `genres`. |
-| `subgenres` | string[] | Specific styles. |
-| `label` | string | Record label. |
-| `releaseYear` | number | Original or pressing year. |
-| `releaseEra` | string | Example: `1970s`. |
-| `country` | string | Country of release or pressing. |
-| `tags` | string[] | Search and recommendation tags. |
-| `mood` | string[] | Optional mood descriptors. |
-| `format` | string | LP, EP, single, box set. |
-| `condition` | string | Item condition. |
-| `price` | number | Store price. |
-| `currency` | string | Example: `USD` or `THB`. |
-| `stock` | number | Quantity available. |
-| `imageUrl` | string | Local or approved asset URL. |
-| `createdAt` | date | Created timestamp. |
-| `updatedAt` | date | Updated timestamp. |
+## Current Synthetic Profile
 
-## artists
+The recommender contains one code-defined `demo-user` profile with purchased IDs, wishlist IDs, and preferred genres. It is not private or persistent user data.
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `_id` | ObjectId | MongoDB ID. |
-| `name` | string | Artist name. |
-| `genres` | string[] | Main genres. |
-| `relatedArtistIds` | ObjectId[] | Manual or learned links later. |
-| `country` | string | Optional. |
-| `activeYears` | string | Optional display field. |
+## Deferred MongoDB Model
 
-## genres
+Future persistence may require `users`, `vinylRecords`, `interactions`, `wishlists`, `orders`, and `recommendationLogs`, with indexes around user, record, time, genre, artist, and availability. Exact schemas and retention/privacy rules must be decided when persistence is explicitly scoped.
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `_id` | ObjectId | MongoDB ID. |
-| `name` | string | Genre or subgenre name. |
-| `parentGenreId` | ObjectId | Optional parent. |
-| `description` | string | Short explanation. |
+## Privacy Boundary
 
-## interactions
-
-| Field | Type | Notes |
-| --- | --- | --- |
-| `_id` | ObjectId | MongoDB ID. |
-| `userId` | ObjectId | Link to `users`. |
-| `recordId` | ObjectId | Link to `vinylRecords`. |
-| `type` | string | `view`, `wishlist`, `cart`, `purchase`, `rating`, `like`, `dislike`, or `search`. |
-| `value` | number or string | Rating value or search query when needed. |
-| `createdAt` | date | Interaction time. |
-| `metadata` | object | Optional context, such as source page. |
-
-## orders
-
-| Field | Type | Notes |
-| --- | --- | --- |
-| `_id` | ObjectId | MongoDB ID. |
-| `userId` | ObjectId | Link to `users`. |
-| `items` | object[] | Record IDs, quantity, and price at time of order. |
-| `status` | string | Planned order state. |
-| `total` | number | Order total. |
-| `createdAt` | date | Order time. |
-
-## wishlists
-
-| Field | Type | Notes |
-| --- | --- | --- |
-| `_id` | ObjectId | MongoDB ID. |
-| `userId` | ObjectId | Link to `users`. |
-| `recordIds` | ObjectId[] | Saved records. |
-| `createdAt` | date | Created timestamp. |
-| `updatedAt` | date | Updated timestamp. |
-
-## recommendationLogs
-
-| Field | Type | Notes |
-| --- | --- | --- |
-| `_id` | ObjectId | MongoDB ID. |
-| `userId` | ObjectId | Optional user. |
-| `sourceRecordId` | ObjectId | Optional source product. |
-| `recommendedRecordIds` | ObjectId[] | Ordered output. |
-| `scores` | object[] | Optional score details. |
-| `reasons` | object[] | Explanation reasons. |
-| `algorithmVersion` | string | Version label. |
-| `createdAt` | date | Log time. |
-
-## Indexing Ideas
-
-- `users.email`, unique if authentication is added.
-- `vinylRecords.artistId`.
-- `vinylRecords.genreIds`.
-- `vinylRecords.releaseYear`.
-- `vinylRecords.tags`.
-- `vinylRecords.stock`.
-- `interactions.userId`.
-- `interactions.recordId`.
-- `orders.userId`.
-- `recommendationLogs.userId`.
-- `recommendationLogs.createdAt`.
-
-## Privacy Notes
-
-- User email and interaction history are sensitive.
-- Do not commit real user data.
-- Do not expose raw private interaction logs to the frontend.
-- Store only the data needed for recommendation and evaluation.
-
-## Documentation Update Rules
-
-Update this file whenever backend collections, fields, indexes, relationships, privacy rules, or migration plans change. Update frontend data-shape docs if API responses change.
+Do not add real emails, orders, ratings, interaction histories, or identifiers to the demo seed. Raw private interaction logs must never be returned by public routes.
