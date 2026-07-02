@@ -26,6 +26,8 @@ The backend is an implemented read-only integration service, not a planning-only
 
 ## Required Startup Reads
 
+Read `../AGENT_MEMORY.md` at session start and append a dated entry at session end if anything changed (cross-agent shared memory — see root `CLAUDE.md`/`AGENTS.md`).
+
 1. Global and project-root instructions.
 2. `LESSONS.md`.
 3. `AGENTS.md` and `CLAUDE.md`.
