@@ -2,6 +2,8 @@
 
 Instructions for Claude Code or any Claude-based coding agent working in the backend folder.
 
+This is a SUBTREE instruction file. Per the project hierarchy, read the **project-root** instruction files (`../CLAUDE.md` and `../AGENTS.md` at `CSX4207/Project/`) and the global files FIRST; they take precedence. This file adds backend-specific rules only and never overrides the root.
+
 ## Project Summary
 
 This folder owns the backend for the Vinyl Record Store Recommender System. Backend work covers API routes, server validation, MongoDB Atlas data access, interaction logging, recommender services, and evaluation support.
@@ -24,6 +26,10 @@ Do not implement API logic, database logic, recommender algorithms, authenticati
 ## Required Startup Reads
 
 Before starting every backend session, read:
+
+**First, always:** the project-root instruction files (`../CLAUDE.md` and `../AGENTS.md` at `CSX4207/Project/`) plus the global files. Root is authoritative and is read before this subtree file.
+
+Then, within this folder:
 
 1. `LESSONS.md`
 2. `AGENTS.md`
@@ -151,7 +157,6 @@ After each backend task, summarize:
 - Validation performed or why it was skipped.
 - Assumptions and TODOs.
 - Recommended next task.
-
 
 ---
 

@@ -121,4 +121,3 @@ Add collaborative or hybrid recommendation only when interaction data is large e
 ## Documentation Update Rules
 
 Update this file when backend recommendation signals, scoring, exclusions, candidate generation, explanation output, diversity rules, algorithm versioning, or evaluation methods change.
-

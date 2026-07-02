@@ -167,4 +167,3 @@ Planned error shape:
 ## Documentation Update Notes
 
 Update this file whenever route names, methods, request shapes, response shapes, validation, errors, or related collections change. Update the frontend API consumption docs when a contract changes.
-

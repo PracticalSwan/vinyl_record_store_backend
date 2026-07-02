@@ -59,4 +59,3 @@ If backend setup changes packages, scripts, framework versions, environment vari
 - `docs/DECISION_LOG.md`
 - `docs/TASK_BACKLOG.md`
 - `.env.example`
-

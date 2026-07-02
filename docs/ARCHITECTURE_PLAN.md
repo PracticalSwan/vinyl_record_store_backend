@@ -86,4 +86,3 @@ If a backend contract changes, update backend API docs and the frontend API cons
 ## Documentation Update Rules
 
 Update this file when backend boundaries, module ownership, framework usage, data flow, validation approach, security approach, or deployment assumptions change.
-

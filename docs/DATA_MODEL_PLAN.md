@@ -141,4 +141,3 @@ This file plans MongoDB Atlas collections for backend implementation. It does no
 ## Documentation Update Rules
 
 Update this file whenever backend collections, fields, indexes, relationships, privacy rules, or migration plans change. Update frontend data-shape docs if API responses change.
-

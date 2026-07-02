@@ -79,4 +79,3 @@ If information is missing, add a clear `TODO` with the missing decision.
 6. Update affected backend docs.
 7. Check whether frontend integration docs need updates.
 8. Summarize changed files, validation, assumptions, and next steps.
-

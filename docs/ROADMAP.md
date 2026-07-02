@@ -170,4 +170,3 @@ Likely docs updated:
 - `docs/EVALUATION_PLAN.md`
 - `docs/RISK_REGISTER.md`
 - `docs/DECISION_LOG.md`
-
