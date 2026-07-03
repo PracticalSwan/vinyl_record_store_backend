@@ -67,3 +67,11 @@ Date: 2026-07-03
 Decision: Use case-insensitive literal substring search, controlled repeated facets, and stable public-ID tie-breakers in both catalog repositories.
 
 Rationale: Literal behavior is predictable for the small catalog, prevents regex input from changing query meaning, and keeps seed and MongoDB results contract-equivalent.
+
+## BDEC-009: Seed Migration Preserves Soft-Delete Tombstones
+
+Date: 2026-07-03
+
+Decision: The seed migration reconciles catalog content only. `deletedAt` is not a managed field and is never written in an update payload, so an operator's soft-deleted demo-seed record survives any seed re-run.
+
+Rationale: A re-run that wrote `deletedAt: null` over a tombstone would silently resurrect records the operator intentionally hid, contradicting the documented "soft-deleted products must be excluded by default" rule with no log, conflict, or exit-code signal. Creates still seed `deletedAt: null`; updates leave tombstone state untouched.

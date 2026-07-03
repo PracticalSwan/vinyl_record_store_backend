@@ -21,6 +21,7 @@ Read this file before every backend session.
 - Run `npm run db:ping` after changing Atlas credentials or connection code; a successful ping does not prove persistence behavior.
 - Run `npm run db:seed` before `npm run db:seed:apply`; abort on conflicts. Use `npm run db:indexes` to verify the connected database after model or index changes.
 - Keep seed and MongoDB catalog behavior equivalent, including literal search, repeated facets, deterministic sorting, pagination, soft-delete exclusion, and public numeric IDs.
+- The seed migration reconciles catalog content only; it must never rewrite the `deletedAt` tombstone, so operator soft-deletes survive re-runs.
 - Run `npm test`, `npm run lint`, and `npm run build` after backend behavior changes.
 
 ## Safety

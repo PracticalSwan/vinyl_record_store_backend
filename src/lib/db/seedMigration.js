@@ -1,6 +1,9 @@
 import { records } from "../../data/records.js";
 import { toPersistenceProduct } from "../../repositories/catalogMapping.js";
 
+// Catalog content managed by the seed. The `deletedAt` tombstone is intentionally
+// excluded: an operator's soft-delete is an editorial decision the seed must not
+// reconcile away, so tombstone state never drives an update or gets rewritten.
 const managedFields = [
   "publicId",
   "slug",
@@ -18,10 +21,13 @@ const managedFields = [
   "description",
   "imageUrl",
   "source",
-  "deletedAt",
 ];
 
 const sameValue = (left, right) => JSON.stringify(left) === JSON.stringify(right);
+
+// Strip the tombstone from update payloads so a re-run can never resurrect a
+// soft-deleted record by writing `deletedAt: null` back over a tombstone date.
+const withoutTombstone = ({ deletedAt: _omit, ...fields }) => fields;
 
 function groupBy(records, selector) {
   const groups = new Map();
@@ -80,7 +86,7 @@ export function planSeedMigration(existingRecords, seedRecords = records) {
     actions.push({
       type: changed ? "update" : "unchanged",
       publicId: desired.publicId,
-      ...(changed ? { desired } : {}),
+      ...(changed ? { desired: withoutTombstone(desired) } : {}),
     });
   }
 

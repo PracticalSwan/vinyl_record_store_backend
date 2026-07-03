@@ -38,7 +38,10 @@ export async function connectMongoDB() {
     return cache.connection;
   }
 
-  if (cache.connection && cache.connection.readyState === 0) {
+  // Treat any non-connected state (disconnected/connecting/disconnecting) as a
+  // stale cache. A connecting or disconnecting connection can resolve to one
+  // that is already closing, so drop it and reconnect instead of awaiting it.
+  if (cache.connection && cache.connection.readyState !== 1) {
     cache.connection = null;
     cache.promise = null;
   }

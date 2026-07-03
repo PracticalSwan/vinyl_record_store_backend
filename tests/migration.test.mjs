@@ -53,3 +53,20 @@ test("seed migration rejects duplicate existing public IDs and slugs before writ
     ],
   );
 });
+
+test("seed migration never rewrites a tombstone, so soft-deletes survive re-runs", () => {
+  const tombstone = new Date("2026-01-01T00:00:00.000Z");
+  const softDeleted = { ...toPersistenceProduct(records[0]), deletedAt: tombstone };
+
+  // Tombstone-only difference is not catalog content drift, so it stays unchanged.
+  const idle = planSeedMigration([softDeleted], [records[0]]);
+  assert.equal(idle.find((action) => action.type === "update"), undefined);
+
+  // Even when content drift forces an update, the payload must omit deletedAt.
+  const drifted = { ...softDeleted, price: 1 };
+  const actions = planSeedMigration([drifted], [records[0]]);
+  const update = actions.find((action) => action.type === "update");
+  assert.ok(update, "expected a content-driven update");
+  assert.equal("deletedAt" in update.desired, false);
+});
+
