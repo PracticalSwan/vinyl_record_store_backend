@@ -18,12 +18,13 @@ This document describes the implemented read-only service structure.
 - Recommender layer: `src/lib/recommender/`.
 - Error/response helpers: `src/lib/errors.js` and `src/lib/http.js`.
 - Current data source: `src/data/records.js`.
-- Future database boundary: `src/lib/db/`.
+- Connected but unused database boundary: `src/lib/db/mongodb.js`.
 
 ## Runtime Properties
 
 - Read-only routes are dynamic Next.js route handlers.
 - Catalog filtering and recommendation scoring are in memory over a small demo seed.
+- A cached Mongoose helper can connect to Atlas and perform a ping, but application routes do not query MongoDB.
 - The default allowed frontend origin is `http://localhost:5173`.
 - No authentication, persistence, or write-side consistency exists yet.
 

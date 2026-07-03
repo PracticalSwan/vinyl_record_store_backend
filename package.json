@@ -9,10 +9,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "db:ping": "node --env-file-if-exists=.env.local scripts/ping-mongodb.mjs",
     "lint": "eslint",
     "test": "node --test"
   },
   "dependencies": {
+    "mongoose": "^9.7.3",
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4"

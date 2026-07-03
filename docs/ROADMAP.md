@@ -15,11 +15,13 @@ This file records current completion and deferred scope. It does not authorize c
 
 ## Deferred And Not Started
 
-- MongoDB connection, collections, indexes, and seed migration.
+- MongoDB models, repositories, collections, indexes, seed migration, and data-source switching.
 - Authentication and real user profiles.
 - Interaction, wishlist, cart, order, rating, and recommendation-log writes.
 - Admin product management, payments, scraping, and deployment automation.
 - Collaborative or hybrid recommendation.
 - Offline benchmark with random and popularity baselines.
 
-Deferred items require a separate explicit task.
+Detailed plans and the approved cross-repository implementation order are in `FUTURE_IMPLEMENTATION_PLAN.md`. Atlas connectivity is verified, but models, collections, migration, and persistence remain deferred. Recommender algorithm selection remains on hold, and deployment, scraping, real payments, and production commerce remain out of scope.
+
+Deferred items require a separate explicit implementation task.

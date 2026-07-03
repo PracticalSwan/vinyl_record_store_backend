@@ -2,6 +2,8 @@
 
 This document distinguishes the active in-memory seed from deferred persistence.
 
+MongoDB Atlas connectivity is configured and can be verified with `npm run db:ping`, but the connection has no application collections or active models. The seed remains the only catalog data source.
+
 ## Current Demo Product
 
 The active seed in `src/data/records.js` contains:

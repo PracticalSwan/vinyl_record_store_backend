@@ -9,6 +9,7 @@ These files document the implemented read-only API and explainable demo recommen
 - `RECOMMENDER_SYSTEM_PLAN.md`: implemented scoring, explanations, diversity, and cold-start rules.
 - `ARCHITECTURE_PLAN.md`: current modules and request flow.
 - `EVALUATION_PLAN.md`: automated behavior checks and the offline metric boundary.
+- `FUTURE_IMPLEMENTATION_PLAN.md`: approved future persistence, auth, writes, evaluation-data, ingestion, and admin plans plus the cross-repository implementation order; recommender selection is on hold.
 - `ROADMAP.md` and `TASK_BACKLOG.md`: completed consolidation and deferred work.
 - `DECISION_LOG.md`, `RISK_REGISTER.md`, and `SETUP_LATER.md`: durable decisions, risks, and unstarted setup.
 

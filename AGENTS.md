@@ -10,7 +10,7 @@ The backend is an implemented read-only integration service, not a planning-only
 
 - Next.js 16.2.9, React 19.2.4, Tailwind 4, and JavaScript modules.
 - Routes for health, product listing/detail, search, product similarity, and user recommendations.
-- Approved local demo seed; no MongoDB connection is active.
+- Approved local demo seed remains the active catalog; a server-only Atlas connection helper and ping command are configured, but no MongoDB models or persistence are active.
 - Deterministic content-based recommendations with explanations, stock preference, exclusions, diversity limits, and an algorithm version.
 - Automated catalog, recommender-behavior, and metric sanity tests.
 
@@ -21,7 +21,7 @@ The backend is an implemented read-only integration service, not a planning-only
 - `src/validation/` owns request validation.
 - `src/lib/recommender/` owns scoring, explanations, diversity, and evaluation helpers.
 - `src/data/records.js` is the current approved demo catalog.
-- `src/lib/db/` remains the future server-only MongoDB boundary.
+- `src/lib/db/` owns the current connection helper and remains the server-only boundary for future MongoDB models and repositories.
 - `../vinyl_record_store_frontend/` owns all customer-facing UI and client state.
 
 ## Required Startup Reads
@@ -49,7 +49,7 @@ Read `../AGENT_MEMORY.md` at session start and append a dated entry at session e
 
 - `FRONTEND_ORIGIN` controls API CORS and defaults to `http://localhost:5173`.
 - `RECOMMENDER_ALGORITHM_VERSION` overrides the default `content-demo-v1` label.
-- `MONGODB_URI` and `MONGODB_DB_NAME` remain placeholders until persistence is explicitly implemented.
+- `MONGODB_URI` and `MONGODB_DB_NAME` configure the server-only Atlas connection through an ignored `.env.local`; the catalog remains seed-backed until persistence is explicitly implemented.
 - API contract changes require matching updates in both repositories.
 
 ## Validation

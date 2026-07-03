@@ -1,5 +1,7 @@
 # Database Boundary
 
-This folder is reserved for a future server-only MongoDB connection and query helpers. No database implementation is active in the read-only demo.
+`mongodb.js` owns the server-only, cached Mongoose connection to MongoDB Atlas. `npm run db:ping` verifies authentication, network access, database selection, and a clean disconnect.
 
-Do not add credentials to source files. Persistence requires a separate explicit task covering environment validation, indexes, privacy, retention, and failure handling.
+The catalog still reads `src/data/records.js`. No model, schema, collection, migration, or persistence path is active.
+
+Keep credentials only in ignored `.env.local`. Persistence requires a separate explicit task covering models, indexes, privacy, retention, migration, and failure handling.

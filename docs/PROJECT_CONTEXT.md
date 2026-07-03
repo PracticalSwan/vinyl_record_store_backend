@@ -14,11 +14,12 @@ The backend is a Next.js 16.2.9 read-only integration service. It serves the app
 - Content scoring by artist, genre, decade, label, and availability.
 - Exclusion of source/known-profile records, artist diversity cap, explanation generation, and algorithm version label.
 - Synthetic `demo-user` profile and explicit cold-start behavior.
+- Cached server-only Mongoose connection helper and a live Atlas ping command.
 - Node tests plus lint and production build validation.
 
 ## Current Data Boundary
 
-`src/data/records.js` is the current approved demo catalog. Product responses remove seed-only display reasons. No MongoDB connection, credentials, real user, or private interaction history exists in the implementation.
+`src/data/records.js` remains the current approved demo catalog. Product responses remove seed-only display reasons. The backend can connect to Atlas through ignored local credentials and `src/lib/db/mongodb.js`, but no MongoDB model, collection, migration, or catalog persistence is active. No real user or private interaction history exists.
 
 ## Deferred Scope
 

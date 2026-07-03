@@ -18,6 +18,8 @@ Decision: Serve `src/data/records.js` through the service/API boundary and keep 
 
 Rationale: The frontend can integrate now without fake credentials or an undocumented external dependency. Public product normalization removes legacy seed-only reasons.
 
+Status update, 2026-07-03: the server-only Atlas helper and safe ping are now active, but the seed decision is unchanged. No application model, repository, collection, migration, or MongoDB-backed route exists.
+
 ## BDEC-003: Start With Deterministic Content Ranking
 
 Date: 2026-07-02
