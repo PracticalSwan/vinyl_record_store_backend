@@ -21,7 +21,7 @@ Out-of-stock candidates are excluded. Product recommendations exclude the source
 
 ## Product Recommendations
 
-`recommendForProduct` compares every available candidate with one source record, sorts by score and title, applies the artist cap, and returns ranks, reasons, and the algorithm version.
+`recommendForProduct` compares the repository's bounded candidate set (maximum 1,000) with one source record, sorts by score and title, applies the artist cap, and returns ranks, reasons, and the algorithm version.
 
 ## User Recommendations
 
@@ -36,4 +36,4 @@ The default is `content-demo-v1`; `RECOMMENDER_ALGORITHM_VERSION` can override t
 
 ## Deferred Methods
 
-Collaborative filtering, matrix factorization, hybrid ranking, learned weights, popularity signals, and recommendation logs require persistent interactions and a separate explicit task.
+Collaborative filtering, matrix factorization, hybrid ranking, learned weights, popularity signals, and recommendation-request logging require interaction evidence and a separate explicit task. The persistence model exists, but no logging route or evaluation dataset is active.

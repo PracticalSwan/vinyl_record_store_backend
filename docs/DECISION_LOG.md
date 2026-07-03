@@ -14,11 +14,11 @@ Rationale: The read API is small, validated, testable, and builds cleanly. A Typ
 
 Date: 2026-07-02
 
-Decision: Serve `src/data/records.js` through the service/API boundary and keep MongoDB placeholders inactive.
+Decision: Serve `src/data/records.js` through the repository/API boundary as the default catalog while MongoDB is not explicitly selected.
 
 Rationale: The frontend can integrate now without fake credentials or an undocumented external dependency. Public product normalization removes legacy seed-only reasons.
 
-Status update, 2026-07-03: the server-only Atlas helper and safe ping are now active, but the seed decision is unchanged. No application model, repository, collection, migration, or MongoDB-backed route exists.
+Status update, 2026-07-03: BFP-01 added strict models, repositories, a conflict-safe seed migration, and index verification. The seed remains the default; explicit `CATALOG_DATA_SOURCE=mongodb` selection uses Atlas without silent fallback.
 
 ## BDEC-003: Start With Deterministic Content Ranking
 
@@ -40,9 +40,9 @@ Rationale: This prevents false personalization claims.
 
 Date: 2026-07-02
 
-Decision: Do not implement in-memory interaction, wishlist, cart, order, or recommendation logs as if they were durable.
+Decision: Do not expose interaction, wishlist, cart, order, or recommendation-log writes until identity and the corresponding write contracts are implemented.
 
-Rationale: Server-memory writes would be misleading and unreliable without identity and persistence.
+Rationale: Persistence models alone do not provide authorization, idempotency, privacy controls, or complete write-side consistency.
 
 ## BDEC-006: Distinguish Behavior Tests From Quality Metrics
 
@@ -51,3 +51,19 @@ Date: 2026-07-02
 Decision: Test deterministic rules and metric sanity, but report no offline quality score until a leakage-safe dataset and baselines exist.
 
 Rationale: A top-k metric without held-out relevance and fair baselines is not valid evaluation evidence.
+
+## BDEC-007: Make Catalog Persistence Explicit
+
+Date: 2026-07-03
+
+Decision: Default `CATALOG_DATA_SOURCE` to `seed` and require explicit `mongodb` selection with valid Atlas configuration. Never silently fall back after MongoDB has been selected.
+
+Rationale: The local academic demo remains deterministic and available without credentials, while database failures stay visible instead of producing ambiguous mixed-source responses.
+
+## BDEC-008: Keep Search Literal And Repository-Equivalent
+
+Date: 2026-07-03
+
+Decision: Use case-insensitive literal substring search, controlled repeated facets, and stable public-ID tie-breakers in both catalog repositories.
+
+Rationale: Literal behavior is predictable for the small catalog, prevents regex input from changing query meaning, and keeps seed and MongoDB results contract-equivalent.

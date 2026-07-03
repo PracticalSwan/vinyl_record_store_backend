@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
       name: "limit",
       max: 20,
     });
-    return success(recommendForUser(userId(routeParams.userId), limit));
+    return success(await recommendForUser(userId(routeParams.userId), limit));
   } catch (error) {
     return failure(error);
   }

@@ -12,17 +12,20 @@ All routes below are implemented and use the common envelopes.
 
 ### `GET /api/health`
 
-Returns service status, catalog mode, and algorithm version.
+Returns `{ status, service, catalogMode, database, algorithmVersion }`. Seed mode reports `database.status: "not-required"`; MongoDB mode pings the selected application database and fails safely when persistence is unavailable.
 
 ### `GET /api/products`
 
 Query parameters:
 
-- `page` (default 1), `limit` (default 24, maximum 100).
-- `q`, `genre`, `artist`, `label`, `condition`, `era`.
+- `page` (default 1, maximum 10,000), `limit` (default 24, maximum 100).
+- `q`, `artist`, and `label` (maximum 100 characters each), repeated `genre`, repeated `condition`, and repeated `era`.
 - `minPrice`, `maxPrice`, `inStock=true|false`.
+- `sort=newest|price-asc|price-desc|artist-asc` (default `newest`).
 
-Response: `{ data: { items }, meta: { page, limit, total } }`.
+`q`, `artist`, and `label` use case-insensitive literal substring matching. Repeated values use OR semantics within a facet and different facets use AND semantics. Repeated controlled facets accept at most 20 values and reject unsupported values. Sorts use the stable numeric product ID as their final tie-breaker.
+
+Response: `{ data: { items }, meta: { page, limit, total, totalPages, sort, facets } }`. Facets describe the full active catalog and include genre, era, condition, stock counts, and the catalog price range.
 
 ### `GET /api/products/:id`
 
@@ -30,7 +33,7 @@ Accepts a positive numeric product ID. Response: `{ data: { product } }`. Missin
 
 ### `GET /api/search`
 
-Accepts the product filters plus `q`. Response includes `{ page, limit, total, query }` metadata.
+Uses the same filters, sorts, products, and metadata as `/api/products`, plus normalized `query` metadata. It is a compatibility alias over the same catalog service rather than a separate search implementation.
 
 ### `GET /api/recommendations/product/:id`
 

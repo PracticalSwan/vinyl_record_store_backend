@@ -1,9 +1,9 @@
 import { failure, success } from "@/lib/http";
 import { listProducts } from "@/services/catalog";
 
-export function GET(request) {
+export async function GET(request) {
   try {
-    const result = listProducts(request.nextUrl.searchParams);
+    const result = await listProducts(request.nextUrl.searchParams);
     return success(
       { items: result.items },
       {

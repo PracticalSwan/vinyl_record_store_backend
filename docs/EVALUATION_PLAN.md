@@ -4,11 +4,13 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 
 ## Current Automated Evidence
 
-| Check | Evidence on 2026-07-02 |
+| Check | Evidence on 2026-07-03 |
 | --- | --- |
-| Catalog filter behavior | Passing Node test. |
+| Literal search, repeated facets, sorting, pagination, and validation | Passing Node tests. |
 | Public product shape | Passing Node test. |
-| Unsupported era validation | Passing Node test. |
+| Seed/MongoDB repository contract parity and failure mapping | Passing Node tests plus live catalog parity check. |
+| Model constraints and declared indexes | Passing Node tests and live Atlas index verification. |
+| Conflict-safe idempotent seed migration | Passing Node tests and repeated live dry-run. |
 | Same-artist ranking and explanation | Passing Node test. |
 | Source/out-of-stock exclusions | Passing Node test. |
 | Demo-profile exclusion and mode | Passing Node test. |
@@ -16,7 +18,7 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 | Ideal-order NDCG sanity | Passing Node test equals 1.0. |
 | Frontend CORS origin rule | Passing Node test. |
 | ESLint | Passed. |
-| Next.js production build | Passed with all six API routes. |
+| Next.js production build | Passed with all six API route groups. |
 
 Run:
 

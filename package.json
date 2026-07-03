@@ -10,6 +10,10 @@
     "build": "next build",
     "start": "next start",
     "db:ping": "node --env-file-if-exists=.env.local scripts/ping-mongodb.mjs",
+    "db:seed": "node --env-file-if-exists=.env.local scripts/seed-mongodb.mjs",
+    "db:seed:apply": "node --env-file-if-exists=.env.local scripts/seed-mongodb.mjs --apply",
+    "db:indexes": "node --env-file-if-exists=.env.local scripts/verify-indexes.mjs",
+    "db:indexes:ensure": "node --env-file-if-exists=.env.local scripts/verify-indexes.mjs --ensure",
     "lint": "eslint",
     "test": "node --test"
   },

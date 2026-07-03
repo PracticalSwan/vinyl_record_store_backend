@@ -1,5 +1,5 @@
 # Demo Data
 
-`records.js` is the current approved catalog seed shared conceptually with the frontend design fixture. Public API responses normalize it through `src/services/catalog.js` and omit seed-only reasons.
+`records.js` is the approved catalog seed and the default catalog data source. Both seed and MongoDB repositories normalize records through `src/repositories/catalogMapping.js` and omit seed-only reasons from public responses.
 
 Do not add scraped, copied, private, or unlicensed product data.

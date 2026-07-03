@@ -4,7 +4,7 @@ import { getProduct } from "@/services/catalog";
 export async function GET(_request, { params }) {
   try {
     const { id } = await params;
-    return success({ product: getProduct(id) });
+    return success({ product: await getProduct(id) });
   } catch (error) {
     return failure(error);
   }

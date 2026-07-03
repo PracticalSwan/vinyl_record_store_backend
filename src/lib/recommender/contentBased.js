@@ -1,5 +1,5 @@
-import { records } from "../../data/records.js";
-import { getProductRecord, toPublicProduct } from "../../services/catalog.js";
+import { getCatalogRepository } from "../db/dataSource.js";
+import { getProductRecord } from "../../services/catalog.js";
 
 export const ALGORITHM_VERSION = process.env.RECOMMENDER_ALGORITHM_VERSION || "content-demo-v1";
 
@@ -61,14 +61,19 @@ function diversify(scored, limit) {
   return selected.map((item, index) => ({ ...item, rank: index + 1 }));
 }
 
-export function recommendForProduct(sourceId, limit = 6) {
-  const source = getProductRecord(sourceId);
-  const scored = records
+export async function recommendForProduct(
+  sourceId,
+  limit = 6,
+  { repository = getCatalogRepository() } = {},
+) {
+  const source = await getProductRecord(sourceId, { repository });
+  const candidates = await repository.listRecommendationCandidates();
+  const scored = candidates
     .filter((candidate) => candidate.id !== source.id && candidate.stock !== "out")
     .map((candidate) => {
       const match = compareProducts(source, candidate);
       return {
-        product: toPublicProduct(candidate),
+        product: candidate,
         score: match.score,
         reasons: match.reasons.length ? match.reasons.slice(0, 2) : ["Available in the demo catalog."],
         algorithmVersion: ALGORITHM_VERSION,
@@ -84,11 +89,11 @@ export function recommendForProduct(sourceId, limit = 6) {
   };
 }
 
-function genericRecommendations(limit) {
+function genericRecommendations(records, limit) {
   const scored = records
     .filter((record) => record.stock !== "out")
     .map((record) => ({
-      product: toPublicProduct(record),
+      product: record,
       score: STOCK_BOOST[record.stock],
       reasons: ["Available now in the demo catalog."],
       algorithmVersion: ALGORITHM_VERSION,
@@ -98,19 +103,26 @@ function genericRecommendations(limit) {
   return diversify(scored, limit);
 }
 
-export function recommendForUser(requestedUserId, limit = 8) {
+export async function recommendForUser(
+  requestedUserId,
+  limit = 8,
+  { repository = getCatalogRepository() } = {},
+) {
+  const records = await repository.listRecommendationCandidates();
   if (requestedUserId !== "demo-user") {
     return {
       userId: requestedUserId,
       mode: "cold-start",
       profileSummary: ["No stored history is available.", "Results use the in-stock demo catalog."],
-      recommendations: genericRecommendations(limit),
+      recommendations: genericRecommendations(records, limit),
       algorithmVersion: ALGORITHM_VERSION,
     };
   }
 
   const sourceIds = [...DEMO_PROFILE.purchasedIds, ...DEMO_PROFILE.wishlistIds];
-  const sources = sourceIds.map((id) => getProductRecord(id));
+  const sources = await Promise.all(
+    sourceIds.map((id) => getProductRecord(id, { repository })),
+  );
   const excluded = new Set(sourceIds);
   const scored = records
     .filter((candidate) => !excluded.has(candidate.id) && candidate.stock !== "out")
@@ -127,7 +139,7 @@ export function recommendForUser(requestedUserId, limit = 8) {
         reasons.add(`Matches the demo profile's ${candidate.genre} preference.`);
       }
       return {
-        product: toPublicProduct(candidate),
+        product: candidate,
         score,
         reasons: [...reasons].slice(0, 2),
         algorithmVersion: ALGORITHM_VERSION,

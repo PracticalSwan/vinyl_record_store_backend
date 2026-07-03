@@ -14,3 +14,11 @@ export function invalid(message) {
 export function notFound(message) {
   return new ServiceError("NOT_FOUND", message, 404);
 }
+
+export function persistenceUnavailable() {
+  return new ServiceError(
+    "PERSISTENCE_UNAVAILABLE",
+    "The selected catalog data source is unavailable.",
+    503,
+  );
+}

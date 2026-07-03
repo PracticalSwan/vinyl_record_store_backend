@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
       name: "limit",
       max: 20,
     });
-    return success(recommendForProduct(id, limit));
+    return success(await recommendForProduct(id, limit));
   } catch (error) {
     return failure(error);
   }

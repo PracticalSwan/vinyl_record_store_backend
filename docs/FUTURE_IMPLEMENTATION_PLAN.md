@@ -1,6 +1,6 @@
 # Backend Future Implementation Plan
 
-Status: planned work only. The MongoDB connection prerequisite is complete; no persistence or feature plan in this document is implemented or in progress.
+Status: BFP-01 and the backend portion of FFP-05 were implemented and verified on 2026-07-03. Remaining plans are future work only.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
@@ -9,7 +9,7 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 ## User Decisions Recorded On 2026-07-03
 
 - Use a small custom authentication system with server-issued sessions.
-- Add customer registration only after durable user persistence exists. Atlas connectivity is now verified, but that original persistence gate is not complete.
+- Add customer registration only after durable user persistence exists. The model and repository gate is complete; authentication, session, authorization, and registration contracts remain future work.
 - Preserve the existing numeric product IDs in public APIs; MongoDB `_id` remains internal.
 - Merge anonymous wishlist and cart state automatically after login.
 - Collect anonymous interaction data by default with a visible opt-out, no direct personal information, and a 90-day retention target.
@@ -21,23 +21,23 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 
 | ID | Plan | Status | Main Gate |
 | --- | --- | --- | --- |
-| BFP-01 | MongoDB persistence, schemas, indexes, and seed migration | Connection verified; persistence not started | Atlas authentication and ping pass; models, collections, and migration still require an explicit task. |
+| BFP-01 | MongoDB persistence, schemas, indexes, and seed migration | Completed 2026-07-03 | Seed remains the default; explicit MongoDB mode, models, repositories, migration, parity checks, and live indexes are verified. |
 | BFP-02 | Recommendation logging and offline evaluation dataset | Planned | Request logging precedes frontend analytics; offline evaluation waits for sufficient persisted interactions. |
 | BFP-03 | Write API contracts and implementation | Planned | Requires repositories and models; most routes also require authentication. |
 | BFP-04 | Simple authentication, registration, and authorization | Planned | Seeded accounts can precede user persistence; registration requires the user repository. |
 | BFP-05 | Recommender algorithm selection | On hold | User will choose the future recommender method. |
-| BFP-06 | Catalog ingestion and metadata quality | Planned | Requires the MongoDB product repository. |
+| BFP-06 | Catalog ingestion and metadata quality | Planned | The MongoDB product repository gate is complete; validated preview/apply and provenance work remain. |
 | BFP-07 | Admin mode backend | Planned | Requires authentication, authorization, persistence, and product writes. |
 
 ## Approved Cross-Repository Implementation Order
 
-The Atlas connection is a completed prerequisite, not a completed persistence phase. Implement the remaining plans in this order so each later surface builds on verified contracts and regression coverage:
+The first three milestones are complete. Implement the remaining plans in this order so each later surface builds on verified contracts and regression coverage:
 
 | Order | Plan | Dependency-safe outcome |
 | --- | --- | --- |
-| 1 | FFP-04: browser, integration, and accessibility testing | Protect the current storefront and backend contract before feature work changes either side. |
-| 2 | BFP-01: MongoDB persistence | Reuse the verified connection to add models, repositories, indexes, and an idempotent seed migration while preserving seed fallback. |
-| 3 | FFP-05: server-side search and pagination | Build the final read-query contract once, on top of the repository boundary. |
+| 1 | FFP-04: browser, integration, and accessibility testing | Completed 2026-07-03; regression coverage now protects the integrated contract. |
+| 2 | BFP-01: MongoDB persistence | Completed 2026-07-03; seed remains the default and explicit MongoDB mode is verified. |
+| 3 | FFP-05: server-side search and pagination | Completed 2026-07-03; repository-backed literal search, facets, sorting, and pagination are active. |
 | 4 | BFP-04: simple authentication and authorization | Establish real server-enforced customer/admin identity and registration through the user repository. |
 | 5 | BFP-03: write APIs | Add protected wishlist, cart, rating, preference, merge, and interaction contracts. |
 | 6 | FFP-03: local-to-server state migration | Move guest state only after identity and write contracts are stable. |
@@ -52,19 +52,25 @@ The Atlas connection is a completed prerequisite, not a completed persistence ph
 
 BFP-05 remains on hold and is excluded from this order until the user selects a recommender approach. Deployment, real payments, and a production order system remain out of scope.
 
+### Completed FFP-05 Backend Read Contract
+
+`/api/products` and `/api/search` now share one repository-backed query path. It supports bounded literal text search, repeated genre/condition/era facets, artist and label substrings, price and stock filters, four controlled sorts, deterministic public-ID tie-breakers, bounded pagination, and full active-catalog facet metadata. Seed and MongoDB adapters preserve the same public envelope and exclude soft-deleted records.
+
 ## BFP-01: MongoDB Persistence, Schemas, Indexes, And Migration
 
 This plan defines the optional persistence layer while keeping seed mode working when Atlas is unavailable or MongoDB mode is not selected.
 
+Status: completed and verified on 2026-07-03.
+
 ### Goal
 
-Add durable data without breaking the current read-only demo. Atlas connectivity is verified, but the approved seed remains the default until models, repositories, migration, and parity checks are implemented and MongoDB mode is explicitly selected.
+Add durable data without breaking the current read-only demo. The approved seed remains the default, and MongoDB catalog reads activate only when `CATALOG_DATA_SOURCE=mongodb` is explicitly selected.
 
 ### Atlas Boundary
 
-Connection update on 2026-07-03: Atlas authentication, network access, the ignored local environment, and the backend Mongoose ping are verified. No application database, collection, model, migration, or persistence path was created.
+Completion update on 2026-07-03: Atlas authentication and network access, the ignored local environment, application models and collections, catalog migration, repository parity, and declared indexes were verified. The migrated seed remains idempotent on repeated dry-runs.
 
-The connection prerequisite is complete. Before any persistence write or data-source switch, all of these must still be true:
+Before any future migration write or data-source switch, all of these must remain true:
 
 - The Atlas project, cluster, database user, and network access rule remain valid.
 - `MONGODB_URI` and `MONGODB_DB_NAME` remain in uncommitted `.env.local`.
@@ -92,7 +98,7 @@ The application must default to `CATALOG_DATA_SOURCE=seed`. Missing Atlas config
 
 - Unique indexes: `users.publicId`, `users.normalizedUsername`, `vinylRecords.publicId`, `vinylRecords.slug`, `interactions.eventId`, `recommendationLogs.requestId`, and `orders.publicId`.
 - Query indexes: catalog genre/artist/year/stock, user plus event time, product plus event time, algorithm version plus served time, and audit entity plus timestamp.
-- Text search must be evaluated against the actual catalog size. Start with a text index on title and artist only if query behavior is acceptable; preserve the existing deterministic substring search until verified.
+- Text search uses escaped, case-insensitive literal substring matching for the current catalog. A text index remains a future optimization only if measured catalog growth justifies a contract change.
 - TTL indexes should remove `interactions` and `recommendationLogs` after 90 days. The plans and UI must describe TTL deletion as eventual rather than immediate.
 - Soft-deleted products must be excluded by default from catalog, search, recommendations, cart additions, and new orders.
 
@@ -100,7 +106,7 @@ The application must default to `CATALOG_DATA_SOURCE=seed`. Missing Atlas config
 
 Public contracts continue using numeric `product.id`. Repository code translates numeric public IDs to MongoDB documents. No route, URL, cart item, wishlist item, recommendation item, or frontend key exposes MongoDB ObjectIds.
 
-### Proposed Files
+### Implemented Files
 
 - `src/lib/db/mongodb.js`: existing cached Mongoose connection, configuration validation, and safe connection errors.
 - `src/lib/db/dataSource.js`: selects seed or MongoDB repositories.
@@ -111,15 +117,15 @@ Public contracts continue using numeric `product.id`. Repository code translates
 - `scripts/verify-indexes.mjs`: compare required indexes with the connected database.
 - `tests/db-*.test.mjs`: model, repository, migration, fallback, and failure-path tests.
 
-### Implementation Phases
+### Completed Implementation Phases
 
-1. Preserve the existing Mongoose dependency, environment validation, cached connection helper, and safe `db:ping` verification.
-2. Define repository interfaces and keep the seed adapter active.
-3. Add schemas and indexes with explicit validation and timestamps.
-4. Implement MongoDB repositories behind `CATALOG_DATA_SOURCE`.
-5. Build an idempotent migration keyed by numeric `publicId`; dry-run must report creates, updates, unchanged records, and conflicts.
-6. Run the seed and MongoDB adapters through the same catalog contract tests.
-7. Switch a local session to MongoDB, verify parity, then switch back to seed and verify the fallback remains healthy.
+1. Preserved the Mongoose dependency, environment validation, cached connection helper, and safe `db:ping` verification.
+2. Defined repository interfaces while keeping the seed adapter as the default.
+3. Added strict schemas, timestamps, validation, and declared indexes.
+4. Implemented MongoDB repositories behind explicit `CATALOG_DATA_SOURCE` selection.
+5. Added an idempotent numeric-public-ID migration whose dry-run reports creates, updates, unchanged records, and conflicts.
+6. Exercised seed and MongoDB adapters through repository contract and parity checks.
+7. Verified live MongoDB mode, then reverified seed mode and failure behavior.
 
 ### Failure And Recovery Rules
 
@@ -130,6 +136,8 @@ Public contracts continue using numeric `product.id`. Repository code translates
 - Account deletion removes user state and identifiers from demo collections. Demo orders may also be deleted because this project has no legal accounting requirement.
 
 ### Validation And Definition Of Done
+
+All BFP-01 checks below passed on 2026-07-03:
 
 - Existing seed-backed tests, lint, and build still pass with no Atlas variables.
 - Missing MongoDB variables fail safely only when MongoDB mode is selected.
@@ -314,7 +322,7 @@ Excluded:
 - Registration creates only `customer` accounts. Administrator creation remains a local script or manual database operation.
 - Use scrypt with a unique random salt through Node's cryptographic APIs. Store the parameters needed for future verification and upgrade.
 - No email is collected, reducing personal-data scope. Username uniqueness is case-insensitive.
-- Registration remains visibly unavailable until the MongoDB user repository is implemented, selected, and healthy.
+- Registration remains visibly unavailable until the authentication service explicitly wires the implemented user repository and verifies its health.
 
 ### Session Design
 
@@ -343,7 +351,7 @@ Excluded:
 2. Implement seeded-account login, signed cookies, session restoration, and logout without requiring user persistence.
 3. Add exact-origin credentialed CORS and protect a test-only customer route during development.
 4. Add customer/admin authorization helpers and prove that UI state cannot bypass them.
-5. Add customer registration after the MongoDB user repository is implemented and verified.
+5. Add customer registration by wiring and revalidating the implemented MongoDB user repository.
 6. Add account deactivation and deletion behavior; no password reset is added.
 7. Connect the frontend auth provider and protected routes.
 

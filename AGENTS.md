@@ -10,18 +10,21 @@ The backend is an implemented read-only integration service, not a planning-only
 
 - Next.js 16.2.9, React 19.2.4, Tailwind 4, and JavaScript modules.
 - Routes for health, product listing/detail, search, product similarity, and user recommendations.
-- Approved local demo seed remains the active catalog; a server-only Atlas connection helper and ping command are configured, but no MongoDB models or persistence are active.
+- Approved local demo seed remains the default catalog. Explicit `CATALOG_DATA_SOURCE=mongodb` selection reads the migrated catalog from Atlas through the MongoDB repository.
+- Mongoose models, persistence repositories, an idempotent seed migration, and live index verification are implemented; customer write APIs are not.
 - Deterministic content-based recommendations with explanations, stock preference, exclusions, diversity limits, and an algorithm version.
-- Automated catalog, recommender-behavior, and metric sanity tests.
+- Automated catalog, persistence, migration, recommender-behavior, and metric sanity tests.
 
 ## Folder Boundary
 
 - `src/app/api/` owns route handlers.
 - `src/services/` owns catalog business logic.
+- `src/repositories/` owns seed and MongoDB data access.
+- `src/models/` owns strict Mongoose schemas and indexes.
 - `src/validation/` owns request validation.
 - `src/lib/recommender/` owns scoring, explanations, diversity, and evaluation helpers.
-- `src/data/records.js` is the current approved demo catalog.
-- `src/lib/db/` owns the current connection helper and remains the server-only boundary for future MongoDB models and repositories.
+- `src/data/records.js` is the approved catalog seed and seed-mode data source.
+- `src/lib/db/` owns connection, data-source selection, and migration support.
 - `../vinyl_record_store_frontend/` owns all customer-facing UI and client state.
 
 ## Required Startup Reads
@@ -49,7 +52,8 @@ Read `../AGENT_MEMORY.md` at session start and append a dated entry at session e
 
 - `FRONTEND_ORIGIN` controls API CORS and defaults to `http://localhost:5173`.
 - `RECOMMENDER_ALGORITHM_VERSION` overrides the default `content-demo-v1` label.
-- `MONGODB_URI` and `MONGODB_DB_NAME` configure the server-only Atlas connection through an ignored `.env.local`; the catalog remains seed-backed until persistence is explicitly implemented.
+- `CATALOG_DATA_SOURCE` defaults to `seed`; set it to `mongodb` only when Atlas configuration and migrated data are ready.
+- `MONGODB_URI` and `MONGODB_DB_NAME` configure the server-only Atlas connection through an ignored `.env.local`. Explicit MongoDB mode never silently falls back to seed data.
 - API contract changes require matching updates in both repositories.
 
 ## Validation
@@ -71,7 +75,7 @@ Use `docs/PROJECT_CONTEXT.md` as the backend source of truth. Update only affect
 ## Safety
 
 - Never commit real secrets, MongoDB credentials, private interaction logs, emails, orders, ratings, or `.env` files.
-- Do not add scraping, auth, payments, admin APIs, collaborative filtering, or production persistence without explicit scope.
+- Do not add scraping, auth, payments, admin APIs, collaborative filtering, or customer write routes without explicit scope.
 - Do not use destructive Git commands or overwrite user work.
 - Cleanup must use verified exact paths inside this repository. Never delete source, docs, assets, config, or `node_modules` without explicit scope.
 - Do not commit or push unless the user explicitly asks.

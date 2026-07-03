@@ -1,6 +1,7 @@
 import { invalid } from "../lib/errors.js";
 
 const MAX_USER_ID_LENGTH = 64;
+const MAX_FILTER_VALUES = 20;
 
 export function positiveInteger(value, fallback, { name, max = 100 } = {}) {
   if (value === null || value === undefined || value === "") return fallback;
@@ -20,6 +21,35 @@ export function optionalNumber(value, name) {
     throw invalid(`${name} must be a non-negative number.`);
   }
   return parsed;
+}
+
+export function boundedLiteral(value, { name, maxLength }) {
+  const normalized = String(value || "").trim();
+  if (normalized.length > maxLength) {
+    throw invalid(`${name} must be ${maxLength} characters or fewer.`);
+  }
+  return normalized;
+}
+
+export function repeatedControlledValues(searchParams, name, allowedValues) {
+  const values = searchParams
+    .getAll(name)
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+
+  if (values.length > MAX_FILTER_VALUES) {
+    throw invalid(`${name} may contain at most ${MAX_FILTER_VALUES} values.`);
+  }
+
+  const canonicalValues = new Map(
+    allowedValues.map((value) => [value.toLowerCase(), value]),
+  );
+  const normalized = values.map((value) => canonicalValues.get(value.toLowerCase()));
+  if (normalized.some((value) => !value)) {
+    throw invalid(`${name} contains an unsupported value.`);
+  }
+
+  return [...new Set(normalized)];
 }
 
 export function productId(value) {

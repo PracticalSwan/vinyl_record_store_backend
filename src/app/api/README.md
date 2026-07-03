@@ -2,4 +2,4 @@
 
 Implemented routes live in this tree for health, products, search, product recommendations, and user recommendations.
 
-Keep handlers thin: validate or call a service, then return through `src/lib/http.js`.
+Keep handlers thin: validate or call a service, then return through `src/lib/http.js`. Product and search routes share the same repository-backed query service, so their filtering, sorting, facets, and pagination remain consistent.
