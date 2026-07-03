@@ -1,13 +1,13 @@
 import { connectMongoDB } from "../lib/db/mongodb.js";
-import { persistenceUnavailable } from "../lib/errors.js";
+import { persistenceUnavailable, ServiceError } from "../lib/errors.js";
 
 export function createMongoRunner(connect = connectMongoDB) {
   return async (operation) => {
     try {
-      await connect();
-      return await operation();
+      const connection = await connect();
+      return await operation(connection);
     } catch (error) {
-      if (error?.code === "PERSISTENCE_UNAVAILABLE") throw error;
+      if (error instanceof ServiceError) throw error;
       throw persistenceUnavailable();
     }
   };

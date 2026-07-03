@@ -4,7 +4,7 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 
 ## Current Automated Evidence
 
-| Check | Evidence on 2026-07-03 |
+| Check | Evidence through 2026-07-04 |
 | --- | --- |
 | Literal search, repeated facets, sorting, pagination, and validation | Passing Node tests. |
 | Public product shape | Passing Node test. |
@@ -17,8 +17,10 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 | Cold-start mode and language | Passing Node test. |
 | Ideal-order NDCG sanity | Passing Node test equals 1.0. |
 | Frontend CORS origin rule | Passing Node test. |
+| Authentication, signed/tampered cookies, roles, registration, and rate limits | Passing Node tests plus browser session flows. |
+| Write validation, ownership, interaction/merge idempotency, transactions, and account cleanup | Passing Node tests plus live Atlas browser flows. |
 | ESLint | Passed. |
-| Next.js production build | Passed with all six API route groups. |
+| Next.js production build | Passed with all catalog, recommendation, authentication, and customer-state routes. |
 
 Run:
 
@@ -30,7 +32,7 @@ npm run build
 
 ## What These Tests Do Not Prove
 
-Behavior tests do not show that recommendations are relevant to real users. No ranking-quality result is reported because there is no timestamped interaction dataset, held-out relevance definition, train/test split, or fair baseline comparison.
+Behavior tests do not show that recommendations are relevant to real users. The interaction ingestion route now exists, but the frontend analytics pipeline and sufficient timestamped evidence do not. No ranking-quality result is reported because there is no eligible held-out dataset, relevance build, train/test split, or fair baseline comparison.
 
 ## Required Offline Protocol Before Reporting Quality
 

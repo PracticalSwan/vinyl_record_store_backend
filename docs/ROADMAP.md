@@ -4,7 +4,7 @@ This file records current completion and deferred scope. It does not authorize c
 
 ## Completed
 
-- Next.js read-only API foundation.
+- Next.js read and authenticated mutation API foundation.
 - Approved demo catalog and public product normalization.
 - Product listing/detail and search routes with literal search, repeated facets, deterministic sorting, pagination, and catalog-wide facets.
 - Optional MongoDB catalog reads behind explicit data-source selection, with seed mode remaining the default.
@@ -13,17 +13,20 @@ This file records current completion and deferred scope. It does not authorize c
 - Product similarity, synthetic demo-profile, and cold-start recommendations.
 - Explanations, exclusions, stock preference, artist diversity cap, and algorithm versioning.
 - CORS configuration for the separate Vite frontend.
-- Catalog/recommender behavior tests, metric sanity test, lint, and production build.
+- Signed HttpOnly sessions, customer registration, seeded identities, logout/restoration, role checks, and account deletion.
+- Protected profile/preferences, wishlist, cart, ratings, idempotent guest merge, and anonymous/authenticated interaction ingestion.
+- Exact-origin credentialed CORS, bounded JSON/input, rate limits, server-derived ownership, safe errors, and transaction-backed consistency.
+- Catalog/recommender/auth/write behavior tests, metric sanity test, lint, and production build.
 - Current instructions, README, contracts, architecture, data, evaluation, risk, decision, and setup docs.
 
 ## Deferred And Not Started
 
-- Authentication and real user profiles.
-- Interaction, wishlist, cart, order, rating, and recommendation-log writes.
+- Frontend migration from local wishlist/cart/rating state to the implemented server APIs.
+- Demo-order and recommendation-request-log writes.
 - Admin product management, payments, scraping, and deployment automation.
 - Collaborative or hybrid recommendation.
 - Offline benchmark with random and popularity baselines.
 
-Detailed plans and the approved cross-repository implementation order are in `FUTURE_IMPLEMENTATION_PLAN.md`. BFP-01 persistence and the backend FFP-05 read-query work are complete. Recommender algorithm selection remains on hold, and authentication, customer writes, deployment, scraping, real payments, and production commerce remain out of scope.
+Detailed plans and the approved cross-repository implementation order are in `FUTURE_IMPLEMENTATION_PLAN.md`. BFP-01 persistence, BFP-04 authentication, BFP-03 customer writes, and the backend FFP-05 read-query work are complete. Recommender algorithm selection remains on hold; deployment, scraping, real payments, and production commerce remain out of scope.
 
 Deferred items require a separate explicit implementation task.

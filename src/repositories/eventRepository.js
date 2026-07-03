@@ -1,6 +1,7 @@
 import { AuditLog } from "../models/AuditLog.js";
 import { Interaction } from "../models/Interaction.js";
 import { RecommendationLog } from "../models/RecommendationLog.js";
+import { RETENTION_MS } from "../models/constants.js";
 import { createMongoRunner, toPlainObject } from "./repositorySupport.js";
 
 const clean = (document) => {
@@ -21,10 +22,27 @@ export function createEventRepository(
   const run = createMongoRunner(connect);
   return {
     appendInteraction: (data) => run(async () => clean(await interactionModel.create(data))),
+    appendInteractions: (items) => run(async () => {
+      const receivedAt = new Date();
+      const expiresAt = new Date(receivedAt.getTime() + RETENTION_MS);
+      const operations = items.map((item) => ({
+        updateOne: {
+          filter: { eventId: item.eventId },
+          update: { $setOnInsert: { ...item, receivedAt, expiresAt } },
+          upsert: true,
+        },
+      }));
+      const result = await interactionModel.bulkWrite(operations, { ordered: false });
+      const inserted = result.upsertedCount || 0;
+      return { accepted: inserted, duplicates: items.length - inserted };
+    }),
     appendRecommendationLog: (data) => run(async () => clean(
       await recommendationLogModel.create(data),
     )),
     appendAuditLog: (data) => run(async () => clean(await auditLogModel.create(data))),
+    deleteUserInteractions: (userPublicId, { session } = {}) => run(async () => (
+      interactionModel.deleteMany({ userPublicId }, { session })
+    )),
   };
 }
 

@@ -11,17 +11,26 @@ export const PRODUCT_GENRES = [
 
 export const PRODUCT_CONDITIONS = ["M", "NM", "VG+", "VG", "G"];
 export const PRODUCT_STOCK_LEVELS = ["in", "low", "out"];
+export const PRODUCT_FORMATS = ["LP, 33 1/3 rpm", "2xLP", "3xLP", "2xLP + EP"];
 export const USER_ROLES = ["customer", "admin"];
 
 export const INTERACTION_TYPES = [
-  "view",
+  "recommendation_impression",
+  "recommendation_click",
+  "recommendation_wishlist_add",
+  "recommendation_cart_add",
+  "recommendation_dismiss",
+  "product_view",
   "wishlist_add",
   "wishlist_remove",
   "cart_add",
   "cart_remove",
-  "cart_qty",
-  "rating",
-  "search",
+  "cart_quantity",
+  "rating_set",
+  "rating_remove",
+  "search_submit",
+  "search_result_click",
+  "demo_checkout_complete",
 ];
 
 export const RETENTION_DAYS = 90;

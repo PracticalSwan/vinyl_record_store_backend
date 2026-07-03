@@ -1,6 +1,6 @@
 # Backend Future Implementation Plan
 
-Status: BFP-01 and the backend portion of FFP-05 were implemented and verified on 2026-07-03. Remaining plans are future work only.
+Status: BFP-01 and the backend portion of FFP-05 were implemented on 2026-07-03. BFP-04 authentication and BFP-03 customer write APIs were implemented and verified on 2026-07-04. Remaining plans are future work only.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
@@ -9,7 +9,7 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 ## User Decisions Recorded On 2026-07-03
 
 - Use a small custom authentication system with server-issued sessions.
-- Add customer registration only after durable user persistence exists. The model and repository gate is complete; authentication, session, authorization, and registration contracts remain future work.
+- Add customer registration only after durable user persistence exists. This gate is complete and registration now uses the MongoDB user repository.
 - Preserve the existing numeric product IDs in public APIs; MongoDB `_id` remains internal.
 - Merge anonymous wishlist and cart state automatically after login.
 - Collect anonymous interaction data by default with a visible opt-out, no direct personal information, and a 90-day retention target.
@@ -23,23 +23,23 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 | --- | --- | --- | --- |
 | BFP-01 | MongoDB persistence, schemas, indexes, and seed migration | Completed 2026-07-03 | Seed remains the default; explicit MongoDB mode, models, repositories, migration, parity checks, and live indexes are verified. |
 | BFP-02 | Recommendation logging and offline evaluation dataset | Planned | Request logging precedes frontend analytics; offline evaluation waits for sufficient persisted interactions. |
-| BFP-03 | Write API contracts and implementation | Planned | Requires repositories and models; most routes also require authentication. |
-| BFP-04 | Simple authentication, registration, and authorization | Planned | Seeded accounts can precede user persistence; registration requires the user repository. |
+| BFP-03 | Write API contracts and implementation | Completed 2026-07-04 | Customer/event routes are implemented; optional demo orders and administrator writes remain in BFP-08/BFP-07 scope. |
+| BFP-04 | Simple authentication, registration, and authorization | Completed 2026-07-04 | Registered and seeded identities use signed server sessions and role checks. |
 | BFP-05 | Recommender algorithm selection | On hold | User will choose the future recommender method. |
 | BFP-06 | Catalog ingestion and metadata quality | Planned | The MongoDB product repository gate is complete; validated preview/apply and provenance work remain. |
 | BFP-07 | Admin mode backend | Planned | Requires authentication, authorization, persistence, and product writes. |
 
 ## Approved Cross-Repository Implementation Order
 
-The first three milestones are complete. Implement the remaining plans in this order so each later surface builds on verified contracts and regression coverage:
+The first five milestones are complete. Implement the remaining plans in this order so each later surface builds on verified contracts and regression coverage:
 
 | Order | Plan | Dependency-safe outcome |
 | --- | --- | --- |
 | 1 | FFP-04: browser, integration, and accessibility testing | Completed 2026-07-03; regression coverage now protects the integrated contract. |
 | 2 | BFP-01: MongoDB persistence | Completed 2026-07-03; seed remains the default and explicit MongoDB mode is verified. |
 | 3 | FFP-05: server-side search and pagination | Completed 2026-07-03; repository-backed literal search, facets, sorting, and pagination are active. |
-| 4 | BFP-04: simple authentication and authorization | Establish real server-enforced customer/admin identity and registration through the user repository. |
-| 5 | BFP-03: write APIs | Add protected wishlist, cart, rating, preference, merge, and interaction contracts. |
+| 4 | BFP-04: simple authentication and authorization | Completed 2026-07-04; signed sessions, registration, seeded identities, role checks, and account cleanup are active. |
+| 5 | BFP-03: write APIs | Completed 2026-07-04; protected preferences/state plus idempotent interaction and guest-merge contracts are active. |
 | 6 | FFP-03: local-to-server state migration | Move guest state only after identity and write contracts are stable. |
 | 7 | FFP-02: onboarding and preferences | Add the customer flow against the implemented session and preference APIs. |
 | 8 | BFP-02 Part A: recommendation-request logging | Persist request IDs, served lists, modes, and algorithm versions before collecting recommendation interactions. |
@@ -217,7 +217,9 @@ Demo checkout completion can be reported as a funnel event, but it must not be d
 
 ## BFP-03: Write API Contracts And Implementation
 
-This plan defines the future mutation boundary shared by customer state, interaction capture, and demo orders.
+This plan defines the mutation boundary shared by customer state, interaction capture, and optional demo orders.
+
+Status: completed and verified on 2026-07-04 for the required customer/event surface. Optional demo orders remain part of FFP-08, and administrator writes remain part of BFP-07.
 
 ### Goal
 
@@ -232,11 +234,12 @@ Add a small, consistent write surface for preferences, interactions, wishlist, c
 - JSON body size and batch length are bounded.
 - Resource creation and batched event ingestion accept an idempotency key or stable client event ID.
 
-### Planned Customer And Event Routes
+### Implemented Customer And Event Routes
 
 | Method | Route | Authentication | Purpose |
 | --- | --- | --- | --- |
 | `GET` | `/api/me` | Required | Return safe profile, role, onboarding status, and preferences. |
+| `DELETE` | `/api/me` | Required | Delete a registered customer and owned demo state, then clear the session. |
 | `PATCH` | `/api/me/preferences` | Required | Validate and replace supported preference fields. |
 | `POST` | `/api/interactions` | Optional | Accept a bounded batch of versioned anonymous or authenticated events. |
 | `GET` | `/api/wishlist` | Required | Return the current user's product IDs and product summaries. |
@@ -246,6 +249,7 @@ Add a small, consistent write surface for preferences, interactions, wishlist, c
 | `PUT` | `/api/cart/:productId` | Required | Set an absolute validated quantity from 1 through 99. |
 | `DELETE` | `/api/cart/:productId` | Required | Remove an item. |
 | `POST` | `/api/me/merge-guest-state` | Required | Atomically and idempotently merge guest wishlist, cart, and ratings after login. |
+| `GET` | `/api/ratings` | Required | Return the current user's ratings and update timestamps. |
 | `PUT` | `/api/ratings/:productId` | Required | Create or replace a rating from 1 through 5. |
 | `DELETE` | `/api/ratings/:productId` | Required | Remove the current rating while retaining a safe historical event. |
 | `POST` | `/api/orders` | Required, optional phase | Create a clearly marked demo order with no payment. |
@@ -265,17 +269,19 @@ Authentication routes are specified in BFP-04 and administrator routes in BFP-07
 
 Use stable codes including `INVALID_INPUT`, `UNAUTHENTICATED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `RATE_LIMITED`, `PERSISTENCE_UNAVAILABLE`, and `INTERNAL_ERROR`. Error messages remain safe and must not expose database or validation internals.
 
-### Implementation Phases
+### Completed Implementation Phases
 
-1. Extend the shared API contract documents before adding route code.
-2. Add reusable JSON-body, origin, session, ownership, and idempotency helpers.
-3. Implement interactions first because they allow anonymous capture and support evaluation.
-4. Implement preferences, wishlist, cart, merge, and rating services behind authentication.
-5. Add the optional demo-order routes only when the simulated checkout needs durable history.
-6. Add administrator product routes after BFP-07 authorization is complete.
-7. Update CORS to explicit methods, headers, credentials, and origin without using `*`.
+1. Added reusable bounded JSON, exact-origin, session, ownership, and idempotency helpers.
+2. Implemented optional-session interaction ingestion with unique event IDs and server-derived authenticated ownership.
+3. Implemented preferences, wishlist, cart, merge, rating, profile, and account-deletion services behind authentication.
+4. Added MongoDB transactions for cart consistency, rating history, guest merge, and account cleanup.
+5. Updated CORS to explicit methods, headers, credentials, and origin without using `*`.
+6. Deferred optional demo-order routes until FFP-08 and administrator product routes until BFP-07.
+7. Updated both contract documents and added unit/integration/browser coverage.
 
 ### Validation And Definition Of Done
+
+All required BFP-03 checks below passed on 2026-07-04:
 
 - Every route has success, invalid-input, unauthenticated, forbidden, not-found, idempotency, and persistence-failure tests where applicable.
 - A user cannot read or mutate another user's state by changing request values.
@@ -287,6 +293,8 @@ Use stable codes including `INVALID_INPUT`, `UNAUTHENTICATED`, `FORBIDDEN`, `NOT
 ## BFP-04: Simple Authentication, Registration, And Authorization
 
 This plan defines the deliberately small identity boundary selected for the classroom project.
+
+Status: completed and verified on 2026-07-04.
 
 ### Goal
 
@@ -322,7 +330,7 @@ Excluded:
 - Registration creates only `customer` accounts. Administrator creation remains a local script or manual database operation.
 - Use scrypt with a unique random salt through Node's cryptographic APIs. Store the parameters needed for future verification and upgrade.
 - No email is collected, reducing personal-data scope. Username uniqueness is case-insensitive.
-- Registration remains visibly unavailable until the authentication service explicitly wires the implemented user repository and verifies its health.
+- Registration is available in explicit MongoDB mode and fails safely when persistence is unavailable.
 
 ### Session Design
 
@@ -335,27 +343,29 @@ Excluded:
 - Mutating routes validate the request origin. Login attempts receive a small per-identifier and per-client rate limit without logging submitted passwords.
 - After the user repository is active, protected writes reload the user or verify `sessionVersion` so disabled accounts and role changes take effect.
 
-### Proposed Files
+### Implemented Files
 
-- `src/lib/auth/password.js`, `session.js`, `origin.js`, and `rateLimit.js`.
-- `src/services/auth.js` and `src/services/users.js`.
+- `src/lib/auth/config.js`, `password.js`, `session.js`, `cookie.js`, `rateLimit.js`, and `requireSession.js` plus `src/lib/request.js`.
+- `src/services/auth.js`, `userState.js`, and `account.js`.
 - `src/validation/auth.js`.
 - `src/app/api/auth/login/route.js`, `logout/route.js`, `session/route.js`, and `register/route.js`.
-- `src/lib/auth/requireSession.js` and `requireRole.js` for route handlers.
+- `src/lib/auth/requireSession.js` exports optional/required session and role guards for route handlers.
 - `scripts/create-password-hash.mjs` and `scripts/promote-admin.mjs`; scripts must never print secrets unnecessarily.
-- `tests/auth-*.test.mjs` covering cookies, expiry, tampering, roles, registration gates, and rate limits.
+- `tests/auth.test.mjs` plus frontend provider/browser coverage for cookies, expiry, tampering, roles, registration, restoration races, and rate limits.
 
-### Implementation Phases
+### Completed Implementation Phases
 
-1. Add environment schema and password-hash generation script.
-2. Implement seeded-account login, signed cookies, session restoration, and logout without requiring user persistence.
-3. Add exact-origin credentialed CORS and protect a test-only customer route during development.
-4. Add customer/admin authorization helpers and prove that UI state cannot bypass them.
-5. Add customer registration by wiring and revalidating the implemented MongoDB user repository.
-6. Add account deactivation and deletion behavior; no password reset is added.
-7. Connect the frontend auth provider and protected routes.
+1. Added environment parsing and a hidden-input password-hash generation script.
+2. Implemented seeded/registered login, signed cookies, session restoration, and logout.
+3. Added exact-origin credentialed CORS and protected real customer-state routes.
+4. Added customer/admin authorization helpers with server-side role/session-version checks.
+5. Added customer-only registration through the MongoDB user repository.
+6. Added registered-customer deletion; seeded and administrator deletion are blocked and password reset remains excluded.
+7. Connected the frontend auth provider, registration/login/account pages, protected route, and navigation.
 
 ### Validation And Definition Of Done
+
+All required BFP-04 checks below passed on 2026-07-04; the role helper is verified directly because BFP-07 administrator routes remain deferred:
 
 - Correct seeded credentials create a session; incorrect credentials return the same generic failure.
 - Tampered, expired, or missing cookies are rejected.

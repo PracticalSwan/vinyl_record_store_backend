@@ -6,22 +6,23 @@ This is a subtree instruction file. Read the global instructions and the project
 
 ## Current State
 
-The backend is an implemented read-only integration service, not a planning-only Next.js starter.
+The backend is an implemented integration and authenticated customer-state service, not a planning-only Next.js starter.
 
 - Next.js 16.2.9, React 19.2.4, Tailwind 4, and JavaScript modules.
-- Routes for health, product listing/detail, search, product similarity, and user recommendations.
+- Routes for health, product listing/detail, search, product similarity, user recommendations, authentication, profile/preferences, interactions, wishlist, cart, ratings, guest merge, and account deletion.
 - Approved local demo seed remains the default catalog. Explicit `CATALOG_DATA_SOURCE=mongodb` selection reads the migrated catalog from Atlas through the MongoDB repository.
-- Mongoose models, persistence repositories, an idempotent seed migration, and live index verification are implemented; customer write APIs are not.
+- Mongoose models, persistence repositories, signed sessions, authenticated customer writes, an idempotent seed migration, and live index verification are implemented.
 - Deterministic content-based recommendations with explanations, stock preference, exclusions, diversity limits, and an algorithm version.
-- Automated catalog, persistence, migration, recommender-behavior, and metric sanity tests.
+- Automated catalog, persistence, migration, authentication, write-state, recommender-behavior, and metric sanity tests.
 
 ## Folder Boundary
 
 - `src/app/api/` owns route handlers.
-- `src/services/` owns catalog business logic.
+- `src/services/` owns catalog, authentication, customer-state, and account-lifecycle business logic.
 - `src/repositories/` owns seed and MongoDB data access.
 - `src/models/` owns strict Mongoose schemas and indexes.
-- `src/validation/` owns request validation.
+- `src/validation/` owns catalog, authentication, and mutation validation.
+- `src/lib/auth/` owns password, signed-session, cookie, authorization, and rate-limit helpers.
 - `src/lib/recommender/` owns scoring, explanations, diversity, and evaluation helpers.
 - `src/data/records.js` is the approved catalog seed and seed-mode data source.
 - `src/lib/db/` owns connection, data-source selection, and migration support.
@@ -54,6 +55,8 @@ Read `../AGENT_MEMORY.md` at session start and append a dated entry at session e
 - `RECOMMENDER_ALGORITHM_VERSION` overrides the default `content-demo-v1` label.
 - `CATALOG_DATA_SOURCE` defaults to `seed`; set it to `mongodb` only when Atlas configuration and migrated data are ready.
 - `MONGODB_URI` and `MONGODB_DB_NAME` configure the server-only Atlas connection through an ignored `.env.local`. Explicit MongoDB mode never silently falls back to seed data.
+- `AUTH_SECRET` signs eight-hour HttpOnly sessions. Seeded account credentials are configured only through the documented `AUTH_DEMO_*` environment fields; registered users require MongoDB mode.
+- Credentialed mutations require the exact `FRONTEND_ORIGIN`; ownership always comes from the verified session, never from a client user ID.
 - API contract changes require matching updates in both repositories.
 
 ## Validation
@@ -75,7 +78,7 @@ Use `docs/PROJECT_CONTEXT.md` as the backend source of truth. Update only affect
 ## Safety
 
 - Never commit real secrets, MongoDB credentials, private interaction logs, emails, orders, ratings, or `.env` files.
-- Do not add scraping, auth, payments, admin APIs, collaborative filtering, or customer write routes without explicit scope.
+- Do not add scraping, payments, public admin APIs, collaborative filtering, demo orders, or new identity features without explicit scope.
 - Do not use destructive Git commands or overwrite user work.
 - Cleanup must use verified exact paths inside this repository. Never delete source, docs, assets, config, or `node_modules` without explicit scope.
 - Do not commit or push unless the user explicitly asks.

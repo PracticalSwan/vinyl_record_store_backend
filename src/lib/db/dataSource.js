@@ -6,7 +6,8 @@ import { seedCatalogRepository } from "../../repositories/seedCatalogRepository.
 export const CATALOG_DATA_SOURCES = ["seed", "mongodb"];
 
 export function getCatalogDataSource(environment = process.env) {
-  const source = environment.CATALOG_DATA_SOURCE?.trim().toLowerCase() || "seed";
+  const atlasConfigured = Boolean(environment.MONGODB_URI?.trim() && environment.MONGODB_DB_NAME?.trim());
+  const source = environment.CATALOG_DATA_SOURCE?.trim().toLowerCase() || (atlasConfigured ? "mongodb" : "seed");
   if (!CATALOG_DATA_SOURCES.includes(source)) {
     throw invalid(`CATALOG_DATA_SOURCE must be one of: ${CATALOG_DATA_SOURCES.join(", ")}.`);
   }

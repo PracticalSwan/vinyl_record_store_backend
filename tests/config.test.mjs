@@ -8,4 +8,12 @@ test("API routes expose the configured frontend CORS origin", async () => {
   const origin = apiRule.headers.find((header) => header.key === "Access-Control-Allow-Origin");
 
   assert.equal(origin.value, process.env.FRONTEND_ORIGIN || "http://localhost:5173");
+  assert.equal(
+    apiRule.headers.find((header) => header.key === "Access-Control-Allow-Credentials").value,
+    "true",
+  );
+  assert.equal(
+    apiRule.headers.find((header) => header.key === "Access-Control-Allow-Methods").value,
+    "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+  );
 });

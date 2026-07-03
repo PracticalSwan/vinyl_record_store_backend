@@ -44,6 +44,8 @@ Decision: Do not expose interaction, wishlist, cart, order, or recommendation-lo
 
 Rationale: Persistence models alone do not provide authorization, idempotency, privacy controls, or complete write-side consistency.
 
+Status update, 2026-07-04: BFP-04 and BFP-03 satisfied this gate. The implemented write surface uses signed sessions, exact-origin checks, bounded schemas, server-derived ownership, idempotency, and transaction-backed consistency. Demo orders, recommendation-request logging, and administrator catalog writes remain deferred.
+
 ## BDEC-006: Distinguish Behavior Tests From Quality Metrics
 
 Date: 2026-07-02
@@ -75,3 +77,11 @@ Date: 2026-07-03
 Decision: The seed migration reconciles catalog content only. `deletedAt` is not a managed field and is never written in an update payload, so an operator's soft-deleted demo-seed record survives any seed re-run.
 
 Rationale: A re-run that wrote `deletedAt: null` over a tombstone would silently resurrect records the operator intentionally hid, contradicting the documented "soft-deleted products must be excluded by default" rule with no log, conflict, or exit-code signal. Creates still seed `deletedAt: null`; updates leave tombstone state untouched.
+
+## BDEC-010: Use Small Server-Enforced Sessions And Idempotent Customer Writes
+
+Date: 2026-07-04
+
+Decision: Use scrypt username/password authentication, signed eight-hour HttpOnly cookies, registered customer accounts plus environment-backed demo identities, and session-derived ownership for profile, wishlist, cart, rating, interaction, merge, and account-deletion routes.
+
+Rationale: This supplies a real authorization boundary without introducing email recovery, third-party identity, or production payment scope. Exact-origin checks, bounded bodies, generic login failures, stable event IDs, merge receipts, and MongoDB transactions address the principal risks for the classroom write surface.

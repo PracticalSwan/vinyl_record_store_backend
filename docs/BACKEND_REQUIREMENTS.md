@@ -1,6 +1,6 @@
 # Backend Requirements
 
-Requirement status reflects the integrated academic demo as of 2026-07-03.
+Requirement status reflects the integrated academic demo as of 2026-07-04.
 
 ## Requirement Status
 
@@ -9,14 +9,16 @@ Requirement status reflects the integrated academic demo as of 2026-07-03.
 | BR-001 | Product listing data. | Implemented | `/api/products`. |
 | BR-002 | Product detail data. | Implemented | `/api/products/:id`. |
 | BR-003 | Search and filters. | Implemented | Literal search, repeated facets, deterministic sorts, pagination, and catalog-wide facet metadata. |
-| BR-004 | Interaction logging. | Deferred | Requires identity and persistence. |
-| BR-005 | Wishlist, cart, and order writes. | Deferred | Frontend remains local demo state. |
+| BR-004 | Interaction ingestion. | Implemented | Anonymous/authenticated bounded event batches with idempotent event IDs. |
+| BR-005 | Wishlist and cart writes. | Implemented | Session-owned wishlist, absolute cart quantities, totals, warnings, and guest merge. Demo orders remain deferred. |
 | BR-006 | Product-based recommendations. | Implemented | Content similarity endpoint. |
 | BR-007 | User-based recommendations. | Demo only | Synthetic profile or cold-start result. |
 | BR-008 | Recommendation explanations. | Implemented | Generated from matched metadata. |
 | BR-009 | Recommendation output logging. | Deferred | Requires persistent evaluation store. |
 | BR-010 | Admin product management. | Deferred | Outside current demo scope. |
 | BR-011 | Optional MongoDB catalog persistence. | Implemented | Explicit data-source selection, strict models, repository parity, conflict-safe seed migration, and index verification. |
+| BR-012 | Authentication and authorization. | Implemented | Registration, seeded/registered login, signed HttpOnly sessions, logout, restoration, role checks, and account deletion. |
+| BR-013 | Preferences and ratings. | Implemented | Validated preference replacement and current rating/history mutation routes. |
 
 ## Non-Functional Requirements
 
@@ -28,4 +30,4 @@ Requirement status reflects the integrated academic demo as of 2026-07-03.
 
 ## Success Boundary
 
-The frontend can consume stable repository-backed read routes and understand why items were ranked. MongoDB catalog reads are implemented, but the project does not claim persistent customer commerce or measured recommendation quality.
+The frontend can consume stable repository-backed reads, signed sessions, and protected customer-state mutations while understanding why items were ranked. The current UI still keeps wishlist/cart/rating state local until FFP-03, and the project does not claim order commerce or measured recommendation quality.

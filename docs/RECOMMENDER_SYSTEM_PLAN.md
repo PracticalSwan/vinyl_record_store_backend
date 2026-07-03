@@ -36,4 +36,4 @@ The default is `content-demo-v1`; `RECOMMENDER_ALGORITHM_VERSION` can override t
 
 ## Deferred Methods
 
-Collaborative filtering, matrix factorization, hybrid ranking, learned weights, popularity signals, and recommendation-request logging require interaction evidence and a separate explicit task. The persistence model exists, but no logging route or evaluation dataset is active.
+Collaborative filtering, matrix factorization, hybrid ranking, learned weights, popularity signals, and recommendation-request logging require interaction evidence and a separate explicit task. Interaction ingestion exists, but recommendation-request logging, frontend capture, and the evaluation dataset pipeline are not active.

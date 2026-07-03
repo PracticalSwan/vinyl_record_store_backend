@@ -1,12 +1,33 @@
 import mongoose from "mongoose";
-import { PRODUCT_GENRES, USER_ROLES } from "./constants.js";
+import {
+  PRODUCT_CONDITIONS,
+  PRODUCT_FORMATS,
+  PRODUCT_GENRES,
+  USER_ROLES,
+} from "./constants.js";
 import { schemaOptions } from "./schemaOptions.js";
+
+const budgetSchema = new mongoose.Schema(
+  {
+    min: { type: Number, default: null, min: 0, max: 1_000_000 },
+    max: { type: Number, default: null, min: 0, max: 1_000_000 },
+  },
+  { _id: false, strict: "throw" },
+);
 
 const preferencesSchema = new mongoose.Schema(
   {
-    genres: { type: [{ type: String, enum: PRODUCT_GENRES }], default: [] },
-    artists: { type: [{ type: String, trim: true, maxlength: 200 }], default: [] },
-    onboarded: { type: Boolean, default: false },
+    favoriteGenres: { type: [{ type: String, enum: PRODUCT_GENRES }], default: [] },
+    dislikedGenres: { type: [{ type: String, enum: PRODUCT_GENRES }], default: [] },
+    favoriteArtists: {
+      type: [{ type: String, trim: true, minlength: 1, maxlength: 200 }],
+      default: [],
+    },
+    budget: { type: budgetSchema, default: () => ({}) },
+    conditions: { type: [{ type: String, enum: PRODUCT_CONDITIONS }], default: [] },
+    formats: { type: [{ type: String, enum: PRODUCT_FORMATS }], default: [] },
+    completedAt: { type: Date, default: null },
+    schemaVersion: { type: Number, default: 1, min: 1, validate: Number.isInteger },
   },
   { _id: false, strict: "throw" },
 );

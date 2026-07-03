@@ -1,4 +1,5 @@
 import { User } from "../models/User.js";
+import { conflict } from "../lib/errors.js";
 import { createMongoRunner, toPlainObject } from "./repositorySupport.js";
 
 const publicUser = (document) => {
@@ -17,7 +18,50 @@ export function createUserRepository(model = User, connect) {
     findByNormalizedUsername: (normalizedUsername) => run(async () => publicUser(
       await model.findOne({ normalizedUsername, active: true }).lean().exec(),
     )),
-    create: (data) => run(async () => publicUser(await model.create(data))),
+    findForAuthentication: (normalizedUsername) => run(async () => {
+      const query = model.findOne({ normalizedUsername, active: true });
+      const document = await query.select("+passwordHash +passwordSalt").lean().exec();
+      return toPlainObject(document);
+    }),
+    create: (data) => run(async () => {
+      try {
+        return publicUser(await model.create(data));
+      } catch (error) {
+        if (error?.code === 11000) throw conflict("That username is already registered.");
+        throw error;
+      }
+    }),
+    updatePreferences: (publicId, preferences) => run(async () => publicUser(
+      await model.findOneAndUpdate(
+        { publicId, active: true },
+        { $set: { preferences } },
+        { returnDocument: "after", runValidators: true },
+      ).lean().exec(),
+    )),
+    upsertSeededProfile: (user, preferences) => run(async () => publicUser(
+      await model.findOneAndUpdate(
+        { publicId: user.publicId },
+        {
+          $set: {
+            username: user.username,
+            normalizedUsername: user.username.toLowerCase(),
+            displayName: user.displayName,
+            role: user.role,
+            active: true,
+            preferences,
+          },
+          $setOnInsert: { publicId: user.publicId, sessionVersion: 0 },
+        },
+        { returnDocument: "after", runValidators: true, upsert: true },
+      ).lean().exec(),
+    )),
+    setRole: (normalizedUsername, role) => run(async () => publicUser(
+      await model.findOneAndUpdate(
+        { normalizedUsername, active: true },
+        { $set: { role }, $inc: { sessionVersion: 1 } },
+        { returnDocument: "after", runValidators: true },
+      ).lean().exec(),
+    )),
   };
 }
 

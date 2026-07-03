@@ -41,8 +41,10 @@ test("interaction requires a subject and retention TTL is declared", async () =>
   const interaction = new Interaction({
     eventId: "event-1",
     sessionId: "session-1",
-    type: "view",
+    type: "product_view",
     productPublicId: 1,
+    source: "groovehaus-frontend",
+    surface: "product-detail",
     occurredAt: new Date(),
   });
   await assert.rejects(() => interaction.validate(), /subject is required/);
@@ -56,8 +58,10 @@ test("retention timestamps are server-owned", async () => {
     eventId: "event-retention",
     anonymousId: "anon-1",
     sessionId: "session-1",
-    type: "view",
+    type: "product_view",
     productPublicId: 1,
+    source: "groovehaus-frontend",
+    surface: "product-detail",
     occurredAt: new Date(),
     receivedAt: new Date(0),
     expiresAt: suppliedExpiry,
@@ -88,7 +92,9 @@ test("optional product IDs accept null but reject non-integers", async () => {
     eventId: "event-search",
     anonymousId: "anon-1",
     sessionId: "session-1",
-    type: "search",
+    type: "search_submit",
+    source: "groovehaus-frontend",
+    surface: "search",
     occurredAt: new Date(),
   });
   await searchInteraction.validate();

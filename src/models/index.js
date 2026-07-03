@@ -1,6 +1,7 @@
 export { AuditLog } from "./AuditLog.js";
 export { Cart } from "./Cart.js";
 export { Counter } from "./Counter.js";
+export { GuestMerge } from "./GuestMerge.js";
 export { Interaction } from "./Interaction.js";
 export { Order } from "./Order.js";
 export { Rating } from "./Rating.js";
@@ -12,6 +13,7 @@ export { Wishlist } from "./Wishlist.js";
 import { AuditLog } from "./AuditLog.js";
 import { Cart } from "./Cart.js";
 import { Counter } from "./Counter.js";
+import { GuestMerge } from "./GuestMerge.js";
 import { Interaction } from "./Interaction.js";
 import { Order } from "./Order.js";
 import { Rating } from "./Rating.js";
@@ -31,4 +33,5 @@ export const ALL_MODELS = [
   RecommendationLog,
   AuditLog,
   Counter,
+  GuestMerge,
 ];

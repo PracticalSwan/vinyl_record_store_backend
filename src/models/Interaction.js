@@ -8,6 +8,8 @@ const recommendationContextSchema = new mongoose.Schema(
     surface: { type: String, default: null, maxlength: 64 },
     rank: { type: Number, default: null, min: 1, max: 1_000, validate: Number.isInteger },
     algorithmVersion: { type: String, default: null, maxlength: 100 },
+    mode: { type: String, default: null, maxlength: 64 },
+    listId: { type: String, default: null, maxlength: 128 },
   },
   { _id: false, strict: "throw" },
 );
@@ -21,6 +23,12 @@ export const interactionSchema = new mongoose.Schema(
     type: { type: String, required: true, enum: INTERACTION_TYPES },
     productPublicId: { ...optionalPublicIdField, immutable: false },
     value: { type: Number, default: null, min: -99, max: 99 },
+    source: {
+      type: String,
+      required: true,
+      enum: ["groovehaus-frontend", "groovehaus-backend"],
+    },
+    surface: { type: String, required: true, maxlength: 64 },
     recommendationContext: { type: recommendationContextSchema, default: null },
     occurredAt: { type: Date, required: true },
     receivedAt: { type: Date, required: true, default: Date.now, immutable: true },

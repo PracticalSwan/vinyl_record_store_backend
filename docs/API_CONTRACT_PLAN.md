@@ -1,6 +1,6 @@
 # Backend API Contract
 
-This contract defines the read-only routes used by the integrated storefront.
+This contract defines the read and authenticated mutation routes available to the integrated storefront.
 
 ## Envelopes
 
@@ -48,13 +48,42 @@ User IDs allow letters, numbers, underscores, and hyphens. Optional `limit` defa
 - `demo-user` returns `mode: "demo-profile"` and a synthetic profile summary.
 - Other valid IDs return `mode: "cold-start"` without claiming user history.
 
+## Authentication Routes
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/auth/register` | Create a case-insensitively unique customer account and issue a session. |
+| `POST` | `/api/auth/login` | Verify a registered or configured seeded identity and issue a session. |
+| `POST` | `/api/auth/logout` | Expire the session cookie. |
+| `GET` | `/api/auth/session` | Return `{ authenticated, user? }` without secret fields. |
+
+Passwords are 10 to 128 characters and use scrypt with a random salt. Login failures use one generic message and bounded rate limiting. Sessions are signed, HttpOnly, `SameSite=Lax`, eight hours long, and secure when configured for HTTPS. Registration always creates a `customer`; administrator promotion is never public.
+
+## Customer And Interaction Routes
+
+| Method | Route | Authentication | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/me` | Required | Return the safe current profile and preferences. |
+| `DELETE` | `/api/me` | Required | Delete a registered customer and owned demo state, then clear the session. Seeded/admin identities are blocked. |
+| `PATCH` | `/api/me/preferences` | Required | Replace supported onboarding preferences. |
+| `POST` | `/api/interactions` | Optional | Idempotently ingest 1 through 50 version-1 events. |
+| `GET` | `/api/wishlist` | Required | Return product IDs and current product summaries. |
+| `PUT`, `DELETE` | `/api/wishlist/:productId` | Required | Idempotently add or remove a product. |
+| `GET` | `/api/cart` | Required | Return current items, calculated USD subtotal, and availability warnings. |
+| `PUT`, `DELETE` | `/api/cart/:productId` | Required | Set an absolute quantity from 1 through 99 or remove an item. |
+| `GET` | `/api/ratings` | Required | Return current ratings and timestamps. |
+| `PUT`, `DELETE` | `/api/ratings/:productId` | Required | Set 1 through 5 or remove a rating while retaining a safe event. |
+| `POST` | `/api/me/merge-guest-state` | Required | Idempotently merge bounded guest wishlist, cart, and rating state by `mergeId`. |
+
+Ownership comes only from the verified session; client-supplied user IDs are rejected as unknown fields. Interactions require stable unique event IDs, a controlled source/surface/type, a valid retention-window timestamp, and an anonymous ID only when no session exists. Merge retries return the original receipt, cart quantities are capped at 99, unavailable products produce warnings, and the newest rating timestamp wins.
+
 ## Deferred Routes
 
-Interaction, wishlist, cart, order, authentication, recommendation-log, and admin write routes are not implemented.
+Demo-order, recommendation-request-log, and administrator catalog routes are not implemented.
 
 ## CORS
 
-API responses allow the single origin configured by `FRONTEND_ORIGIN`, defaulting to `http://localhost:5173`.
+API responses allow credentials only for the single origin configured by `FRONTEND_ORIGIN`, defaulting to `http://localhost:5173`. Mutations reject missing or different origins, bound JSON bodies to 64 KB, and advertise only the implemented methods and `Content-Type`/`Idempotency-Key` headers.
 
 ## Change Rule
 
