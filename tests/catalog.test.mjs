@@ -35,10 +35,10 @@ test("catalog returns deterministic sort, pagination, totals, and global facets"
   const result = await listProducts(params);
   assert.equal(result.items.length, 5);
   assert.equal(result.meta.page, 2);
-  assert.equal(result.meta.total, 42);
-  assert.equal(result.meta.totalPages, 9);
+  assert.equal(result.meta.total, 116);
+  assert.equal(result.meta.totalPages, 24);
   assert.equal(result.meta.sort, "price-desc");
-  assert.equal(result.meta.facets.genres.find(({ value }) => value === "Jazz").count, 7);
+  assert.equal(result.meta.facets.genres.find(({ value }) => value === "Jazz").count, 20);
   assert.ok(result.items.every((item, index, items) => index === 0 || items[index - 1].price >= item.price));
 });
 

@@ -49,6 +49,41 @@ export const records = [
     description: 'A concept album evoking the open sea through modal harmony and spacious, oceanic rhythms. Considered one of the finest post-bop records ever made.',
     reason: 'Recommended because you bought another jazz album.',
   },
+  {
+    id: 100, title: 'Saxophone Colossus', artist: 'Sonny Rollins', genre: 'Jazz',
+    year: 1956, price: 50, stock: 'in', condition: 'VG+',
+    label: 'Prestige Records', format: 'LP, 33 1/3 rpm', pressing: '1956 US original',
+    description: 'A tenor saxophone showcase built around the calypso-tinged "St. Thomas," capturing Rollins at his most melodically inventive.',
+    reason: 'Recommended because you bought another jazz album.',
+  },
+  {
+    id: 101, title: 'Blue Train', artist: 'John Coltrane', genre: 'Jazz',
+    year: 1957, price: 64, stock: 'in', condition: 'NM',
+    label: 'Blue Note Records', format: 'LP, 33 1/3 rpm', pressing: '1957 US original',
+    description: "Coltrane's only Blue Note date as leader, pairing hard-driving hard bop with a title track that became an instant standard.",
+    reason: 'Recommended because you bought another record by John Coltrane.',
+  },
+  {
+    id: 102, title: 'Brilliant Corners', artist: 'Thelonious Monk', genre: 'Jazz',
+    year: 1957, price: 56, stock: 'low', condition: 'VG',
+    label: 'Riverside Records', format: 'LP, 33 1/3 rpm', pressing: '1957 US original',
+    description: "Monk's most rhythmically daring record, full of jagged angles and tunes so difficult the title track had to be edited together from multiple takes.",
+    reason: 'Recommended because it shares the same era as your recent views.',
+  },
+  {
+    id: 103, title: 'Getz/Gilberto', artist: 'Stan Getz & João Gilberto', genre: 'Jazz',
+    year: 1964, price: 38, stock: 'in', condition: 'VG+',
+    label: 'Verve Records', format: 'LP, 33 1/3 rpm', pressing: '1964 US original',
+    description: 'The record that brought bossa nova to American audiences, featuring "The Girl from Ipanema" and Astrud Gilberto\'s breakout vocal turn.',
+    reason: 'Recommended because it shares similar tags and is in stock.',
+  },
+  {
+    id: 104, title: 'Head Hunters', artist: 'Herbie Hancock', genre: 'Jazz',
+    year: 1973, price: 45, stock: 'in', condition: 'NM',
+    label: 'Columbia Records', format: 'LP, 33 1/3 rpm', pressing: '1973 US original',
+    description: "Hancock's pivot into jazz-funk, built on a thick Headhunters groove that became one of the best-selling jazz records of all time.",
+    reason: 'Recommended because you bought another record by this artist.',
+  },
 
   // ── Soul & R&B ────────────────────────────────────────
   {
@@ -98,6 +133,34 @@ export const records = [
     year: 2000, price: 40, stock: 'in', condition: 'NM',
     label: 'Virgin Records', format: '2xLP', pressing: '2000 US original',
     description: 'A slow-burning, neo-soul masterpiece built on loose, behind-the-beat grooves from the Soulquarians collective. Patient, sensual, and endlessly influential.',
+    reason: 'Recommended because it has similar tags and is in stock.',
+  },
+  {
+    id: 105, title: 'Hot Buttered Soul', artist: 'Isaac Hayes', genre: 'Soul',
+    year: 1969, price: 40, stock: 'in', condition: 'VG+',
+    label: 'Enterprise Records', format: 'LP, 33 1/3 rpm', pressing: '1969 US original',
+    description: 'Four sprawling tracks, including an 18-minute reinvention of "By the Time I Get to Phoenix," that redefined how ambitious a soul album could be.',
+    reason: 'Recommended because it shares the same genre and release era.',
+  },
+  {
+    id: 106, title: 'Superfly', artist: 'Curtis Mayfield', genre: 'Soul',
+    year: 1972, price: 36, stock: 'in', condition: 'NM',
+    label: 'Curtom Records', format: 'LP, 33 1/3 rpm', pressing: '1972 US original',
+    description: 'A blaxploitation soundtrack that outgrew its film, pairing lush orchestration with sharp, socially conscious lyricism.',
+    reason: 'Recommended because it shares the same genre and release era.',
+  },
+  {
+    id: 107, title: 'I Never Loved a Man the Way I Love You', artist: 'Aretha Franklin', genre: 'Soul',
+    year: 1967, price: 35, stock: 'in', condition: 'VG+',
+    label: 'Atlantic Records', format: 'LP, 33 1/3 rpm', pressing: '1967 US original',
+    description: 'Aretha\'s Atlantic debut, cut at Muscle Shoals and anchored by "Respect" — the record that crowned her the Queen of Soul.',
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+  {
+    id: 108, title: 'Channel Orange', artist: 'Frank Ocean', genre: 'Soul',
+    year: 2012, price: 44, stock: 'low', condition: 'M',
+    label: 'Def Jam Recordings', format: '2xLP', pressing: '2012 US original',
+    description: "A genre-blurring debut that traded conventional song structure for impressionistic storytelling, instantly recognized as a modern classic.",
     reason: 'Recommended because it has similar tags and is in stock.',
   },
 
@@ -151,6 +214,41 @@ export const records = [
     description: 'Kevin Parker\'s pivot from psych-rock to synth-driven pop, exploring heartbreak and transformation through dense, kaleidoscopic production.',
     reason: 'Recommended because it shares similar tags to your wishlist.',
   },
+  {
+    id: 109, title: 'Abbey Road', artist: 'The Beatles', genre: 'Rock',
+    year: 1969, price: 60, stock: 'in', condition: 'VG+',
+    label: 'Apple Records', format: 'LP, 33 1/3 rpm', pressing: '1969 UK original',
+    description: 'The final album the Beatles recorded together, famous for its medley on side two and the zebra crossing photo that became one of music\'s most iconic images.',
+    reason: 'Recommended because it shares the same era as your recent views.',
+  },
+  {
+    id: 110, title: 'Pet Sounds', artist: 'The Beach Boys', genre: 'Rock',
+    year: 1966, price: 52, stock: 'in', condition: 'NM',
+    label: 'Capitol Records', format: 'LP, 33 1/3 rpm', pressing: '1966 US original',
+    description: 'Brian Wilson\'s symphonic pop opus, built from layered harmonies and unconventional instrumentation. A direct influence on Sgt. Pepper\'s.',
+    reason: 'Recommended because it shares the same era as your recent views.',
+  },
+  {
+    id: 111, title: 'Exile on Main St.', artist: 'The Rolling Stones', genre: 'Rock',
+    year: 1972, price: 48, stock: 'low', condition: 'VG',
+    label: 'Rolling Stones Records', format: '2xLP', pressing: '1972 US original',
+    description: 'A sprawling, grimy double album recorded partly in a French villa basement, capturing the Stones at their most loose and bluesy.',
+    reason: 'Recommended because it shares similar tags and is in stock.',
+  },
+  {
+    id: 112, title: 'Loveless', artist: 'My Bloody Valentine', genre: 'Rock',
+    year: 1991, price: 58, stock: 'in', condition: 'NM',
+    label: 'Creation Records', format: 'LP, 33 1/3 rpm', pressing: '1991 UK original',
+    description: 'A wall-of-sound shoegaze landmark, drenched in pitch-bent guitars and whispered vocals. Took nearly two years and a small fortune to record.',
+    reason: 'Recommended because it shares similar tags to records you\'ve viewed.',
+  },
+  {
+    id: 113, title: 'Funeral', artist: 'Arcade Fire', genre: 'Rock',
+    year: 2004, price: 36, stock: 'in', condition: 'M',
+    label: 'Merge Records', format: 'LP, 33 1/3 rpm', pressing: '2004 Canadian original',
+    description: 'A debut written largely in the wake of personal loss, channeling grief into anthemic, orchestral indie rock that reshaped the genre\'s ambitions.',
+    reason: 'Recommended because it shares similar tags to your wishlist.',
+  },
 
   // ── Electronic ────────────────────────────────────────
   {
@@ -195,6 +293,34 @@ export const records = [
     description: 'Warped nostalgia rendered in hazy synths and decayed samples, evoking half-remembered childhood educational films. Endlessly influential and deeply strange.',
     reason: 'Recommended because it shares similar tags to your wishlist.',
   },
+  {
+    id: 114, title: 'Oxygène', artist: 'Jean-Michel Jarre', genre: 'Electronic',
+    year: 1976, price: 34, stock: 'in', condition: 'VG+',
+    label: 'Polydor Records', format: 'LP, 33 1/3 rpm', pressing: '1976 French original',
+    description: 'One of the earliest fully electronic albums to become a mainstream hit, built entirely on analog synthesizers in a home studio.',
+    reason: 'Recommended because you rated an electronic album 5 stars.',
+  },
+  {
+    id: 115, title: 'Substance', artist: 'New Order', genre: 'Electronic',
+    year: 1987, price: 40, stock: 'in', condition: 'NM',
+    label: 'Factory Records', format: '2xLP', pressing: '1987 UK original',
+    description: 'A singles compilation that bridged post-punk and dance music, including "Blue Monday," still the best-selling 12-inch single of all time.',
+    reason: 'Recommended because it shares similar tags and is in stock.',
+  },
+  {
+    id: 116, title: 'Untrue', artist: 'Burial', genre: 'Electronic',
+    year: 2007, price: 48, stock: 'low', condition: 'NM',
+    label: 'Hyperdub', format: 'LP, 33 1/3 rpm', pressing: '2007 UK original',
+    description: 'A ghostly, rain-soaked vision of London dubstep built from pitched-up vocal samples and vinyl crackle. Anonymous and endlessly atmospheric.',
+    reason: 'Recommended because you rated an electronic album 5 stars.',
+  },
+  {
+    id: 117, title: 'Endtroducing.....', artist: 'DJ Shadow', genre: 'Electronic',
+    year: 1996, price: 46, stock: 'in', condition: 'VG+',
+    label: 'Mo Wax', format: '2xLP', pressing: '1996 UK original',
+    description: 'Constructed entirely from samples, this instrumental hip-hop landmark proved an album could be built like a collage and still feel deeply personal.',
+    reason: 'Recommended because it has similar tags and is in stock.',
+  },
 
   // ── Folk ──────────────────────────────────────────────
   {
@@ -232,6 +358,27 @@ export const records = [
     description: 'Recorded alone in a Wisconsin cabin during a hard winter, this whispery, reverb-soaked debut redefined what indie folk could sound like.',
     reason: 'Recommended because it has similar tags and is in stock.',
   },
+  {
+    id: 118, title: 'Five Leaves Left', artist: 'Nick Drake', genre: 'Folk',
+    year: 1969, price: 60, stock: 'in', condition: 'VG',
+    label: 'Island Records', format: 'LP, 33 1/3 rpm', pressing: '1969 UK original',
+    description: 'Drake\'s debut, draped in string arrangements and gentle fingerpicked guitar. Underappreciated on release, now regarded as a folk masterpiece.',
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+  {
+    id: 119, title: 'Bridge Over Troubled Water', artist: 'Simon & Garfunkel', genre: 'Folk',
+    year: 1970, price: 32, stock: 'in', condition: 'VG+',
+    label: 'Columbia Records', format: 'LP, 33 1/3 rpm', pressing: '1970 US original',
+    description: 'The duo\'s final and best-selling album, anchored by a soaring gospel-influenced title track. Won Album of the Year at the Grammys.',
+    reason: 'Recommended because it shares the same era and genre as records you own.',
+  },
+  {
+    id: 120, title: 'Songs of Leonard Cohen', artist: 'Leonard Cohen', genre: 'Folk',
+    year: 1967, price: 38, stock: 'low', condition: 'VG',
+    label: 'Columbia Records', format: 'LP, 33 1/3 rpm', pressing: '1967 US original',
+    description: 'Cohen\'s debut, introducing his spare, literary songwriting style with "Suzanne" and "So Long, Marianne" among its highlights.',
+    reason: 'Recommended because it shares similar tags to your wishlist.',
+  },
 
   // ── Hip-Hop ───────────────────────────────────────────
   {
@@ -262,6 +409,27 @@ export const records = [
     description: 'A sprawling, jazz-infused concept album wrestling with fame, race, and self-worth. Among the most acclaimed hip-hop records of the decade.',
     reason: 'Recommended because it shares similar tags to your wishlist.',
   },
+  {
+    id: 121, title: 'Ready to Die', artist: 'The Notorious B.I.G.', genre: 'Hip-Hop',
+    year: 1994, price: 48, stock: 'in', condition: 'NM',
+    label: 'Bad Boy Records', format: 'LP, 33 1/3 rpm', pressing: '1994 US original',
+    description: 'A vivid, cinematic debut chronicling life and death in Brooklyn, delivered with effortless flow over some of the era\'s richest production.',
+    reason: 'Recommended because it shares the same era and genre as records you own.',
+  },
+  {
+    id: 122, title: 'The College Dropout', artist: 'Kanye West', genre: 'Hip-Hop',
+    year: 2004, price: 38, stock: 'in', condition: 'VG+',
+    label: 'Roc-A-Fella Records', format: '2xLP', pressing: '2004 US original',
+    description: 'A soul-sampling, sped-up-vocal debut that established a new sonic template for mainstream hip-hop and launched one of the genre\'s biggest careers.',
+    reason: 'Recommended because it shares similar tags and is in stock.',
+  },
+  {
+    id: 123, title: 'Aquemini', artist: 'OutKast', genre: 'Hip-Hop',
+    year: 1998, price: 42, stock: 'low', condition: 'VG+',
+    label: 'LaFace Records', format: '2xLP', pressing: '1998 US original',
+    description: 'A genre-bending Southern hip-hop classic blending funk, soul, and psychedelia, widely cited as one of the best rap albums ever made.',
+    reason: 'Recommended because it shares similar tags to your wishlist.',
+  },
 
   // ── Blues ─────────────────────────────────────────────
   {
@@ -285,6 +453,20 @@ export const records = [
     description: 'A ferocious debut that single-handedly revived blues-rock guitar in the 1980s, recorded live in the studio in just two days.',
     reason: 'Recommended because it shares similar tags to your wishlist.',
   },
+  {
+    id: 124, title: 'At Fillmore East', artist: 'The Allman Brothers Band', genre: 'Blues',
+    year: 1971, price: 44, stock: 'in', condition: 'VG+',
+    label: 'Capricorn Records', format: '2xLP', pressing: '1971 US original',
+    description: 'A landmark live blues-rock recording, capturing extended, exploratory jams that defined the Southern rock and jam-band scenes to follow.',
+    reason: 'Recommended because it shares the same genre and release era.',
+  },
+  {
+    id: 125, title: 'Hoodoo Man Blues', artist: 'Junior Wells', genre: 'Blues',
+    year: 1965, price: 38, stock: 'in', condition: 'VG',
+    label: 'Delmark Records', format: 'LP, 33 1/3 rpm', pressing: '1965 US original',
+    description: 'A raw, club-recorded Chicago blues session featuring Buddy Guy on guitar, considered one of the most authentic live-sounding blues records ever made.',
+    reason: 'Recommended because it has similar tags and is in stock.',
+  },
 
   // ── Classical ─────────────────────────────────────────
   {
@@ -306,6 +488,358 @@ export const records = [
     year: 1963, price: 38, stock: 'low', condition: 'VG+',
     label: 'Deutsche Grammophon', format: '2xLP', pressing: '1963 German original',
     description: 'Karajan\'s first complete Beethoven cycle with the Berlin Philharmonic, capped by a thunderous, definitive reading of the Ninth.',
+    reason: 'Recommended because it shares the same era as your recent views.',
+  },
+  {
+    id: 126, title: 'The Planets', artist: 'Gustav Holst (London Philharmonic)', genre: 'Classical',
+    year: 1968, price: 32, stock: 'in', condition: 'VG+',
+    label: 'EMI Records', format: 'LP, 33 1/3 rpm', pressing: '1968 UK original',
+    description: 'A vivid orchestral suite depicting the astrological character of each planet, famous for inspiring decades of film score composers.',
+    reason: 'Recommended because it shares similar tags and is in stock.',
+  },
+  {
+    id: 127, title: 'Rhapsody in Blue', artist: 'George Gershwin (Bernstein, NY Phil.)', genre: 'Classical',
+    year: 1959, price: 30, stock: 'low', condition: 'VG',
+    label: 'Columbia Masterworks', format: 'LP, 33 1/3 rpm', pressing: '1959 US original',
+    description: 'Bernstein conducts and plays piano on this definitive recording of Gershwin\'s jazz-classical hybrid, a defining work of American concert music.',
+    reason: 'Recommended because it shares the same era as your recent views.',
+  },
+  {
+    id: 128, title: 'The Well-Tempered Clavier, Book I', artist: 'J.S. Bach (Wanda Landowska)', genre: 'Classical',
+    year: 1954, price: 36, stock: 'in', condition: 'VG',
+    label: 'RCA Victor', format: '3xLP', pressing: '1954 US original',
+    description: 'A pioneering harpsichord recording of Bach\'s foundational keyboard cycle, prized by collectors for Landowska\'s expressive, historically informed playing.',
+    reason: 'Recommended because it shares the same era as your recent views.',
+  },
+
+  // ── Jazz (continued) ──────────────────────────────────
+  {
+    id: 200, title: 'The Black Saint and the Sinner Lady', artist: 'Charles Mingus', genre: 'Jazz',
+    year: 1963, price: 58, stock: 'in', condition: 'VG+',
+    label: 'Impulse! Records', format: 'LP, 33 1/3 rpm', pressing: '1963 US original',
+    description: 'A multi-movement ballet suite that treats the full band as a single expressive voice, built from dense counterpoint and raw emotional intensity.',
+    reason: 'Recommended because you bought another jazz album.',
+  },
+  {
+    id: 201, title: 'Speak No Evil', artist: 'Wayne Shorter', genre: 'Jazz',
+    year: 1966, price: 52, stock: 'in', condition: 'NM',
+    label: 'Blue Note Records', format: 'LP, 33 1/3 rpm', pressing: '1966 US original',
+    description: "One of Blue Note's finest post-bop dates, showcasing Shorter's unique ability to write melodies that feel ancient and futuristic at the same time.",
+    reason: 'Recommended because it shares the same era as your recent views.',
+  },
+  {
+    id: 202, title: 'Night at the Village Vanguard', artist: 'Sonny Rollins', genre: 'Jazz',
+    year: 1957, price: 60, stock: 'low', condition: 'VG',
+    label: 'Blue Note Records', format: 'LP, 33 1/3 rpm', pressing: '1957 US original',
+    description: "A legendary live recording from New York's premier jazz club, captured during Rollins's most creative period, performing in a pianoless trio.",
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+  {
+    id: 203, title: 'Grant Green Idle Moments', artist: 'Grant Green', genre: 'Jazz',
+    year: 1965, price: 44, stock: 'in', condition: 'VG+',
+    label: 'Blue Note Records', format: 'LP, 33 1/3 rpm', pressing: '1965 US original',
+    description: 'A supremely laid-back session anchored by a 14-minute title track, showcasing the melodic simplicity and blues feeling that defined Green\'s style.',
+    reason: 'Recommended because it shares the same genre and era.',
+  },
+  {
+    id: 204, title: 'Birth of the Cool', artist: 'Miles Davis', genre: 'Jazz',
+    year: 1957, price: 55, stock: 'in', condition: 'VG+',
+    label: 'Capitol Records', format: 'LP, 33 1/3 rpm', pressing: '1957 US original',
+    description: "Assembled from 1949–50 sessions, this record coined a genre — cool jazz — and introduced a nonet format that balanced improvisation with orchestral arrangement.",
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+  {
+    id: 205, title: 'Live-Evil', artist: 'Miles Davis', genre: 'Jazz',
+    year: 1971, price: 46, stock: 'in', condition: 'NM',
+    label: 'Columbia Records', format: '2xLP', pressing: '1971 US original',
+    description: "A double live album from Davis's electric period, blending jazz-rock fusion with funk grooves and free improvisation in unpredictable, thrilling ways.",
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+  {
+    id: 206, title: 'The Köln Concert', artist: 'Keith Jarrett', genre: 'Jazz',
+    year: 1975, price: 38, stock: 'in', condition: 'VG+',
+    label: 'ECM Records', format: '2xLP', pressing: '1975 German original',
+    description: "Improvised entirely on a faulty piano, this solo concert became the best-selling solo piano and live jazz album of all time.",
+    reason: 'Recommended because it shares the same era as your recent views.',
+  },
+  {
+    id: 207, title: 'We Insist! Freedom Now Suite', artist: 'Max Roach', genre: 'Jazz',
+    year: 1960, price: 64, stock: 'low', condition: 'VG+',
+    label: 'Candid Records', format: 'LP, 33 1/3 rpm', pressing: '1960 US original',
+    description: "A landmark of protest jazz, written in response to the civil rights movement, featuring Abbey Lincoln's wordless screaming as a call to action.",
+    reason: 'Recommended because it shares the same era and genre.',
+  },
+
+  // ── Soul & R&B (continued) ────────────────────────────
+  {
+    id: 208, title: 'There\'s a Riot Goin\' On', artist: 'Sly and the Family Stone', genre: 'Soul',
+    year: 1971, price: 36, stock: 'in', condition: 'VG+',
+    label: 'Epic Records', format: 'LP, 33 1/3 rpm', pressing: '1971 US original',
+    description: "A dark inversion of their earlier optimism, recorded in a home studio with overdubbed layers that feel deliberately smeared and claustrophobic.",
+    reason: 'Recommended because it shares the same genre and release era.',
+  },
+  {
+    id: 209, title: 'Off the Wall', artist: 'Michael Jackson', genre: 'Soul',
+    year: 1979, price: 34, stock: 'in', condition: 'NM',
+    label: 'Epic Records', format: 'LP, 33 1/3 rpm', pressing: '1979 US original',
+    description: 'Produced by Quincy Jones, this disco-funk debut announced Michael Jackson as a solo force, a year before Thriller made him a phenomenon.',
+    reason: 'Recommended because it matches records in your wishlist.',
+  },
+  {
+    id: 210, title: 'Sign \'O\' the Times', artist: 'Prince', genre: 'Soul',
+    year: 1987, price: 50, stock: 'low', condition: 'NM',
+    label: 'Paisley Park Records', format: '2xLP', pressing: '1987 US original',
+    description: "Prince's sprawling, genre-defying double album, fusing funk, rock, jazz, and gospel into a 16-track statement that many consider his masterpiece.",
+    reason: 'Recommended because it has similar tags and is in stock.',
+  },
+  {
+    id: 211, title: 'Purple Rain', artist: 'Prince', genre: 'Soul',
+    year: 1984, price: 42, stock: 'in', condition: 'VG+',
+    label: 'Warner Bros.', format: 'LP, 33 1/3 rpm', pressing: '1984 US original',
+    description: 'Both a soundtrack and a defining pop record, featuring some of Prince\'s most beloved songs alongside guitar heroics and stadium-sized balladry.',
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+  {
+    id: 212, title: 'Control', artist: 'Janet Jackson', genre: 'Soul',
+    year: 1986, price: 30, stock: 'in', condition: 'VG+',
+    label: 'A&M Records', format: 'LP, 33 1/3 rpm', pressing: '1986 US original',
+    description: "Janet's collaboration with Jimmy Jam and Terry Lewis established her own identity, separate from her family, with crisp funk production and assertive lyrics.",
+    reason: 'Recommended because it shares the same era as your recent views.',
+  },
+  {
+    id: 213, title: 'I Am... Sasha Fierce', artist: 'Beyoncé', genre: 'Soul',
+    year: 2008, price: 36, stock: 'in', condition: 'M',
+    label: 'Columbia Records', format: '2xLP', pressing: '2008 US original',
+    description: "A dual-disc concept album contrasting Beyoncé's ballad side with her fierce alter ego, featuring the recording debut of 'Single Ladies.'",
+    reason: 'Recommended because it shares similar tags to your wishlist.',
+  },
+  {
+    id: 214, title: 'The Miseducation of Lauryn Hill', artist: 'Lauryn Hill', genre: 'Soul',
+    year: 1998, price: 44, stock: 'in', condition: 'NM',
+    label: 'Ruffhouse Records', format: 'LP, 33 1/3 rpm', pressing: '1998 US original',
+    description: 'A genre-straddling classic blending neo-soul, hip-hop, and reggae, anchored by raw personal storytelling and a Grammy-record-breaking debut.',
+    reason: 'Recommended because it has similar tags and is in stock.',
+  },
+
+  // ── Rock (continued) ──────────────────────────────────
+  {
+    id: 215, title: 'Nevermind', artist: 'Nirvana', genre: 'Rock',
+    year: 1991, price: 38, stock: 'in', condition: 'VG+',
+    label: 'DGC Records', format: 'LP, 33 1/3 rpm', pressing: '1991 US original',
+    description: "The record that shifted popular music's center of gravity overnight, pairing Cobain's melodic instincts with Butch Vig's polished, explosive production.",
+    reason: 'Recommended because it shares similar tags and is in stock.',
+  },
+  {
+    id: 216, title: 'The Joshua Tree', artist: 'U2', genre: 'Rock',
+    year: 1987, price: 36, stock: 'in', condition: 'VG+',
+    label: 'Island Records', format: 'LP, 33 1/3 rpm', pressing: '1987 UK original',
+    description: "U2's commercial and artistic peak, fusing anthemic stadium rock with Brian Eno's atmospheric production and lyrics about America's contradictions.",
+    reason: 'Recommended because it shares the same era as your recent views.',
+  },
+  {
+    id: 217, title: 'Thriller', artist: 'Michael Jackson', genre: 'Rock',
+    year: 1982, price: 32, stock: 'in', condition: 'VG',
+    label: 'Epic Records', format: 'LP, 33 1/3 rpm', pressing: '1982 US original',
+    description: 'The best-selling album of all time, with every track a distinct showcase of pop, funk, and soft rock, anchored by seven top-ten singles.',
+    reason: 'Recommended because it shares the same era as your recent views.',
+  },
+  {
+    id: 218, title: 'Born to Run', artist: 'Bruce Springsteen', genre: 'Rock',
+    year: 1975, price: 40, stock: 'in', condition: 'VG+',
+    label: 'Columbia Records', format: 'LP, 33 1/3 rpm', pressing: '1975 US original',
+    description: "Springsteen's breakthrough, built on Wall of Sound production and blue-collar narratives of escape and longing that made him 'the future of rock and roll.'",
+    reason: 'Recommended because it shares similar tags to your wishlist.',
+  },
+  {
+    id: 219, title: 'Ziggy Stardust', artist: 'David Bowie', genre: 'Rock',
+    year: 1972, price: 50, stock: 'low', condition: 'VG+',
+    label: 'RCA Victor', format: 'LP, 33 1/3 rpm', pressing: '1972 UK original',
+    description: "Bowie's glam-rock alter ego concept album, combining sci-fi mythology with hook-laden guitar rock and some of his most memorable melodies.",
+    reason: 'Recommended because it shares similar tags and is in stock.',
+  },
+  {
+    id: 220, title: 'The Dark Side of the Moon', artist: 'Pink Floyd', genre: 'Rock',
+    year: 1973, price: 55, stock: 'in', condition: 'NM',
+    label: 'Harvest Records', format: 'LP, 33 1/3 rpm', pressing: '1973 UK original',
+    description: "Spent over 900 weeks on the Billboard charts. A seamless sonic journey exploring time, greed, and madness through revolutionary studio technique.",
+    reason: 'Recommended because it has similar tags and is in stock.',
+  },
+  {
+    id: 221, title: 'Horses', artist: 'Patti Smith', genre: 'Rock',
+    year: 1975, price: 46, stock: 'in', condition: 'VG+',
+    label: 'Arista Records', format: 'LP, 33 1/3 rpm', pressing: '1975 US original',
+    description: "The debut that launched punk poetry, fusing rock and roll with spoken word, stream-of-consciousness lyricism, and raw spiritual intensity.",
+    reason: 'Recommended because it shares similar tags to records you own.',
+  },
+  {
+    id: 222, title: 'London Calling', artist: 'The Clash', genre: 'Rock',
+    year: 1979, price: 44, stock: 'in', condition: 'NM',
+    label: 'CBS Records', format: '2xLP', pressing: '1979 UK original',
+    description: 'Named the best album of the 1980s by Rolling Stone, despite being released in 1979. A genre-spanning double album mixing punk, ska, reggae, and rockabilly.',
+    reason: 'Recommended because it has similar tags and is in stock.',
+  },
+
+  // ── Electronic (continued) ────────────────────────────
+  {
+    id: 223, title: 'Autobahn', artist: 'Kraftwerk', genre: 'Electronic',
+    year: 1974, price: 50, stock: 'in', condition: 'VG+',
+    label: 'Philips Records', format: 'LP, 33 1/3 rpm', pressing: '1974 German original',
+    description: 'The album that established Kraftwerk as pioneers of electronic music, built around a 22-minute motorway simulation using synthesizers and vocoders.',
+    reason: 'Recommended because you rated an electronic album 5 stars.',
+  },
+  {
+    id: 224, title: 'The Man-Machine', artist: 'Kraftwerk', genre: 'Electronic',
+    year: 1978, price: 46, stock: 'in', condition: 'NM',
+    label: 'Capitol Records', format: 'LP, 33 1/3 rpm', pressing: '1978 German original',
+    description: "Featuring 'The Model' and 'Neon Lights,' this precise, icily beautiful record was a primary influence on new wave, synth-pop, and electro.",
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+  {
+    id: 225, title: 'Vespertine', artist: 'Bjork', genre: 'Electronic',
+    year: 2001, price: 40, stock: 'in', condition: 'NM',
+    label: 'One Little Indian', format: 'LP, 33 1/3 rpm', pressing: '2001 UK original',
+    description: 'An intimate, microscopic album built from harps, music boxes, and microsampled household sounds, wrapped in orchestral arrangements.',
+    reason: 'Recommended because it has similar tags and is in stock.',
+  },
+  {
+    id: 226, title: 'In Sides', artist: 'Orbital', genre: 'Electronic',
+    year: 1996, price: 38, stock: 'low', condition: 'VG+',
+    label: 'Internal Records', format: '2xLP', pressing: '1996 UK original',
+    description: "Orbital's most ambitious album, pairing rave euphoria with meditative ambient passages across eight extended tracks.",
+    reason: 'Recommended because you rated an electronic album 5 stars.',
+  },
+  {
+    id: 227, title: 'Random Access Memories', artist: 'Daft Punk', genre: 'Electronic',
+    year: 2013, price: 45, stock: 'in', condition: 'M',
+    label: 'Columbia Records', format: '2xLP', pressing: '2013 EU original',
+    description: 'Recorded almost entirely with live musicians, this nostalgic love letter to 1970s Los Angeles studio pop won Album of the Year at the Grammys.',
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+
+  // ── Folk (continued) ──────────────────────────────────
+  {
+    id: 228, title: 'John Wesley Harding', artist: 'Bob Dylan', genre: 'Folk',
+    year: 1967, price: 40, stock: 'in', condition: 'VG',
+    label: 'Columbia Records', format: 'LP, 33 1/3 rpm', pressing: '1967 US original',
+    description: 'A spare, parable-laden response to the psychedelic maximalism of the era, recorded quietly in Nashville and full of biblical imagery.',
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+  {
+    id: 229, title: 'Court and Spark', artist: 'Joni Mitchell', genre: 'Folk',
+    year: 1974, price: 36, stock: 'in', condition: 'VG+',
+    label: 'Asylum Records', format: 'LP, 33 1/3 rpm', pressing: '1974 US original',
+    description: "Mitchell's most commercially successful album, adding jazz orchestration and LA session players to her confessional folk style.",
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+  {
+    id: 230, title: 'Bookends', artist: 'Simon & Garfunkel', genre: 'Folk',
+    year: 1968, price: 30, stock: 'in', condition: 'VG+',
+    label: 'Columbia Records', format: 'LP, 33 1/3 rpm', pressing: '1968 US original',
+    description: "A loose concept album about aging and nostalgia, featuring 'Mrs. Robinson' and some of the duo's most inventive studio experiments.",
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+  {
+    id: 231, title: 'Illinois', artist: 'Sufjan Stevens', genre: 'Folk',
+    year: 2005, price: 42, stock: 'low', condition: 'M',
+    label: 'Asthmatic Kitty', format: '2xLP', pressing: '2005 US original',
+    description: "A maximalist folk-orchestral concept album about the state of Illinois, balancing intimate bedroom pop with sweeping 20-piece arrangements.",
+    reason: 'Recommended because it shares similar tags to your wishlist.',
+  },
+  {
+    id: 232, title: 'Blood on the Tracks', artist: 'Bob Dylan', genre: 'Folk',
+    year: 1975, price: 52, stock: 'in', condition: 'NM',
+    label: 'Columbia Records', format: 'LP, 33 1/3 rpm', pressing: '1975 US original',
+    description: "Widely considered Dylan's greatest work, written during the breakdown of his marriage. Raw, literary, and devastatingly personal.",
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+
+  // ── Hip-Hop (continued) ───────────────────────────────
+  {
+    id: 233, title: 'Enter the Wu-Tang (36 Chambers)', artist: 'Wu-Tang Clan', genre: 'Hip-Hop',
+    year: 1993, price: 46, stock: 'in', condition: 'NM',
+    label: 'Loud Records', format: 'LP, 33 1/3 rpm', pressing: '1993 US original',
+    description: "Nine MCs over RZA's grimy, kung-fu-sampled beats — a debut that introduced New York hip-hop to a rougher, more abstract sound.",
+    reason: 'Recommended because it shares the same era and genre as records you own.',
+  },
+  {
+    id: 234, title: 'Reasonable Doubt', artist: 'Jay-Z', genre: 'Hip-Hop',
+    year: 1996, price: 52, stock: 'low', condition: 'VG+',
+    label: 'Roc-A-Fella Records', format: 'LP, 33 1/3 rpm', pressing: '1996 US original',
+    description: "Jay-Z's debut, built on jazz samples and street narratives that established him as one of hip-hop's most sophisticated storytellers.",
+    reason: 'Recommended because it shares similar tags to your wishlist.',
+  },
+  {
+    id: 235, title: 'Midnight Marauders', artist: 'A Tribe Called Quest', genre: 'Hip-Hop',
+    year: 1993, price: 40, stock: 'in', condition: 'VG+',
+    label: 'Jive Records', format: 'LP, 33 1/3 rpm', pressing: '1993 US original',
+    description: "The Tribe's most accessible and polished album, balancing jazz-rap sophistication with warmth and wit across a seamless 50-minute runtime.",
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+  {
+    id: 236, title: 'Paid in Full', artist: 'Eric B. & Rakim', genre: 'Hip-Hop',
+    year: 1987, price: 48, stock: 'in', condition: 'VG',
+    label: '4th & Broadway', format: 'LP, 33 1/3 rpm', pressing: '1987 US original',
+    description: "Rakim's complex internal rhyme schemes and Eric B.'s stripped sampling technique created a new template for lyrical density in hip-hop.",
+    reason: 'Recommended because it shares the same era and genre.',
+  },
+  {
+    id: 237, title: 'Donuts', artist: 'J Dilla', genre: 'Hip-Hop',
+    year: 2006, price: 44, stock: 'in', condition: 'NM',
+    label: 'Stones Throw Records', format: 'LP, 33 1/3 rpm', pressing: '2006 US original',
+    description: "Completed in hospital days before Dilla's death, this 31-track instrumental beat tape is among the most revered producer albums in hip-hop history.",
+    reason: 'Recommended because it shares similar tags and is in stock.',
+  },
+
+  // ── Blues (continued) ─────────────────────────────────
+  {
+    id: 238, title: 'Muddy Waters at Newport', artist: 'Muddy Waters', genre: 'Blues',
+    year: 1960, price: 42, stock: 'in', condition: 'VG',
+    label: 'Chess Records', format: 'LP, 33 1/3 rpm', pressing: '1960 US original',
+    description: "A legendary live recording from the Newport Jazz Festival, introducing urban electric Chicago blues to a largely white folk audience.",
+    reason: 'Recommended because it shares the same genre and release era.',
+  },
+  {
+    id: 239, title: 'Electric Mud', artist: 'Muddy Waters', genre: 'Blues',
+    year: 1968, price: 38, stock: 'in', condition: 'VG+',
+    label: 'Cadet Records', format: 'LP, 33 1/3 rpm', pressing: '1968 US original',
+    description: "A controversial psychedelic blues experiment — Chess Records tried to make Muddy Waters relevant to rock audiences. Muddy hated it. Fans love it.",
+    reason: 'Recommended because you bought another record by this artist.',
+  },
+  {
+    id: 240, title: 'Blues Breakers', artist: 'John Mayall with Eric Clapton', genre: 'Blues',
+    year: 1966, price: 50, stock: 'low', condition: 'VG+',
+    label: 'Decca Records', format: 'LP, 33 1/3 rpm', pressing: '1966 UK original',
+    description: "The album that earned Clapton the 'Clapton is God' graffiti, a raw British blues record that launched dozens of careers and a thousand guitar-hero imitators.",
+    reason: 'Recommended because it shares the same genre and release era.',
+  },
+
+  // ── Classical (continued) ─────────────────────────────
+  {
+    id: 241, title: 'Cello Suite No. 1 in G Major', artist: 'J.S. Bach (Pablo Casals)', genre: 'Classical',
+    year: 1936, price: 48, stock: 'in', condition: 'VG',
+    label: 'EMI Records', format: 'LP, 33 1/3 rpm', pressing: '1955 reissue',
+    description: "Casals's 1930s recordings of Bach's Cello Suites were the first ever made, rescuing these works from obscurity and establishing them as central to the repertoire.",
+    reason: 'Recommended because it shares the same era as your recent views.',
+  },
+  {
+    id: 242, title: 'Piano Sonatas Vol. 1', artist: 'Beethoven (Wilhelm Kempff)', genre: 'Classical',
+    year: 1964, price: 35, stock: 'in', condition: 'VG+',
+    label: 'Deutsche Grammophon', format: '2xLP', pressing: '1964 German original',
+    description: "Kempff's second stereo traversal of the Beethoven sonatas, prized for its singing tone and the sense of spontaneity in every phrase.",
+    reason: 'Recommended because it shares similar tags and is in stock.',
+  },
+  {
+    id: 243, title: 'String Quartet No. 14 "Death and the Maiden"', artist: 'Schubert (Alban Berg Quartet)', genre: 'Classical',
+    year: 1979, price: 32, stock: 'in', condition: 'NM',
+    label: 'EMI Records', format: 'LP, 33 1/3 rpm', pressing: '1979 German original',
+    description: "The Alban Berg Quartet's intense, forward-leaning reading of Schubert's most dramatic chamber work remains a benchmark recording.",
+    reason: 'Recommended because it has similar tags and is in stock.',
+  },
+  {
+    id: 244, title: 'Symphony No. 5 & 7', artist: 'Beethoven (Carlos Kleiber, Vienna Philharmonic)', genre: 'Classical',
+    year: 1975, price: 40, stock: 'low', condition: 'NM',
+    label: 'Deutsche Grammophon', format: 'LP, 33 1/3 rpm', pressing: '1975 German original',
+    description: "Carlos Kleiber's legendary Fifth is widely considered the definitive recording — propulsive, alive, and conducted with terrifying precision.",
     reason: 'Recommended because it shares the same era as your recent views.',
   },
 ];
