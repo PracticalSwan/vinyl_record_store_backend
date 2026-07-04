@@ -73,7 +73,7 @@ AUTH_DEMO_ADMIN_PASSWORD_HASH=
 AUTH_DEMO_ADMIN_PASSWORD_SALT=
 ```
 
-For local Atlas testing, set `CATALOG_DATA_SOURCE=mongodb` and fill the `AUTH_DEMO_*` variables in `.env.local`. The demo customer and admin accounts are environment-backed; the repo does not commit their hashes or salts.
+For local Atlas testing, set `CATALOG_DATA_SOURCE=mongodb`. Showcase demo customer accounts are seeded into MongoDB by `npm run db:seed:users:apply` (see `src/data/demoUsers.js`); their public classroom passwords are documented in the frontend README and stored only as scrypt hashes. The environment-backed `AUTH_DEMO_CUSTOMER_*` / `AUTH_DEMO_ADMIN_*` accounts remain as a seed-catalog-mode fallback. The repo never commits hashes, salts, or `AUTH_SECRET`.
 When you paste scrypt hashes into `.env.local`, escape each literal `$` as `\$` so Next.js reads the full hash value correctly.
 
 Keep the real connection string only in ignored `.env.local`. Seed mode does not require Atlas configuration. MongoDB mode requires both MongoDB variables and a migrated catalog.
@@ -86,11 +86,13 @@ Use this guarded database workflow:
 npm run db:ping
 npm run db:seed
 npm run db:seed:apply
+npm run db:seed:users
+npm run db:seed:users:apply
 npm run db:indexes:ensure
 npm run db:indexes
 ```
 
-`db:seed` is dry-run only. Apply refuses duplicate public IDs, duplicate slugs, ownership conflicts, and slug conflicts; it never deletes records. `db:indexes` reports missing indexes, while `db:indexes:ensure` creates declared collections and indexes before verifying them.
+`db:seed` is dry-run only. Apply refuses duplicate public IDs, duplicate slugs, ownership conflicts, and slug conflicts; it never deletes records. `db:seed:users` seeds the showcase demo customer accounts; it is dry-run by default, classifies each account as create/update/skip by `publicId`, never overwrites a username held by a different account, and applies transactionally. `db:indexes` reports missing indexes, while `db:indexes:ensure` creates declared collections and indexes before verifying them.
 
 ## Validation
 
@@ -112,6 +114,7 @@ npm run build
 - `src/lib/recommender/`: scoring and evaluation helpers.
 - `src/lib/db/`: cached Atlas connection, data-source selection, and seed-migration planning.
 - `src/data/records.js`: approved demo catalog seed.
+- `src/data/demoUsers.js`: showcase demo customer profiles used by `db:seed:users`.
 - `scripts/`: MongoDB maintenance plus the guarded password-hash command.
 - `tests/`: Node test runner suites.
 - `docs/`: current contracts, architecture, decisions, evaluation boundaries, and limitations.

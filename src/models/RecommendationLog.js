@@ -7,6 +7,7 @@ const recommendationItemSchema = new mongoose.Schema(
     productPublicId: { ...publicIdField, immutable: false },
     score: { type: Number, required: true },
     rank: { type: Number, required: true, min: 1, validate: Number.isInteger },
+    reasons: { type: [String], default: [], validate: (value) => value.length <= 4 },
   },
   { _id: false, strict: "throw" },
 );
@@ -14,6 +15,7 @@ const recommendationItemSchema = new mongoose.Schema(
 export const recommendationLogSchema = new mongoose.Schema(
   {
     requestId: { type: String, required: true, immutable: true, maxlength: 128 },
+    listId: { type: String, required: true, immutable: true, maxlength: 128 },
     subjectType: { type: String, required: true, enum: ["user", "anonymous", "product"] },
     subjectId: { type: String, required: true, maxlength: 128, select: false },
     mode: { type: String, required: true, maxlength: 64 },

@@ -1,6 +1,8 @@
+import { getOptionalSession } from "@/lib/auth/requireSession";
 import { failure, success } from "@/lib/http";
-import { recommendForUser } from "@/lib/recommender/contentBased";
+import { serveUserRecommendations } from "@/services/recommendations";
 import { positiveInteger, userId } from "@/validation/catalog";
+import { parseAnonymousId, parseInteractionSurface } from "@/validation/writes";
 
 export async function GET(request, { params }) {
   try {
@@ -9,7 +11,20 @@ export async function GET(request, { params }) {
       name: "limit",
       max: 20,
     });
-    return success(await recommendForUser(userId(routeParams.userId), limit));
+    const user = await getOptionalSession(request);
+    return success(await serveUserRecommendations(
+      userId(routeParams.userId),
+      limit,
+      {
+        user,
+        anonymousId: parseAnonymousId(request.headers.get("x-anonymous-id")),
+        surface: parseInteractionSurface(
+          request.nextUrl.searchParams.get("surface"),
+          "recommendations",
+        ),
+        trackingAllowed: request.headers.get("x-tracking-enabled") !== "false",
+      },
+    ));
   } catch (error) {
     return failure(error);
   }

@@ -55,7 +55,7 @@ Read `../AGENT_MEMORY.md` at session start and append a dated entry at session e
 - `RECOMMENDER_ALGORITHM_VERSION` overrides the default `content-demo-v1` label.
 - `CATALOG_DATA_SOURCE` defaults to `seed`; set it to `mongodb` only when Atlas configuration and migrated data are ready.
 - `MONGODB_URI` and `MONGODB_DB_NAME` configure the server-only Atlas connection through an ignored `.env.local`. Explicit MongoDB mode never silently falls back to seed data.
-- `AUTH_SECRET` signs eight-hour HttpOnly sessions. The administrator and demo-customer accounts are environment-backed (`AUTH_DEMO_ADMIN_*` / `AUTH_DEMO_CUSTOMER_*`) with ephemeral preferences; the admin role is env-only with no promotion path. Registered customers persist in MongoDB and require MongoDB mode.
+- `AUTH_SECRET` signs eight-hour HttpOnly sessions. The administrator account and the seed-catalog-mode demo customer are environment-backed (`AUTH_DEMO_ADMIN_*` / `AUTH_DEMO_CUSTOMER_*`) with ephemeral preferences; three showcase demo customers are seeded into MongoDB by `db:seed:users` (`src/data/demoUsers.js`) and their usernames are reserved. The admin role is env-only with no promotion path. Registered customers persist in MongoDB and require MongoDB mode.
 - Credentialed mutations require the exact `FRONTEND_ORIGIN`; ownership always comes from the verified session, never from a client user ID.
 - API contract changes require matching updates in both repositories.
 

@@ -324,6 +324,13 @@ Excluded:
 - Login is disabled with a safe configuration message if the selected account variables or `AUTH_SECRET` are missing.
 - The frontend may display classroom credentials only if the user explicitly decides to expose them in demo documentation; the backend never returns password material.
 
+### MongoDB Showcase Demo Customers
+
+- Three showcase demo customer accounts (`jazzlistener`, `rockcollector`, `soulseeker`) are seeded into MongoDB as real `users` documents by `scripts/seed-demo-users.mjs` (`npm run db:seed:users[:apply]`), driven by `src/data/demoUsers.js`. Their public classroom passwords are documented in the frontend README; only scrypt hashes are stored.
+- The seed is idempotent: it classifies each account as create/update/skip by `publicId`, never overwrites a username held by a different account, and applies transactionally. The demo usernames are reserved in `register`, so visitors cannot claim them.
+- These accounts carry EMPTY preferences for now. Distinct per-account preference profiles (for example a jazz listener, a rock collector, and a soul seeker) are DEFERRED until recommender algorithm selection is finalized. At that point they will be added to `src/data/demoUsers.js`, re-seeded, and the offline recommender evaluation re-baselined against them. Tracking this here is the agreed placeholder; do not implement it until the recommender decision is made.
+- Unlike the environment-backed demo accounts, these MongoDB customers have PERSISTENT preferences (they are real customer documents, not ephemeral), so a tester's preference edits survive until the next `db:seed:users:apply` resets them to the canonical profile.
+
 ### Registration After User Persistence
 
 - `POST /api/auth/register` accepts normalized username, password, and optional display name.

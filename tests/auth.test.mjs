@@ -7,6 +7,7 @@ import { getOptionalSession, requireRole, requireSession } from "../src/lib/auth
 import { login, register } from "../src/services/auth.js";
 import { parseLoginInput, parseRegistrationInput } from "../src/validation/auth.js";
 import { assertMutationOrigin, readJsonBody } from "../src/lib/request.js";
+import { DEMO_USER_USERNAMES } from "../src/data/demoUsers.js";
 
 const secret = "test-auth-secret-with-at-least-thirty-two-characters";
 const origin = "http://localhost:5173";
@@ -124,6 +125,48 @@ test("registration creates only a customer, rejects role injection, and skips ha
     () => register(body, { environment, repository: taken }),
     (error) => error.code === "CONFLICT",
   );
+});
+
+test("registration reserves every showcase demo username (case-insensitive) before any database lookup", async () => {
+  for (const username of DEMO_USER_USERNAMES) {
+    const lookups = { byUsername: 0 };
+    const environment = { AUTH_SECRET: secret };
+    const repository = {
+      findByNormalizedUsername: async () => {
+        lookups.byUsername += 1;
+        return null;
+      },
+    };
+    const body = parseRegistrationInput({
+      username: username.toUpperCase(),
+      password: "some valid password",
+      displayName: null,
+    });
+    await assert.rejects(
+      () => register(body, { environment, repository }),
+      (error) => error.code === "FORBIDDEN" && error.message === "That username is reserved.",
+    );
+    assert.equal(lookups.byUsername, 0);
+  }
+});
+
+test("registration does not reserve ordinary usernames", async () => {
+  let created = null;
+  const repository = {
+    findByNormalizedUsername: async () => null,
+    create: async (value) => {
+      created = value;
+      return { ...value, preferences: {} };
+    },
+  };
+  const body = parseRegistrationInput({
+    username: "regular_customer",
+    password: "some valid password",
+    displayName: null,
+  });
+  const result = await register(body, { environment: { AUTH_SECRET: secret }, repository });
+  assert.equal(result.user.role, "customer");
+  assert.equal(created.normalizedUsername, "regular_customer");
 });
 
 test("session resolution rejects missing, disabled, and changed-role tokens", async () => {

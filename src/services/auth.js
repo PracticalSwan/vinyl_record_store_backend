@@ -4,6 +4,7 @@ import { getAuthSecret, getSeededAccounts } from "../lib/auth/config.js";
 import { hashPassword, verifyPassword } from "../lib/auth/password.js";
 import { createSessionToken } from "../lib/auth/session.js";
 import { userRepository } from "../repositories/userRepository.js";
+import { DEMO_USER_USERNAMES } from "../data/demoUsers.js";
 
 const GENERIC_LOGIN_MESSAGE = "The username or password is incorrect.";
 const MISSING_ACCOUNT_SALT = "groovehaus-missing-account";
@@ -71,6 +72,9 @@ export async function register(body, {
   const existingSeed = getSeededAccounts(environment)
     .some((account) => account.normalizedUsername === body.normalizedUsername);
   if (existingSeed) throw forbidden("That username is reserved.");
+  if (DEMO_USER_USERNAMES.includes(body.normalizedUsername)) {
+    throw forbidden("That username is reserved.");
+  }
 
   // Cheap existence check before the expensive scrypt hash to avoid spending
   // CPU on usernames that are already taken. repository.create still enforces

@@ -83,6 +83,7 @@ export async function recommendForProduct(
 
   return {
     sourceProductId: source.id,
+    excludedProductIds: [source.id],
     mode: "content-similarity",
     recommendations: diversify(scored, limit),
     algorithmVersion: ALGORITHM_VERSION,
@@ -112,6 +113,7 @@ export async function recommendForUser(
   if (requestedUserId !== "demo-user") {
     return {
       userId: requestedUserId,
+      excludedProductIds: [],
       mode: "cold-start",
       profileSummary: ["No stored history is available.", "Results use the in-stock demo catalog."],
       recommendations: genericRecommendations(records, limit),
@@ -149,6 +151,7 @@ export async function recommendForUser(
 
   return {
     userId: requestedUserId,
+    excludedProductIds: sourceIds,
     mode: "demo-profile",
     profileSummary: [
       "Purchased: Kind of Blue",

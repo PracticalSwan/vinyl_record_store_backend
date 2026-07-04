@@ -1,6 +1,7 @@
 import { failure, success } from "@/lib/http";
-import { recommendForProduct } from "@/lib/recommender/contentBased";
+import { serveProductRecommendations } from "@/services/recommendations";
 import { positiveInteger } from "@/validation/catalog";
+import { parseInteractionSurface } from "@/validation/writes";
 
 export async function GET(request, { params }) {
   try {
@@ -9,7 +10,13 @@ export async function GET(request, { params }) {
       name: "limit",
       max: 20,
     });
-    return success(await recommendForProduct(id, limit));
+    return success(await serveProductRecommendations(id, limit, {
+      surface: parseInteractionSurface(
+        request.nextUrl.searchParams.get("surface"),
+        "product-detail",
+      ),
+      trackingAllowed: request.headers.get("x-tracking-enabled") !== "false",
+    }));
   } catch (error) {
     return failure(error);
   }

@@ -12,7 +12,7 @@ import { productId } from "./catalog.js";
 const MAX_STATE_ITEMS = 100;
 const MAX_EVENTS = 50;
 const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000;
-const SURFACES = [
+export const INTERACTION_SURFACES = [
   "home",
   "recommendations",
   "product-detail",
@@ -37,6 +37,13 @@ const PRODUCT_EVENT_TYPES = new Set([
   "rating_set",
   "rating_remove",
   "search_result_click",
+]);
+const RECOMMENDATION_EVENT_TYPES = new Set([
+  "recommendation_impression",
+  "recommendation_click",
+  "recommendation_wishlist_add",
+  "recommendation_cart_add",
+  "recommendation_dismiss",
 ]);
 
 function uniqueControlled(values, allowed, name, max = 5) {
@@ -185,6 +192,21 @@ function recommendationContext(value) {
   };
 }
 
+function searchContext(value, type) {
+  if (value === null || value === undefined) return null;
+  if (type !== "search_result_click" || typeof value !== "object" || Array.isArray(value)) {
+    throw invalid("searchContext is supported only for search_result_click events.");
+  }
+  assertOnlyKeys(value, ["rank", "queryLength"], "searchContext");
+  if (!Number.isInteger(value.rank) || value.rank < 1 || value.rank > 1_000) {
+    throw invalid("searchContext.rank must be an integer from 1 through 1000.");
+  }
+  if (!Number.isInteger(value.queryLength) || value.queryLength < 0 || value.queryLength > 100) {
+    throw invalid("searchContext.queryLength must be an integer from 0 through 100.");
+  }
+  return { rank: value.rank, queryLength: value.queryLength };
+}
+
 function parseEvent(event, { authenticated, now }) {
   if (!event || typeof event !== "object" || Array.isArray(event)) {
     throw invalid("Each event must be an object.");
@@ -201,11 +223,12 @@ function parseEvent(event, { authenticated, now }) {
     "surface",
     "value",
     "recommendationContext",
+    "searchContext",
   ], "Event");
   if (event.v !== 1) throw invalid("Event schema version is not supported.");
   if (!INTERACTION_TYPES.includes(event.type)) throw invalid("Event type is not supported.");
   if (event.source !== "groovehaus-frontend") throw invalid("Event source is not supported.");
-  if (!SURFACES.includes(event.surface)) throw invalid("Event surface is not supported.");
+  if (!INTERACTION_SURFACES.includes(event.surface)) throw invalid("Event surface is not supported.");
 
   const anonymousId = event.anonymousId
     ? boundedId(event.anonymousId, "anonymousId")
@@ -232,6 +255,19 @@ function parseEvent(event, { authenticated, now }) {
   if (PRODUCT_EVENT_TYPES.has(event.type) && parsedProductId === null) {
     throw invalid(`${event.type} events require productId.`);
   }
+  const parsedRecommendationContext = recommendationContext(event.recommendationContext);
+  if (
+    RECOMMENDATION_EVENT_TYPES.has(event.type)
+    && (
+      !parsedRecommendationContext?.requestId
+      || !parsedRecommendationContext.algorithmVersion
+      || !parsedRecommendationContext.mode
+      || !parsedRecommendationContext.rank
+      || !parsedRecommendationContext.listId
+    )
+  ) {
+    throw invalid(`${event.type} events require complete recommendationContext.`);
+  }
 
   return {
     eventId: boundedId(event.eventId, "eventId"),
@@ -244,7 +280,8 @@ function parseEvent(event, { authenticated, now }) {
     source: event.source,
     surface: event.surface,
     value,
-    recommendationContext: recommendationContext(event.recommendationContext),
+    recommendationContext: parsedRecommendationContext,
+    searchContext: searchContext(event.searchContext, event.type),
   };
 }
 
@@ -258,6 +295,16 @@ export function parseInteractionBatch(body, { authenticated = false, now = Date.
     throw invalid("Event IDs must be unique within a batch.");
   }
   return events;
+}
+
+export function parseInteractionSurface(value, fallback) {
+  const surface = String(value || fallback || "").trim();
+  if (!INTERACTION_SURFACES.includes(surface)) throw invalid("surface is not supported.");
+  return surface;
+}
+
+export function parseAnonymousId(value) {
+  return value ? boundedId(value, "anonymousId") : null;
 }
 
 function productIds(values, name) {

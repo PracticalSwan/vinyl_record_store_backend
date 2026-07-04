@@ -14,6 +14,14 @@ const recommendationContextSchema = new mongoose.Schema(
   { _id: false, strict: "throw" },
 );
 
+const searchContextSchema = new mongoose.Schema(
+  {
+    rank: { type: Number, required: true, min: 1, max: 1_000, validate: Number.isInteger },
+    queryLength: { type: Number, required: true, min: 0, max: 100, validate: Number.isInteger },
+  },
+  { _id: false, strict: "throw" },
+);
+
 export const interactionSchema = new mongoose.Schema(
   {
     eventId: { type: String, required: true, immutable: true, maxlength: 128 },
@@ -30,6 +38,7 @@ export const interactionSchema = new mongoose.Schema(
     },
     surface: { type: String, required: true, maxlength: 64 },
     recommendationContext: { type: recommendationContextSchema, default: null },
+    searchContext: { type: searchContextSchema, default: null },
     occurredAt: { type: Date, required: true },
     receivedAt: { type: Date, required: true, default: Date.now, immutable: true },
     schemaVersion: { type: Number, required: true, default: 1, min: 1, validate: Number.isInteger },

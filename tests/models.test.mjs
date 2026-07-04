@@ -68,6 +68,7 @@ test("retention timestamps are server-owned", async () => {
   });
   const recommendationLog = new RecommendationLog({
     requestId: "request-retention",
+    listId: "request-retention:primary",
     subjectType: "anonymous",
     subjectId: "anon-1",
     mode: "cold-start",

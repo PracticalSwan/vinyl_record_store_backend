@@ -77,6 +77,75 @@ test("anonymous interaction batches reject PII, duplicates, missing identity, an
   );
 });
 
+test("search result analytics accept bounded rank metadata without storing raw queries", () => {
+  const now = Date.now();
+  const parsed = parseInteractionBatch({ events: [{
+    eventId: "search-event-1",
+    v: 1,
+    type: "search_result_click",
+    anonymousId: "anon-1",
+    sessionId: "session-1",
+    productId: 2,
+    occurredAt: new Date(now).toISOString(),
+    source: "groovehaus-frontend",
+    surface: "search",
+    value: 12,
+    searchContext: { rank: 3, queryLength: 12 },
+  }] }, { now });
+  assert.deepEqual(parsed[0].searchContext, { rank: 3, queryLength: 12 });
+  assert.throws(
+    () => parseInteractionBatch({ events: [{
+      eventId: "search-event-2",
+      v: 1,
+      type: "search_submit",
+      anonymousId: "anon-1",
+      sessionId: "session-1",
+      occurredAt: new Date(now).toISOString(),
+      source: "groovehaus-frontend",
+      surface: "search",
+      searchContext: { rank: 1, queryLength: 4 },
+    }] }, { now }),
+    /only for search_result_click/,
+  );
+});
+
+test("recommendation analytics require complete attribution context", () => {
+  const now = Date.now();
+  const event = {
+    eventId: "recommendation-event-1",
+    v: 1,
+    type: "recommendation_click",
+    anonymousId: "anon-1",
+    sessionId: "session-1",
+    productId: 2,
+    occurredAt: new Date(now).toISOString(),
+    source: "groovehaus-frontend",
+    surface: "recommendations",
+    recommendationContext: {
+      requestId: "request-1",
+      algorithmVersion: "demo-v1",
+      mode: "demo-profile",
+      rank: 1,
+      listId: "list-1",
+    },
+  };
+
+  assert.equal(
+    parseInteractionBatch({ events: [event] }, { now })[0].recommendationContext.listId,
+    "list-1",
+  );
+  assert.throws(
+    () => parseInteractionBatch({ events: [{ ...event, recommendationContext: null }] }, { now }),
+    /require complete recommendationContext/,
+  );
+  assert.throws(
+    () => parseInteractionBatch({
+      events: [{ ...event, recommendationContext: { ...event.recommendationContext, listId: null } }],
+    }, { now }),
+    /require complete recommendationContext/,
+  );
+});
+
 test("guest merge input is bounded, unique, and uses absolute quantities", () => {
   const now = Date.now();
   const value = parseGuestMerge({

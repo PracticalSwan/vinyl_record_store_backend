@@ -95,3 +95,13 @@ Decision: The authentication surface keeps only two roles (`customer`, `admin`).
 Rationale: This is a classroom recommender-systems demo, not a production identity provider. Keeping scrypt hashing, signed HttpOnly sessions, exact-origin checks, server-derived ownership, bounded write validation, and guest-merge idempotency preserves the real authorization boundary. Removing the demo-account persistence shadowing (which silently reverted role changes) and the unused revocation machinery reduces the surface to what the course exercises.
 
 Accepted trade-off: logout clears the cookie but does not invalidate a stolen token server-side; such a token is valid until its eight-hour TTL. This is documented as a classroom-demo limitation.
+
+## BDEC-012: MongoDB Showcase Demo Customers And Session-Only Guest State
+
+Date: 2026-07-04
+
+Decision: Showcase demo customer accounts are real `users` documents seeded into MongoDB (`scripts/seed-demo-users.mjs` driven by `src/data/demoUsers.js`), not environment-backed. Three accounts (`jazzlistener`, `rockcollector`, `soulseeker`) start with empty preferences; their public classroom passwords are documented in the frontend README and stored only as scrypt hashes. The demo usernames are reserved in `register`. Guest wishlist/cart/ratings are session-only: they live in `sessionStorage`, clear when the tab closes, merge into a brand-new account on sign-up only, and are discarded when signing in to an existing account or restoring a session. A one-time cleanup removes any legacy `localStorage` guest data.
+
+Rationale: The showcase needs several named demo accounts that a reviewer can sign into directly, and that the recommender can later personalize. MongoDB-seeded customers (rather than more env-backed accounts) keep distinct preference profiles a single forward step away while reusing the real `users` model and auth path. Session-only guest storage plus merge-on-register-only preserves the safety property that a visitor's guest cart is never copied onto an existing account (for example on a shared device), and gives every visitor a clean guest state instead of a stale cart.
+
+Accepted trade-offs: demo customer logins require the backend to reach MongoDB (the env-backed accounts remain as a seed-catalog fallback); MongoDB demo customers have persistent rather than ephemeral preferences, so a tester's edits survive until `db:seed:users:apply` resets them; distinct per-account preference profiles are deferred until recommender algorithm selection is finalized (tracked in `docs/FUTURE_IMPLEMENTATION_PLAN.md`).
