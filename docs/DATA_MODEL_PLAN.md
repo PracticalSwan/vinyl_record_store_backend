@@ -34,7 +34,7 @@ The recommender contains one code-defined `demo-user` profile with purchased IDs
 | `wishlists`, `carts`, `ratings` | One list per user, unique cart/list product IDs, and one integer rating per user/product. |
 | `guestMerges` | Unique user/merge receipt, stable input hash, and original merge result for retry-safe guest-state migration. |
 | `orders` | Numeric public ID and immutable demo order snapshots; never payment data. |
-| `recommendationLogs` | Unique request identity, ordered results, algorithm context, and 90-day expiry. |
+| `recommendationLogs` | Unique request/list identity, safe subject, ordered products/scores/ranks/reasons, exclusions, mode, version, surface, and 90-day expiry. |
 | `auditLogs` | Safe administrator change summaries without credentials or session values. |
 | `counters` | Atomic numeric ID allocation. |
 
@@ -44,7 +44,7 @@ Schemas use strict unknown-field rejection, timestamps, bounded fields, enum val
 
 `npm run db:seed` plans creates, updates, unchanged records, and conflicts without writing. `npm run db:seed:apply` first creates the catalog indexes, refuses conflicts, performs only seed-owned creates/updates in a transaction, and never deletes records. `npm run db:indexes` verifies all declared indexes; `npm run db:indexes:ensure` creates declared collections and indexes additively before verification.
 
-Authentication, interaction ingestion, preferences, wishlist/cart state, ratings, guest-merge receipts, and registered-customer deletion are active. Ratings create safe history events; account deletion transactionally removes the customer and owned state, interactions, logs, and merge receipts. Demo orders, recommendation-request logging, and administrator catalog mutations remain deferred.
+Authentication, interaction ingestion, preferences, wishlist/cart state, ratings, guest-merge receipts, recommendation-request logging, and registered-customer deletion are active. Ratings create safe history events; account deletion transactionally removes the customer and owned state, interactions, logs, and merge receipts. Demo orders, BFP-02 Part B evaluation outputs, and administrator catalog mutations remain deferred.
 
 ## Privacy Boundary
 

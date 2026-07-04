@@ -19,6 +19,7 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 | Frontend CORS origin rule | Passing Node test. |
 | Authentication, signed/tampered cookies, roles, registration, and the interaction cap | Passing Node tests plus browser session flows. |
 | Write validation, ownership, interaction/merge idempotency, transactions, and account cleanup | Passing Node tests plus live Atlas browser flows. |
+| Exact recommendation request logging, opt-out, ordered reasons, and attribution context | Passing Node tests plus frontend desktop/mobile analytics flows. |
 | ESLint | Passed. |
 | Next.js production build | Passed with all catalog, recommendation, authentication, and customer-state routes. |
 
@@ -32,7 +33,7 @@ npm run build
 
 ## What These Tests Do Not Prove
 
-Behavior tests do not show that recommendations are relevant to real users. The interaction ingestion route now exists, but the frontend analytics pipeline and sufficient timestamped evidence do not. No ranking-quality result is reported because there is no eligible held-out dataset, relevance build, train/test split, or fair baseline comparison.
+Behavior tests do not show that recommendations are relevant to real users. Interaction ingestion, request logging, and frontend analytics now exist, but sufficient eligible timestamped evidence and the Part B dataset pipeline do not. No ranking-quality result is reported because there is no approved relevance build, train/test split, or fair baseline comparison.
 
 ## Required Offline Protocol Before Reporting Quality
 

@@ -6,7 +6,7 @@ The approved design and dependency gates are documented in `FUTURE_IMPLEMENTATIO
 
 ## Deferred
 
-- Add recommendation-request logging, the offline evaluation dataset, and optional demo-order history.
+- Build BFP-02 Part B offline evaluation dataset/baselines and optional demo-order history. Recommendation-request logging is already active.
 - Add password recovery or other identity features only if a later requirement explicitly accepts their privacy/security cost.
 - Add admin routes, deployment configuration, and observability.
 - Build a leakage-safe offline evaluation dataset and baseline comparison.

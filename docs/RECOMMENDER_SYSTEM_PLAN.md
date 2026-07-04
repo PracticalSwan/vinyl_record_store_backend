@@ -34,6 +34,10 @@ The system does not read real user history or claim production personalization.
 
 The default is `content-demo-v1`; `RECOMMENDER_ALGORITHM_VERSION` can override the label for controlled comparisons.
 
+## Request Logging
+
+Every recommendation response receives server-generated `requestId` and `listId`. MongoDB mode persists the exact ordered list, scores, ranks, reasons, exclusions, mode, algorithm version, surface, and safe subject before returning it. Seed mode and usage-data opt-out return attribution IDs without persistence. The logging service removes internal exclusions from the public envelope.
+
 ## Deferred Methods
 
-Collaborative filtering, matrix factorization, hybrid ranking, learned weights, popularity signals, and recommendation-request logging require interaction evidence and a separate explicit task. Interaction ingestion exists, but recommendation-request logging, frontend capture, and the evaluation dataset pipeline are not active.
+Collaborative filtering, matrix factorization, hybrid ranking, learned weights, and popularity signals remain deferred. Interaction ingestion, request logging, and frontend capture are active; BFP-02 Part B dataset construction and offline evaluation remain deferred until the evidence threshold is met.

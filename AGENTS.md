@@ -13,6 +13,7 @@ The backend is an implemented integration and authenticated customer-state servi
 - Approved local demo seed remains the default catalog. Explicit `CATALOG_DATA_SOURCE=mongodb` selection reads the migrated catalog from Atlas through the MongoDB repository.
 - Mongoose models, persistence repositories, signed sessions, authenticated customer writes, an idempotent seed migration, and live index verification are implemented.
 - Deterministic content-based recommendations with explanations, stock preference, exclusions, diversity limits, and an algorithm version.
+- MongoDB-mode recommendation request logging records exact ordered lists, reasons, surfaces, modes, versions, exclusions, and 90-day expiry; seed mode and usage opt-out suppress it.
 - Automated catalog, persistence, migration, authentication, write-state, recommender-behavior, and metric sanity tests.
 
 ## Folder Boundary

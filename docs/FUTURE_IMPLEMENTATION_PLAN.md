@@ -1,6 +1,6 @@
 # Backend Future Implementation Plan
 
-Status: BFP-01 and the backend portion of FFP-05 were implemented on 2026-07-03. BFP-04 authentication and BFP-03 customer write APIs were implemented and verified on 2026-07-04. Remaining plans are future work only.
+Status: BFP-01/03/04, BFP-02 Part A, and the backend contracts for FFP-01/02/03/05 are complete. BFP-02 Part B and the remaining plans are future work only.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
@@ -11,7 +11,7 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 - Use a small custom authentication system with server-issued sessions.
 - Add customer registration only after durable user persistence exists. This gate is complete and registration now uses the MongoDB user repository.
 - Preserve the existing numeric product IDs in public APIs; MongoDB `_id` remains internal.
-- Merge anonymous wishlist and cart state automatically after login.
+- Keep guest state session-only. Merge it only into a brand-new registration; existing-account login and ordinary restore discard it, while a keyed failed registration merge resumes after refresh.
 - Collect anonymous interaction data by default with a visible opt-out, no direct personal information, and a 90-day retention target.
 - Protect an integrated `/admin` mode with the backend `admin` role.
 - Use MusicBrainz and Cover Art Archive as the primary metadata and artwork sources, with placeholders when artwork is unavailable.
@@ -22,7 +22,7 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 | ID | Plan | Status | Main Gate |
 | --- | --- | --- | --- |
 | BFP-01 | MongoDB persistence, schemas, indexes, and seed migration | Completed 2026-07-03 | Seed remains the default; explicit MongoDB mode, models, repositories, migration, parity checks, and live indexes are verified. |
-| BFP-02 | Recommendation logging and offline evaluation dataset | Planned | Request logging precedes frontend analytics; offline evaluation waits for sufficient persisted interactions. |
+| BFP-02 | Recommendation logging and offline evaluation dataset | Part A completed 2026-07-05 | Exact request logging is active; Part B waits for sufficient persisted interactions. |
 | BFP-03 | Write API contracts and implementation | Completed 2026-07-04 | Customer/event routes are implemented; optional demo orders and administrator writes remain in BFP-08/BFP-07 scope. |
 | BFP-04 | Simple authentication, registration, and authorization | Completed 2026-07-04 | Registered and seeded identities use signed server sessions and role checks. |
 | BFP-05 | Recommender algorithm selection | On hold | User will choose the future recommender method. |
@@ -31,7 +31,7 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 
 ## Approved Cross-Repository Implementation Order
 
-The first five milestones are complete. Implement the remaining plans in this order so each later surface builds on verified contracts and regression coverage:
+The first nine milestones are complete. Implement the remaining plans in this order so each later surface builds on verified contracts and regression coverage:
 
 | Order | Plan | Dependency-safe outcome |
 | --- | --- | --- |
@@ -40,10 +40,10 @@ The first five milestones are complete. Implement the remaining plans in this or
 | 3 | FFP-05: server-side search and pagination | Completed 2026-07-03; repository-backed literal search, facets, sorting, and pagination are active. |
 | 4 | BFP-04: simple authentication and authorization | Completed 2026-07-04; signed sessions, registration, seeded identities, role checks, and account cleanup are active. |
 | 5 | BFP-03: write APIs | Completed 2026-07-04; protected preferences/state plus idempotent interaction and guest-merge contracts are active. |
-| 6 | FFP-03: local-to-server state migration | Move guest state only after identity and write contracts are stable. |
-| 7 | FFP-02: onboarding and preferences | Add the customer flow against the implemented session and preference APIs. |
-| 8 | BFP-02 Part A: recommendation-request logging | Persist request IDs, served lists, modes, and algorithm versions before collecting recommendation interactions. |
-| 9 | FFP-01: recommendation interaction analytics | Emit privacy-controlled events that can be joined to the logged recommendation requests. |
+| 6 | FFP-03: local-to-server state migration | Completed 2026-07-05 with session guests and sign-up-only keyed merge. |
+| 7 | FFP-02: onboarding and preferences | Completed 2026-07-05. |
+| 8 | BFP-02 Part A: recommendation-request logging | Completed 2026-07-05 with exact served-list persistence. |
+| 9 | FFP-01: recommendation interaction analytics | Completed 2026-07-05 with privacy-controlled attributed events. |
 | 10 | BFP-06: catalog ingestion and metadata quality | Add validated preview/apply imports and approved metadata enrichment. |
 | 11 | FFP-06: artwork and image handling | Consume only backend-approved artwork mappings with resilient fallbacks. |
 | 12 | BFP-02 Part B: offline evaluation dataset and benchmark | Evaluate only after the minimum interaction threshold and leakage-safe split are available. |
@@ -150,6 +150,16 @@ All BFP-01 checks below passed on 2026-07-03:
 
 This plan defines the evidence pipeline required before the project reports recommendation quality.
 
+Status: Part A recommendation-request logging completed and verified on 2026-07-05. Part B dataset construction, baselines, and reporting remain deferred until the minimum evidence boundary is met.
+
+### Part A Completion
+
+- Recommendation routes generate server request/list IDs and return `recommendationLogged`.
+- MongoDB mode persists exact ordered products, scores, ranks, reasons, exclusions, mode, algorithm version, surface, safe subject, and 90-day expiry before returning the response.
+- Seed mode and usage-data opt-out suppress persistence.
+- Authenticated ownership comes from the verified session; stored subjects are not returned publicly.
+- Frontend events require complete request/list/version/mode/rank attribution, and user lists are requested only on pages that render them.
+
 ### Goal
 
 Create a leakage-safe dataset and repeatable evaluation command without choosing the future recommender algorithm. The current content-based method is evaluated only after sufficient real or controlled interaction evidence exists.
@@ -199,9 +209,9 @@ Demo checkout completion can be reported as a funnel event, but it must not be d
 
 ### Implementation Phases
 
-1. Finalize versioned event and recommendation-log schemas with the frontend analytics plan.
-2. Persist events idempotently and verify the 90-day TTL indexes.
-3. Add a dataset-read layer that returns pseudonymized subjects and ordered events.
+1. Completed: finalized versioned event and recommendation-log schemas with frontend analytics.
+2. Completed: persisted events/request logs idempotently and verified 90-day TTL indexes.
+3. Part B: add a dataset-read layer that returns pseudonymized subjects and ordered events.
 4. Implement relevance construction, eligibility filtering, temporal splitting, and leakage assertions.
 5. Implement random and popularity baselines without changing the active recommender.
 6. Generate the first report only after the minimum evidence boundary is satisfied.

@@ -18,3 +18,4 @@
 | BR-014 | A forged request mutates another account. | High | Derive ownership only from a revalidated signed session; reject client user IDs and require the exact configured origin. | controlled |
 | BR-015 | Session or password material leaks. | High | Use scrypt, signed HttpOnly cookies, non-selecting password fields, generic failures, safe logs, ignored environment files, and no secret response fields. | controlled |
 | BR-016 | A retry duplicates guest state or events. | High | Enforce unique event IDs and stable merge receipts/input hashes; test replay behavior and cart quantity caps. | controlled |
+| BR-017 | Logged lists cannot join events or expose identity. | High | Generate request/list IDs server-side, derive authenticated ownership from the session, hide subjects, require complete event context, honor opt-out, and apply TTL. | controlled |

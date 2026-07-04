@@ -8,6 +8,7 @@ Read this file before every backend session.
 - The approved demo seed remains the default catalog. Explicit `CATALOG_DATA_SOURCE=mongodb` selection uses the Atlas catalog repository; never describe MongoDB as an automatic fallback.
 - Strict Mongoose models, repositories, signed sessions, customer write routes, an idempotent seed migration, and index verification exist.
 - The recommender is deterministic content-based logic for product similarity, a synthetic `demo-user`, and cold-start fallback.
+- Recommendation routes return server-generated request/list IDs. In MongoDB mode they log exactly what was served unless the usage-data header opts out; seed mode remains non-persistent.
 - Behavior tests prove implementation rules, not offline recommendation quality.
 
 ## Working Rules
@@ -23,6 +24,7 @@ Read this file before every backend session.
 - Keep seed and MongoDB catalog behavior equivalent, including literal search, repeated facets, deterministic sorting, pagination, soft-delete exclusion, and public numeric IDs.
 - Derive ownership from `requireSession`, require the exact mutation origin, bound JSON and arrays, and preserve stable safe error codes.
 - Preserve interaction and guest-merge idempotency. Cart and account lifecycle operations must remain transaction-safe, and guest rating merges must use the newest valid timestamp.
+- Require complete request/list/version/mode/rank context for recommendation events. Keep request logs aligned to rendered surfaces and never trust a client-supplied authenticated owner.
 - Seeded identities (admin and demo-customer) are environment-backed, have ephemeral preferences, and cannot be deleted. Registration creates customers only; the administrator role is env-only with no promotion path.
 - The seed migration reconciles catalog content only; it must never rewrite the `deletedAt` tombstone, so operator soft-deletes survive re-runs.
 - Run `npm test`, `npm run lint`, and `npm run build` after backend behavior changes.

@@ -10,6 +10,7 @@ This Next.js service provides the demo catalog, explainable recommendations, sig
 - Product-to-product content similarity.
 - Synthetic demo-profile and explicit cold-start user recommendations.
 - Predictable success/error envelopes, input validation, stock preference, exclusions, diversity limits, and algorithm versioning.
+- Server-generated recommendation request/list IDs and privacy-controlled MongoDB request logs containing the exact ordered response, reasons, surface, exclusions, mode, and algorithm version.
 - Optional MongoDB Atlas catalog persistence with strict models, repository adapters, conflict-safe seed migration, and index verification.
 - Username/password registration and login, seeded demo identities, signed HttpOnly session cookies, logout, session restoration, role checks, and account deletion.
 - Protected profile/preferences, wishlist, cart, rating, and idempotent guest-state merge APIs plus anonymous or authenticated interaction ingestion.

@@ -39,7 +39,7 @@ Uses the same filters, sorts, products, and metadata as `/api/products`, plus no
 
 Optional `limit` defaults to 6 and is capped at 20.
 
-Response data: `{ sourceProductId, mode, recommendations, algorithmVersion }`, where each item contains `{ product, score, reasons, algorithmVersion, rank }`.
+Response data: `{ sourceProductId, mode, recommendations, algorithmVersion, requestId, listId, recommendationLogged }`, where each item contains `{ product, score, reasons, algorithmVersion, rank }`. Optional `surface` is controlled; the default is `product-detail`.
 
 ### `GET /api/recommendations/user/:userId`
 
@@ -47,6 +47,8 @@ User IDs allow letters, numbers, underscores, and hyphens. Optional `limit` defa
 
 - `demo-user` returns `mode: "demo-profile"` and a synthetic profile summary.
 - Other valid IDs return `mode: "cold-start"` without claiming user history.
+
+Response data also includes `requestId`, `listId`, and `recommendationLogged`. Optional `surface` is controlled. In MongoDB mode, a tracking-enabled request logs the exact ordered list before response; seed mode and `X-Tracking-Enabled: false` do not persist it. Authenticated log ownership comes from the verified cookie; anonymous user requests may send bounded `X-Anonymous-Id`.
 
 ## Authentication Routes
 
@@ -79,11 +81,11 @@ Ownership comes only from the verified session; client-supplied user IDs are rej
 
 ## Deferred Routes
 
-Demo-order, recommendation-request-log, and administrator catalog routes are not implemented.
+Demo-order and administrator catalog routes are not implemented. Recommendation-request logging is an internal side effect of the implemented recommendation GET routes, not a public mutation route. BFP-02 Part B offline dataset/report commands remain deferred.
 
 ## CORS
 
-API responses allow credentials only for the single origin configured by `FRONTEND_ORIGIN`, defaulting to `http://localhost:5173`. Mutations reject missing or different origins, bound JSON bodies to 64 KB, and advertise only the implemented methods and `Content-Type`/`Idempotency-Key` headers.
+API responses allow credentials only for the single origin configured by `FRONTEND_ORIGIN`, defaulting to `http://localhost:5173`. Mutations reject missing or different origins, bound JSON bodies to 64 KB, and advertise only the implemented methods and `Content-Type`, `Idempotency-Key`, `X-Anonymous-Id`, and `X-Tracking-Enabled` headers.
 
 ## Change Rule
 

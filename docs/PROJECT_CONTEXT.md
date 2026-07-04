@@ -4,41 +4,31 @@ This is the backend source of truth for the Vinyl Record Store Recommender Syste
 
 ## Current State
 
-The backend is a Next.js 16.2.9 integration service. It serves the approved demo catalog from the default seed adapter or an explicitly selected MongoDB adapter, produces explainable content-based recommendations, and provides signed sessions plus MongoDB-backed customer-state mutations for the separate React frontend.
+The backend is a Next.js 16.2.9 integration service. It serves the approved catalog from the default seed adapter or explicitly selected MongoDB adapter, produces explainable content-based recommendations, provides signed sessions and customer-state mutations, ingests interactions, and records served recommendation lists in MongoDB mode.
 
 ## Implemented Scope
 
-- Health, product list/detail, search, product recommendation, and user recommendation routes.
-- Customer registration, registered/seeded login, signed HttpOnly sessions, logout, session restoration, role authorization, and registered-customer deletion.
+- Health, product list/detail, literal search, product recommendation, and user recommendation routes.
+- Customer registration, environment-backed and MongoDB showcase logins, signed HttpOnly sessions, logout/restoration, role authorization, and registered-customer deletion.
 - Protected profile/preferences, wishlist, cart, ratings, and idempotent guest-state merge routes.
-- Idempotent anonymous or authenticated interaction ingestion with a 90-day retention target.
-- Consistent JSON success/error envelopes.
-- Literal search, repeated controlled facets, deterministic sorting and pagination, catalog-wide facets, and bounded identifier/query validation.
-- Content scoring by artist, genre, decade, label, and availability.
-- Exclusion of source/known-profile records, artist diversity cap, explanation generation, and algorithm version label.
-- Synthetic `demo-user` profile and explicit cold-start behavior.
-- Strict Mongoose models, seed and MongoDB catalog repositories, active customer-state repositories, an idempotent seed migration, and index verification.
-- Cached server-only Mongoose connection helper and explicit `CATALOG_DATA_SOURCE` selection.
-- Node tests covering catalog, persistence, migration, authentication, write validation/state, recommender behavior, and metric sanity, plus lint and production build validation.
+- Idempotent anonymous/authenticated interaction ingestion with bounded schemas, per-identity cap, complete recommendation context, and 90-day eventual TTL.
+- BFP-02 Part A request logging: server request/list IDs, exact ordered items/scores/ranks/reasons, algorithm version, mode, exclusions, surface, safe subject, and 90-day eventual TTL.
+- Usage-data opt-out suppresses request logs; seed catalog mode returns attribution IDs but does not persist logs.
+- Strict Mongoose models, repositories, conflict-safe seed migration, showcase-account seed workflow, and additive index verification.
+- Consistent safe envelopes, exact-origin credentialed mutations, server-derived ownership, and transaction-backed multi-document operations.
+- Automated catalog, persistence, migration, authentication, write, request-log, recommender behavior, and metric-sanity tests.
 
-## Current Data Boundary
+## Data And Privacy Boundary
 
-`src/data/records.js` remains the approved seed and default catalog. Product responses remove seed-only display reasons. `CATALOG_DATA_SOURCE=mongodb` explicitly selects the MongoDB catalog repository; missing configuration or connection failures return `503 PERSISTENCE_UNAVAILABLE` rather than silently falling back. The conflict-safe migration preserves numeric public IDs, and declared unique, compound, and 90-day TTL indexes can be created and verified against Atlas.
-
-MongoDB mode stores registered/seed-profile users, wishlists, carts, ratings, interactions, and idempotent merge receipts behind session-derived ownership. Password fields are non-selecting, public responses omit internal ObjectIds and secrets, event/log TTL deletion is eventual, and account deletion transactionally removes the registered customer's owned demo data. The repository also defines deferred order, recommendation-log, audit-log, and counter boundaries.
+`src/data/records.js` remains the approved seed/default catalog. Explicit MongoDB mode never silently falls back. MongoDB stores registered/showcase users, lists, ratings, interactions, merge receipts, and recommendation logs. Public responses omit internal IDs, secrets, subjects, cookies, and raw events. Recommendation logs and interactions use eventual TTL deletion, and account deletion removes owned demo data.
 
 ## Deferred Scope
 
-- Frontend migration of local wishlist/cart/rating state to the implemented write routes.
-- Recommendation-request logging, offline evaluation, and demo-order writes.
-- Admin APIs, payments, scraping, collaborative filtering, and deployment automation.
+- BFP-02 Part B dataset construction, minimum-evidence check, leakage-safe split, baselines, and offline report.
+- Demo orders, administrator catalog APIs, artwork/ingestion work, payments, collaborative/hybrid ranking, and deployment automation.
 
-BFP-01 persistence, BFP-04 authentication, BFP-03 customer writes, and the FFP-05 read-query contract are complete. Deferred surfaces require separate explicit tasks.
-
-## Academic Focus
-
-The backend makes recommendation decisions inspectable through deterministic weights and reasons. Offline quality claims require held-out interaction data and fair baselines; current tests cover behavior only.
+BFP-01, BFP-03, BFP-04, BFP-02 Part A, and the shared FFP-01/02/03/05 contracts are complete. Behavior tests and stored events do not establish recommendation quality.
 
 ## Update Rule
 
-Update this file when implemented routes, data ownership, scoring behavior, persistence, or limitations change.
+Update this file when routes, data ownership, logging/privacy behavior, scoring, persistence, or limitations change.

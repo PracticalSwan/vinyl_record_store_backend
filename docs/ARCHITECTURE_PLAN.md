@@ -7,7 +7,7 @@ This document describes the implemented read and authenticated mutation service 
 1. A Next.js route handler receives the request.
 2. Catalog/auth/write validation bounds route parameters, query strings, JSON size, allowed body keys, arrays, timestamps, and controlled values.
 3. Authentication verifies scrypt credentials and a signed session cookie; protected routes reload the subject and derive ownership from that session.
-4. Catalog, recommender, auth, state, or account services apply business rules and call the appropriate repository.
+4. Catalog, recommendation-serving/logging, auth, state, or account services apply business rules and call the appropriate repository.
 5. Repositories normalize catalog documents, execute state mutations, preserve idempotency receipts, and use transactions for multi-document consistency.
 6. `src/lib/http.js` produces the common success or error envelope.
 7. `next.config.mjs` adds exact-origin credentialed CORS; mutation handlers also verify the request origin.
@@ -15,7 +15,7 @@ This document describes the implemented read and authenticated mutation service 
 ## Modules
 
 - API layer: `src/app/api/`.
-- Service layer: `src/services/` for catalog, authentication, customer state, and account lifecycle.
+- Service layer: `src/services/` for catalog, recommendation serving/logging, authentication, customer state, and account lifecycle.
 - Repository layer: `src/repositories/`.
 - Persistence models: `src/models/`.
 - Validation layer: `src/validation/` plus bounded JSON/origin checks in `src/lib/request.js`.
@@ -34,6 +34,7 @@ This document describes the implemented read and authenticated mutation service 
 - The approved seed remains the default. Explicit MongoDB mode requires valid Atlas configuration and never silently falls back.
 - The default allowed frontend origin is `http://localhost:5173`; mutations require that exact origin and use credentialed requests.
 - Registered customer state requires MongoDB mode. Seeded identities can authenticate from environment configuration and store preferences/state when persistence is available.
+- Recommendation responses always receive request/list IDs. MongoDB mode logs a tracking-enabled served list before response; seed mode and usage opt-out skip persistence.
 
 ## Security
 

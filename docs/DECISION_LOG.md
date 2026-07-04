@@ -44,7 +44,7 @@ Decision: Do not expose interaction, wishlist, cart, order, or recommendation-lo
 
 Rationale: Persistence models alone do not provide authorization, idempotency, privacy controls, or complete write-side consistency.
 
-Status update, 2026-07-04: BFP-04 and BFP-03 satisfied this gate. The implemented write surface uses signed sessions, exact-origin checks, bounded schemas, server-derived ownership, idempotency, and transaction-backed consistency. Demo orders, recommendation-request logging, and administrator catalog writes remain deferred.
+Status update, 2026-07-05: BFP-04/BFP-03 satisfied the customer/event gate, and BFP-02 Part A added internal recommendation-request logging. Demo orders, BFP-02 Part B evaluation, and administrator catalog writes remain deferred.
 
 ## BDEC-006: Distinguish Behavior Tests From Quality Metrics
 
@@ -100,8 +100,16 @@ Accepted trade-off: logout clears the cookie but does not invalidate a stolen to
 
 Date: 2026-07-04
 
-Decision: Showcase demo customer accounts are real `users` documents seeded into MongoDB (`scripts/seed-demo-users.mjs` driven by `src/data/demoUsers.js`), not environment-backed. Three accounts (`jazzlistener`, `rockcollector`, `soulseeker`) start with empty preferences; their public classroom passwords are documented in the frontend README and stored only as scrypt hashes. The demo usernames are reserved in `register`. Guest wishlist/cart/ratings are session-only: they live in `sessionStorage`, clear when the tab closes, merge into a brand-new account on sign-up only, and are discarded when signing in to an existing account or restoring a session. A one-time cleanup removes any legacy `localStorage` guest data.
+Decision: Showcase demo customer accounts are real `users` documents seeded into MongoDB (`scripts/seed-demo-users.mjs` driven by `src/data/demoUsers.js`), not environment-backed. Three accounts (`jazzlistener`, `rockcollector`, `soulseeker`) start with empty preferences; their public classroom passwords are documented in the frontend README and stored only as scrypt hashes. The demo usernames are reserved in `register`. Guest wishlist/cart/ratings are session-only: they live in `sessionStorage`, clear when the tab closes, merge into a brand-new account on sign-up only, and are discarded when signing in to an existing account or ordinarily restoring a session. A persisted keyed registration failure is the only restore exception. A one-time cleanup removes any legacy `localStorage` guest data.
 
 Rationale: The showcase needs several named demo accounts that a reviewer can sign into directly, and that the recommender can later personalize. MongoDB-seeded customers (rather than more env-backed accounts) keep distinct preference profiles a single forward step away while reusing the real `users` model and auth path. Session-only guest storage plus merge-on-register-only preserves the safety property that a visitor's guest cart is never copied onto an existing account (for example on a shared device), and gives every visitor a clean guest state instead of a stale cart.
 
 Accepted trade-offs: demo customer logins require the backend to reach MongoDB (the env-backed accounts remain as a seed-catalog fallback); MongoDB demo customers have persistent rather than ephemeral preferences, so a tester's edits survive until `db:seed:users:apply` resets them; distinct per-account preference profiles are deferred until recommender algorithm selection is finalized (tracked in `docs/FUTURE_IMPLEMENTATION_PLAN.md`).
+
+## BDEC-013: Log Exact Served Lists Before Analytics
+
+Date: 2026-07-05
+
+Decision: Generate request/list IDs on the server and, in MongoDB mode, persist the exact ordered recommendation output before returning it. Store scores, ranks, reasons, exclusions, mode, algorithm version, surface, safe subject, and 90-day expiry. Suppress persistence in seed mode or when the usage-data header opts out.
+
+Rationale: Interaction events are meaningful only when they can join the list actually served. Server-generated IDs and session-derived ownership prevent client forgery, while opt-out and TTL preserve the selected privacy boundary. Offline dataset construction and metrics remain a separate Part B task.

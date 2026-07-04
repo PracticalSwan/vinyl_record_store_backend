@@ -4,29 +4,20 @@ This file records current completion and deferred scope. It does not authorize c
 
 ## Completed
 
-- Next.js read and authenticated mutation API foundation.
-- Approved demo catalog and public product normalization.
-- Product listing/detail and search routes with literal search, repeated facets, deterministic sorting, pagination, and catalog-wide facets.
-- Optional MongoDB catalog reads behind explicit data-source selection, with seed mode remaining the default.
-- Strict Mongoose models and persistence repositories for the planned data boundaries.
-- Conflict-safe, idempotent seed migration and live index verification.
-- Product similarity, synthetic demo-profile, and cold-start recommendations.
-- Explanations, exclusions, stock preference, artist diversity cap, and algorithm versioning.
-- CORS configuration for the separate Vite frontend.
-- Signed HttpOnly sessions, customer registration, seeded identities, logout/restoration, role checks, and account deletion.
-- Protected profile/preferences, wishlist, cart, ratings, idempotent guest merge, and anonymous/authenticated interaction ingestion.
-- Exact-origin credentialed CORS, bounded JSON/input, a per-identity interaction-ingestion cap, server-derived ownership, safe errors, and transaction-backed consistency.
-- Catalog/recommender/auth/write behavior tests, metric sanity test, lint, and production build.
-- Current instructions, README, contracts, architecture, data, evaluation, risk, decision, and setup docs.
+- Next.js catalog/search/recommendation API with seed default and explicit MongoDB adapter.
+- Strict models/repositories, conflict-safe catalog migration, showcase-customer seeding, and live index verification.
+- Deterministic product, demo-profile, and cold-start recommendations with explanations, exclusions, diversity, and versioning.
+- Signed sessions, customer registration, environment/showcase demo identities, protected state writes, account deletion, and idempotent guest merge.
+- Bounded anonymous/authenticated interaction ingestion with server-derived ownership and 90-day eventual TTL.
+- BFP-02 Part A exact recommendation request/list logging with privacy opt-out, seed-mode suppression, safe subjects, reasons, exclusions, and TTL.
+- FFP-03/02/01 cross-repository contracts for state migration, onboarding, and attributed analytics.
+- Exact-origin credentialed CORS, bounded inputs, safe errors, per-identity event cap, and transaction-backed consistency.
+- Backend tests, lint, production build, Atlas connectivity, and all declared index groups verified.
 
 ## Deferred And Not Started
 
-- Frontend migration from local wishlist/cart/rating state to the implemented server APIs.
-- Demo-order and recommendation-request-log writes.
-- Admin product management, payments, scraping, and deployment automation.
-- Collaborative or hybrid recommendation.
-- Offline benchmark with random and popularity baselines.
+- BFP-02 Part B offline dataset, minimum-evidence check, baselines, and quality report.
+- Demo orders, administrator catalog APIs, ingestion/artwork pipeline, payments, scraping, and deployment automation.
+- Collaborative or hybrid recommendation; BFP-05 remains on hold pending the user's algorithm decision.
 
-Detailed plans and the approved cross-repository implementation order are in `FUTURE_IMPLEMENTATION_PLAN.md`. BFP-01 persistence, BFP-04 authentication, BFP-03 customer writes, and the backend FFP-05 read-query work are complete. Recommender algorithm selection remains on hold; deployment, scraping, real payments, and production commerce remain out of scope.
-
-Deferred items require a separate explicit implementation task.
+Detailed plans and the cross-repository order are in `FUTURE_IMPLEMENTATION_PLAN.md`. Deferred items require a separate explicit task.
