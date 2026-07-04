@@ -17,7 +17,7 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 | Cold-start mode and language | Passing Node test. |
 | Ideal-order NDCG sanity | Passing Node test equals 1.0. |
 | Frontend CORS origin rule | Passing Node test. |
-| Authentication, signed/tampered cookies, roles, registration, and rate limits | Passing Node tests plus browser session flows. |
+| Authentication, signed/tampered cookies, roles, registration, and the interaction cap | Passing Node tests plus browser session flows. |
 | Write validation, ownership, interaction/merge idempotency, transactions, and account cleanup | Passing Node tests plus live Atlas browser flows. |
 | ESLint | Passed. |
 | Next.js production build | Passed with all catalog, recommendation, authentication, and customer-state routes. |

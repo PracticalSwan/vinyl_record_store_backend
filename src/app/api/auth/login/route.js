@@ -7,13 +7,9 @@ import { parseLoginInput } from "@/validation/auth";
 export async function POST(request) {
   try {
     assertMutationOrigin(request);
-    const result = await login(parseLoginInput(await readJsonBody(request)), request);
+    const result = await login(parseLoginInput(await readJsonBody(request)));
     return setSessionCookie(success({ user: result.user }), request, result.token);
   } catch (error) {
-    const response = failure(error);
-    if (error?.retryAfterSeconds) {
-      response.headers.set("Retry-After", String(error.retryAfterSeconds));
-    }
-    return response;
+    return failure(error);
   }
 }

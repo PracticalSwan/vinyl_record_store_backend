@@ -16,7 +16,6 @@ export function createSessionToken(user, {
     v: TOKEN_VERSION,
     sub: user.publicId,
     role: user.role,
-    sv: user.sessionVersion || 0,
     iat: issuedAt,
     exp: issuedAt + SESSION_TTL_SECONDS,
   };
@@ -44,7 +43,6 @@ export function verifySessionToken(token, {
       payload.v !== TOKEN_VERSION
       || !/^[a-zA-Z0-9_-]{1,64}$/.test(payload.sub)
       || !["customer", "admin"].includes(payload.role)
-      || !Number.isInteger(payload.sv)
       || !Number.isInteger(payload.iat)
       || !Number.isInteger(payload.exp)
       || payload.iat > nowSeconds + 60

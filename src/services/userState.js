@@ -34,11 +34,15 @@ export function profile(user) {
 export async function replacePreferences(user, preferences, {
   users = userRepository,
 } = {}) {
-  const updated = user.seeded
-    ? await users.upsertSeededProfile(user, preferences)
-    : await users.updatePreferences(user.publicId, preferences);
+  // Env-backed demo accounts have ephemeral preferences by design: they are
+  // shared classroom accounts, and not persisting keeps every tester on a
+  // clean profile. Registered customers persist through updatePreferences.
+  if (user.seeded) {
+    return profile({ ...user, preferences });
+  }
+  const updated = await users.updatePreferences(user.publicId, preferences);
   if (!updated) throw notFound("The active account was not found.");
-  return profile({ ...updated, seeded: user.seeded });
+  return profile(updated);
 }
 
 async function productOrThrow(productPublicId, catalog) {

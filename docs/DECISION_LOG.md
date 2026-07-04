@@ -85,3 +85,13 @@ Date: 2026-07-04
 Decision: Use scrypt username/password authentication, signed eight-hour HttpOnly cookies, registered customer accounts plus environment-backed demo identities, and session-derived ownership for profile, wishlist, cart, rating, interaction, merge, and account-deletion routes.
 
 Rationale: This supplies a real authorization boundary without introducing email recovery, third-party identity, or production payment scope. Exact-origin checks, bounded bodies, generic login failures, stable event IDs, merge receipts, and MongoDB transactions address the principal risks for the classroom write surface.
+
+## BDEC-011: Simplified Auth To Two Roles With Env-Only Admin
+
+Date: 2026-07-04
+
+Decision: The authentication surface keeps only two roles (`customer`, `admin`). The administrator account is environment-only (`AUTH_DEMO_ADMIN_*`). The shared classroom demo customer is environment-only (`AUTH_DEMO_CUSTOMER_*`) with ephemeral preferences. Registered customers persist in MongoDB and require MongoDB mode. Login rate limiting, server-side session-version revocation, the seeded-profile upsert/merge path, and the administrator-promotion script were removed. A per-identity interaction-ingestion cap (`src/lib/interactionCap.js`) replaces login rate limiting as the write-amplification control.
+
+Rationale: This is a classroom recommender-systems demo, not a production identity provider. Keeping scrypt hashing, signed HttpOnly sessions, exact-origin checks, server-derived ownership, bounded write validation, and guest-merge idempotency preserves the real authorization boundary. Removing the demo-account persistence shadowing (which silently reverted role changes) and the unused revocation machinery reduces the surface to what the course exercises.
+
+Accepted trade-off: logout clears the cookie but does not invalidate a stolen token server-side; such a token is valid until its eight-hour TTL. This is documented as a classroom-demo limitation.

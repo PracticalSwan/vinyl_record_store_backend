@@ -23,7 +23,7 @@ Read this file before every backend session.
 - Keep seed and MongoDB catalog behavior equivalent, including literal search, repeated facets, deterministic sorting, pagination, soft-delete exclusion, and public numeric IDs.
 - Derive ownership from `requireSession`, require the exact mutation origin, bound JSON and arrays, and preserve stable safe error codes.
 - Preserve interaction and guest-merge idempotency. Cart and account lifecycle operations must remain transaction-safe, and guest rating merges must use the newest valid timestamp.
-- Seeded identities are environment-backed and cannot be deleted. Registration creates customers only; administrator promotion remains an explicit local script action.
+- Seeded identities (admin and demo-customer) are environment-backed, have ephemeral preferences, and cannot be deleted. Registration creates customers only; the administrator role is env-only with no promotion path.
 - The seed migration reconciles catalog content only; it must never rewrite the `deletedAt` tombstone, so operator soft-deletes survive re-runs.
 - Run `npm test`, `npm run lint`, and `npm run build` after backend behavior changes.
 

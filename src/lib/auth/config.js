@@ -32,7 +32,6 @@ function seededAccount(environment, kind, publicId, role) {
     passwordSalt,
     role,
     active: true,
-    sessionVersion: 0,
     preferences: {
       favoriteGenres: [],
       dislikedGenres: [],

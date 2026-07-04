@@ -225,7 +225,6 @@ function parseEvent(event, { authenticated, now }) {
   if (event.type === "cart_quantity" && (!Number.isInteger(value) || value < 1 || value > 99)) {
     throw invalid("cart_quantity events require a value from 1 through 99.");
   }
-  if (!Number.isFinite(value)) value = null;
 
   const parsedProductId = event.productId === null || event.productId === undefined
     ? null

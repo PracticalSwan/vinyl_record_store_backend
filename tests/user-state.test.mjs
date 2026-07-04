@@ -71,6 +71,17 @@ test("preference writes cannot alter identity or role", async () => {
   assert.equal(result.role, "customer");
 });
 
+test("seeded accounts keep preferences ephemeral and skip persistence", async () => {
+  let persisted = false;
+  const users = {
+    updatePreferences: async () => { persisted = true; },
+  };
+  const seededUser = { ...user, seeded: true };
+  const result = await replacePreferences(seededUser, { favoriteGenres: ["Jazz"] }, { users });
+  assert.equal(persisted, false);
+  assert.deepEqual(result.preferences.favoriteGenres, ["Jazz"]);
+});
+
 test("interaction ingestion attaches authenticated ownership and strips anonymous identity", async () => {
   let stored;
   const repository = {

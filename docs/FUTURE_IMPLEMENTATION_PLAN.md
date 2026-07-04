@@ -83,7 +83,7 @@ The application must default to `CATALOG_DATA_SOURCE=seed`. Missing Atlas config
 
 | Collection | Purpose | Important fields and constraints |
 | --- | --- | --- |
-| `users` | Customer and administrator identity | `publicId`, normalized unique `username`, optional `displayName`, password hash and salt, `role`, embedded preferences, `active`, `sessionVersion`, timestamps. No email is required. |
+| `users` | Customer and administrator identity | `publicId`, normalized unique `username`, optional `displayName`, password hash and salt, `role`, embedded preferences, `active`, timestamps. No email is required. |
 | `vinylRecords` | Durable catalog | Internal `_id`, unique numeric `publicId`, unique stable `slug`, catalog metadata, price, currency, stock, `musicBrainzReleaseId`, artwork metadata, source/provenance, `deletedAt`, timestamps. |
 | `interactions` | Immutable user or anonymous events | Unique `eventId`, optional `userPublicId`, optional `anonymousId`, `sessionId`, type, product public ID, recommendation context, event time, received time, schema version. |
 | `wishlists` | One wishlist per user | Unique `userPublicId`, embedded unique product public IDs, timestamps. |
@@ -309,7 +309,7 @@ Included:
 - Signed, HttpOnly, time-limited session cookie.
 - Customer registration after the user repository is available.
 - `customer` and `admin` roles.
-- Login, logout, session restoration, route authorization, and safe rate limiting.
+- Login, logout, session restoration, route authorization, and per-identity interaction-ingestion bounding.
 
 Excluded:
 
@@ -327,7 +327,7 @@ Excluded:
 ### Registration After User Persistence
 
 - `POST /api/auth/register` accepts normalized username, password, and optional display name.
-- Registration creates only `customer` accounts. Administrator creation remains a local script or manual database operation.
+- Registration creates only `customer` accounts. The administrator role is environment-only (`AUTH_DEMO_ADMIN_*`); there is no creation or promotion path.
 - Use scrypt with a unique random salt through Node's cryptographic APIs. Store the parameters needed for future verification and upgrade.
 - No email is collected, reducing personal-data scope. Username uniqueness is case-insensitive.
 - Registration is available in explicit MongoDB mode and fails safely when persistence is unavailable.
@@ -337,21 +337,21 @@ Excluded:
 - `POST /api/auth/login`: verify credentials with a timing-safe comparison and issue the cookie.
 - `POST /api/auth/logout`: expire the cookie.
 - `GET /api/auth/session`: return `{ authenticated, user? }` with only public ID, username, display name, role, and onboarding status.
-- The signed payload contains only public user ID, role, issue/expiry times, and session version. It contains no password information or preferences.
+- The signed payload contains only public user ID, role, and issue/expiry times. It contains no password information, preferences, or session version.
 - Cookie defaults: `HttpOnly`, `SameSite=Lax`, `Path=/`, eight-hour maximum age, and `Secure` when HTTPS is used.
 - The frontend uses `credentials: "include"`. CORS allows credentials only for `FRONTEND_ORIGIN`.
-- Mutating routes validate the request origin. Login attempts receive a small per-identifier and per-client rate limit without logging submitted passwords.
-- After the user repository is active, protected writes reload the user or verify `sessionVersion` so disabled accounts and role changes take effect.
+- Mutating routes validate the request origin. Login uses a single generic failure message and runs a dummy hash for unknown usernames so response timing cannot enumerate accounts; no submitted password is logged.
+- Protected writes resolve the session subject from the signed token on every request, so disabled accounts (`active=false`) and role mismatches take effect without a server-side revocation list. Logout clears the cookie; stolen tokens live out their TTL (accepted classroom-demo trade-off).
 
 ### Implemented Files
 
-- `src/lib/auth/config.js`, `password.js`, `session.js`, `cookie.js`, `rateLimit.js`, and `requireSession.js` plus `src/lib/request.js`.
+- `src/lib/auth/config.js`, `password.js`, `session.js`, `cookie.js`, and `requireSession.js`; `src/lib/interactionCap.js`; plus `src/lib/request.js`.
 - `src/services/auth.js`, `userState.js`, and `account.js`.
 - `src/validation/auth.js`.
 - `src/app/api/auth/login/route.js`, `logout/route.js`, `session/route.js`, and `register/route.js`.
 - `src/lib/auth/requireSession.js` exports optional/required session and role guards for route handlers.
-- `scripts/create-password-hash.mjs` and `scripts/promote-admin.mjs`; scripts must never print secrets unnecessarily.
-- `tests/auth.test.mjs` plus frontend provider/browser coverage for cookies, expiry, tampering, roles, registration, restoration races, and rate limits.
+- `scripts/create-password-hash.mjs`; scripts must never print secrets unnecessarily.
+- `tests/auth.test.mjs` plus frontend provider/browser coverage for cookies, expiry, tampering, roles, registration, restoration races, and the interaction cap.
 
 ### Completed Implementation Phases
 

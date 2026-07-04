@@ -13,7 +13,7 @@ This Next.js service provides the demo catalog, explainable recommendations, sig
 - Optional MongoDB Atlas catalog persistence with strict models, repository adapters, conflict-safe seed migration, and index verification.
 - Username/password registration and login, seeded demo identities, signed HttpOnly session cookies, logout, session restoration, role checks, and account deletion.
 - Protected profile/preferences, wishlist, cart, rating, and idempotent guest-state merge APIs plus anonymous or authenticated interaction ingestion.
-- Exact-origin credentialed mutations, bounded JSON/validation, server-derived ownership, rate limiting, safe errors, and transaction-backed state changes.
+- Exact-origin credentialed mutations, bounded JSON/validation, server-derived ownership, a per-identity interaction-ingestion cap, safe errors, and transaction-backed state changes.
 - Automated tests for catalog, persistence, migration, authentication, write validation/state, recommender behavior, and metric sanity.
 
 When `MONGODB_URI` and `MONGODB_DB_NAME` are configured, the backend uses the Atlas catalog by default. Keep `CATALOG_DATA_SOURCE=mongodb` in the local environment to make that explicit; explicit MongoDB failures return a safe unavailable response instead of silently falling back to seed data. Demo orders, payments, public administrator writes, and measured real-user personalization remain unimplemented.
@@ -78,7 +78,7 @@ When you paste scrypt hashes into `.env.local`, escape each literal `$` as `\$` 
 
 Keep the real connection string only in ignored `.env.local`. Seed mode does not require Atlas configuration. MongoDB mode requires both MongoDB variables and a migrated catalog.
 
-Use `npm run auth:hash` to generate a scrypt hash/salt pair without echoing the password. Use `npm run auth:promote -- <username>` for a dry-run role preview and add `--apply` only for an intentional administrator promotion. Never commit plaintext passwords, hashes, salts, cookies, or `AUTH_SECRET`.
+Use `npm run auth:hash` to generate a scrypt hash/salt pair without echoing the password. The administrator role is environment-only (`AUTH_DEMO_ADMIN_*`); there is no promotion path or script. Never commit plaintext passwords, hashes, salts, cookies, or `AUTH_SECRET`.
 
 Use this guarded database workflow:
 
@@ -112,7 +112,7 @@ npm run build
 - `src/lib/recommender/`: scoring and evaluation helpers.
 - `src/lib/db/`: cached Atlas connection, data-source selection, and seed-migration planning.
 - `src/data/records.js`: approved demo catalog seed.
-- `scripts/`: MongoDB maintenance plus guarded password-hash and administrator-promotion commands.
+- `scripts/`: MongoDB maintenance plus the guarded password-hash command.
 - `tests/`: Node test runner suites.
 - `docs/`: current contracts, architecture, decisions, evaluation boundaries, and limitations.
 

@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { hashPassword, verifyPassword } from "../src/lib/auth/password.js";
 import { createSessionToken, verifySessionToken } from "../src/lib/auth/session.js";
+import { clearSessionCookie } from "../src/lib/auth/cookie.js";
 import { getOptionalSession, requireRole, requireSession } from "../src/lib/auth/requireSession.js";
-import { resetRateLimitsForTests } from "../src/lib/auth/rateLimit.js";
 import { login, register } from "../src/services/auth.js";
 import { parseLoginInput, parseRegistrationInput } from "../src/validation/auth.js";
 import { assertMutationOrigin, readJsonBody } from "../src/lib/request.js";
@@ -11,10 +11,20 @@ import { assertMutationOrigin, readJsonBody } from "../src/lib/request.js";
 const secret = "test-auth-secret-with-at-least-thirty-two-characters";
 const origin = "http://localhost:5173";
 
-function request({ cookie, client = "127.0.0.1" } = {}) {
-  const headers = new Headers({ origin, "x-forwarded-for": client });
+function request({ cookie } = {}) {
+  const headers = new Headers({ origin });
   if (cookie) headers.set("cookie", cookie);
   return new Request("http://localhost:3000/api/test", { headers });
+}
+
+function stubCookieResponse() {
+  const store = new Map();
+  return {
+    cookies: {
+      set(options) { store.set(options.name, options); },
+      get(name) { return store.get(name); },
+    },
+  };
 }
 
 test("scrypt password hashes verify without exposing the password", async () => {
@@ -25,23 +35,27 @@ test("scrypt password hashes verify without exposing the password", async () => 
   assert.equal(value.passwordHash.includes("correct horse"), false);
 });
 
+test("weak scrypt hashes are rejected at verification time", async () => {
+  const weakHash = `scrypt$2$1$1$32$${"00".repeat(32)}`;
+  assert.equal(await verifyPassword("anything", weakHash, "salt"), false);
+});
+
 test("session tokens reject tampering and expiration", () => {
   const environment = { AUTH_SECRET: secret };
-  const user = { publicId: "demo-customer", role: "customer", sessionVersion: 2 };
+  const user = { publicId: "demo-customer", role: "customer" };
   const token = createSessionToken(user, { environment, now: 1_000_000 });
   assert.equal(verifySessionToken(token, { environment, now: 1_000_000 }).sub, "demo-customer");
   assert.equal(verifySessionToken(`${token}x`, { environment, now: 1_000_000 }), null);
   assert.equal(verifySessionToken(token, { environment, now: 1_000_000 + (8 * 60 * 60 * 1000) }), null);
 });
 
-test("seeded login uses one generic failure and enforces rate limits", async () => {
-  resetRateLimitsForTests();
-  const password = await hashPassword("classroom customer password");
+test("seeded login succeeds and returns the generic error on a bad password", async () => {
+  const passwordFields = await hashPassword("classroom customer password");
   const environment = {
     AUTH_SECRET: secret,
     AUTH_DEMO_CUSTOMER_USERNAME: "listener",
-    AUTH_DEMO_CUSTOMER_PASSWORD_HASH: password.passwordHash,
-    AUTH_DEMO_CUSTOMER_PASSWORD_SALT: password.passwordSalt,
+    AUTH_DEMO_CUSTOMER_PASSWORD_HASH: passwordFields.passwordHash,
+    AUTH_DEMO_CUSTOMER_PASSWORD_SALT: passwordFields.passwordSalt,
   };
   let repositoryLookups = 0;
   const repository = {
@@ -51,27 +65,38 @@ test("seeded login uses one generic failure and enforces rate limits", async () 
     },
   };
   const valid = parseLoginInput({ username: "Listener", password: "classroom customer password" });
-  const result = await login(valid, request(), { environment, repository });
+  const result = await login(valid, { environment, repository });
   assert.equal(result.user.publicId, "demo-customer");
   assert.equal(result.user.role, "customer");
   assert.equal(repositoryLookups, 1);
 
   const invalid = parseLoginInput({ username: "listener", password: "incorrect password" });
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    await assert.rejects(
-      () => login(invalid, request({ client: "10.0.0.2" }), { environment, repository }),
-      (error) => error.code === "UNAUTHENTICATED" && error.message === "The username or password is incorrect.",
-    );
-  }
   await assert.rejects(
-    () => login(invalid, request({ client: "10.0.0.2" }), { environment, repository }),
-    (error) => error.code === "RATE_LIMITED" && error.status === 429,
+    () => login(invalid, { environment, repository }),
+    (error) => error.code === "UNAUTHENTICATED" && error.message === "The username or password is incorrect.",
   );
 });
 
-test("registration creates only a customer and rejects role injection", async () => {
+test("unknown usernames run a dummy hash and return the generic login error", async () => {
+  let dummyHashed = false;
+  const environment = { AUTH_SECRET: secret };
+  const repository = { findForAuthentication: async () => null };
+  const spyHash = async () => {
+    dummyHashed = true;
+    return { passwordHash: "scrypt$16384$8$1$64$dummy", passwordSalt: "dummy" };
+  };
+  const invalid = parseLoginInput({ username: "ghost", password: "no-such-account" });
+  await assert.rejects(
+    () => login(invalid, { environment, repository, hashPassword: spyHash }),
+    (error) => error.code === "UNAUTHENTICATED" && error.message === "The username or password is incorrect.",
+  );
+  assert.equal(dummyHashed, true);
+});
+
+test("registration creates only a customer, rejects role injection, and skips hashing for taken usernames", async () => {
   let created;
   const repository = {
+    findByNormalizedUsername: async () => null,
     create: async (value) => {
       created = value;
       return { ...value, preferences: {} };
@@ -91,16 +116,23 @@ test("registration creates only a customer and rejects role injection", async ()
     () => parseRegistrationInput({ ...body, role: "admin" }),
     /unsupported fields/,
   );
+
+  const taken = {
+    findByNormalizedUsername: async () => ({ publicId: "user-existing", normalizedUsername: "new_listener" }),
+  };
+  await assert.rejects(
+    () => register(body, { environment, repository: taken }),
+    (error) => error.code === "CONFLICT",
+  );
 });
 
-test("session resolution rejects missing, disabled, changed-role, and customer admin access", async () => {
+test("session resolution rejects missing, disabled, and changed-role tokens", async () => {
   const environment = { AUTH_SECRET: secret };
   const active = {
     publicId: "user-1",
     username: "listener",
     displayName: null,
     role: "customer",
-    sessionVersion: 0,
     active: true,
     preferences: {},
   };
@@ -122,6 +154,14 @@ test("session resolution rejects missing, disabled, changed-role, and customer a
     }),
     null,
   );
+});
+
+test("logout clears the session cookie with an expired maxAge", () => {
+  const response = stubCookieResponse();
+  clearSessionCookie(response, request());
+  const cookie = response.cookies.get("groovehaus_session");
+  assert.equal(cookie.value, "");
+  assert.equal(cookie.maxAge, 0);
 });
 
 test("mutation requests require the exact configured origin and bounded JSON", async () => {

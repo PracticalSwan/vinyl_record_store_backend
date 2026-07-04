@@ -23,10 +23,10 @@ function decodeHash(encoded) {
     prefix !== PREFIX
     || !value
     || !Object.values(parsed).every(Number.isInteger)
-    || parsed.N < 2
+    || parsed.N < PARAMETERS.N
     || parsed.N > 131_072
     || (parsed.N & (parsed.N - 1)) !== 0
-    || parsed.r < 1
+    || parsed.r < PARAMETERS.r
     || parsed.r > 32
     || parsed.p < 1
     || parsed.p > 16

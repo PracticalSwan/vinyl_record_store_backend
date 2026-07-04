@@ -38,30 +38,6 @@ export function createUserRepository(model = User, connect) {
         { returnDocument: "after", runValidators: true },
       ).lean().exec(),
     )),
-    upsertSeededProfile: (user, preferences) => run(async () => publicUser(
-      await model.findOneAndUpdate(
-        { publicId: user.publicId },
-        {
-          $set: {
-            username: user.username,
-            normalizedUsername: user.username.toLowerCase(),
-            displayName: user.displayName,
-            role: user.role,
-            active: true,
-            preferences,
-          },
-          $setOnInsert: { publicId: user.publicId, sessionVersion: 0 },
-        },
-        { returnDocument: "after", runValidators: true, upsert: true },
-      ).lean().exec(),
-    )),
-    setRole: (normalizedUsername, role) => run(async () => publicUser(
-      await model.findOneAndUpdate(
-        { normalizedUsername, active: true },
-        { $set: { role }, $inc: { sessionVersion: 1 } },
-        { returnDocument: "after", runValidators: true },
-      ).lean().exec(),
-    )),
   };
 }
 

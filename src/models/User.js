@@ -58,7 +58,6 @@ export const userSchema = new mongoose.Schema(
     role: { type: String, required: true, enum: USER_ROLES, default: "customer" },
     preferences: { type: preferencesSchema, default: () => ({}) },
     active: { type: Boolean, default: true },
-    sessionVersion: { type: Number, default: 0, min: 0, validate: Number.isInteger },
   },
   { ...schemaOptions, collection: "users" },
 );

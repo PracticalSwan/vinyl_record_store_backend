@@ -57,7 +57,7 @@ User IDs allow letters, numbers, underscores, and hyphens. Optional `limit` defa
 | `POST` | `/api/auth/logout` | Expire the session cookie. |
 | `GET` | `/api/auth/session` | Return `{ authenticated, user? }` without secret fields. |
 
-Passwords are 10 to 128 characters and use scrypt with a random salt. Login failures use one generic message and bounded rate limiting. Sessions are signed, HttpOnly, `SameSite=Lax`, eight hours long, and secure when configured for HTTPS. Registration always creates a `customer`; administrator promotion is never public.
+Passwords are 10 to 128 characters and use scrypt with a random salt. Login failures use one generic message and unknown usernames run a dummy hash to flatten response timing. Sessions are signed, HttpOnly, `SameSite=Lax`, eight hours long, and secure when configured for HTTPS. Registration always creates a `customer`; the administrator role is environment-only (`AUTH_DEMO_ADMIN_*`) and never selectable at registration. Interaction ingestion is bounded to 1 through 50 events per batch and capped per identity (120 events per minute) to prevent write amplification.
 
 ## Customer And Interaction Routes
 

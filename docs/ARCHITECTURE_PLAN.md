@@ -19,7 +19,7 @@ This document describes the implemented read and authenticated mutation service 
 - Repository layer: `src/repositories/`.
 - Persistence models: `src/models/`.
 - Validation layer: `src/validation/` plus bounded JSON/origin checks in `src/lib/request.js`.
-- Authentication layer: `src/lib/auth/` for scrypt, signed cookies, sessions, roles, and rate limiting.
+- Authentication layer: `src/lib/auth/` for scrypt, signed cookies, sessions, and roles; `src/lib/interactionCap.js` bounds interaction ingestion per identity.
 - Recommender layer: `src/lib/recommender/`.
 - Error/response helpers: `src/lib/errors.js` and `src/lib/http.js`.
 - Default data source: `src/data/records.js` through `seedCatalogRepository.js`.
@@ -37,4 +37,4 @@ This document describes the implemented read and authenticated mutation service 
 
 ## Security
 
-Inputs are bounded before repository work, regex metacharacters are escaped for MongoDB substring matching, ownership is server-derived, login failures are generic/rate-limited, and sessions are signed/HttpOnly. Public responses omit seed-only reasons, internal ObjectIds, password fields, and raw events. Unexpected failures return safe errors; credentials stay in ignored local environment files.
+Inputs are bounded before repository work, regex metacharacters are escaped for MongoDB substring matching, ownership is server-derived, login failures are generic with dummy-hash timing, interaction ingestion is per-identity capped, and sessions are signed/HttpOnly. Public responses omit seed-only reasons, internal ObjectIds, password fields, and raw events. Unexpected failures return safe errors; credentials stay in ignored local environment files.

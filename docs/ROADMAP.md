@@ -15,7 +15,7 @@ This file records current completion and deferred scope. It does not authorize c
 - CORS configuration for the separate Vite frontend.
 - Signed HttpOnly sessions, customer registration, seeded identities, logout/restoration, role checks, and account deletion.
 - Protected profile/preferences, wishlist, cart, ratings, idempotent guest merge, and anonymous/authenticated interaction ingestion.
-- Exact-origin credentialed CORS, bounded JSON/input, rate limits, server-derived ownership, safe errors, and transaction-backed consistency.
+- Exact-origin credentialed CORS, bounded JSON/input, a per-identity interaction-ingestion cap, server-derived ownership, safe errors, and transaction-backed consistency.
 - Catalog/recommender/auth/write behavior tests, metric sanity test, lint, and production build.
 - Current instructions, README, contracts, architecture, data, evaluation, risk, decision, and setup docs.
 

@@ -15,7 +15,6 @@
     "db:indexes": "node --env-file-if-exists=.env.local scripts/verify-indexes.mjs",
     "db:indexes:ensure": "node --env-file-if-exists=.env.local scripts/verify-indexes.mjs --ensure",
     "auth:hash": "node scripts/create-password-hash.mjs",
-    "auth:promote": "node --env-file-if-exists=.env.local scripts/promote-admin.mjs",
     "lint": "eslint",
     "test": "node --test"
   },
