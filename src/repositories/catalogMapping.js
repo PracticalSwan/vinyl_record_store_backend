@@ -2,9 +2,41 @@ const valueOf = (record) => (
   typeof record?.toObject === "function" ? record.toObject() : record
 );
 
+const approvedUrl = (value, hosts) => {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && hosts.includes(url.hostname.toLowerCase())
+      ? url.toString()
+      : null;
+  } catch {
+    return null;
+  }
+};
+
 export function toPublicProduct(record) {
   const value = valueOf(record);
   if (!value) return null;
+
+  const legacyUrl = value.imageUrl ?? value.artwork?.url ?? null;
+  const thumbnailUrl = approvedUrl(
+    value.artwork?.thumbnailUrl,
+    ["coverartarchive.org", "www.coverartarchive.org"],
+  );
+  const detailUrl = approvedUrl(
+    value.artwork?.detailUrl,
+    ["coverartarchive.org", "www.coverartarchive.org"],
+  );
+  const sourceUrl = approvedUrl(
+    value.artwork?.sourceUrl,
+    ["musicbrainz.org", "www.musicbrainz.org"],
+  );
+  const hasStructuredImage = Boolean(
+    thumbnailUrl
+    && detailUrl
+    && value.artwork?.source === "cover-art-archive"
+    && sourceUrl,
+  );
 
   return {
     id: value.publicId ?? value.id,
@@ -20,7 +52,13 @@ export function toPublicProduct(record) {
     pressing: value.pressing,
     description: value.description,
     currency: value.currency || "USD",
-    imageUrl: value.imageUrl ?? value.artwork?.url ?? null,
+    imageUrl: legacyUrl,
+    image: hasStructuredImage ? {
+      thumbnailUrl,
+      detailUrl,
+      source: value.artwork.source,
+      sourceUrl,
+    } : null,
   };
 }
 
@@ -54,7 +92,11 @@ export function toPersistenceProduct(record) {
     pressing: product.pressing,
     description: product.description,
     imageUrl: product.imageUrl,
+    musicBrainzReleaseId: record.musicBrainzReleaseId ?? null,
+    musicBrainzReleaseGroupId: record.musicBrainzReleaseGroupId ?? null,
+    artwork: record.artwork ? { ...record.artwork } : {},
     source: "demo-seed",
+    provenance: Array.isArray(record.provenance) ? record.provenance : [],
     deletedAt: null,
   };
 }

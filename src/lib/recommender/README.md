@@ -1,5 +1,5 @@
 # Recommender Library
 
-`contentBased.js` implements deterministic product, synthetic demo-profile, and cold-start ranking. `evaluate.js` contains pure top-k metric helpers.
+`contentBased.js` implements deterministic product, synthetic demo-profile, cold-start, and history-based offline ranking. `evaluationDataset.js` constructs final-state relevance and leakage-safe temporal splits. `offlineEvaluation.js` compares random, popularity, and content-based methods under the same subjects, candidates, and `k`. `evaluate.js` contains pure ranking and beyond-accuracy helpers.
 
-Do not report metric values without the leakage-safe protocol in `../../../docs/EVALUATION_PLAN.md`.
+Do not report metric values without the leakage-safe protocol and minimum evidence boundary in `../../../docs/EVALUATION_PLAN.md`.

@@ -6,10 +6,10 @@ The approved design and dependency gates are documented in `FUTURE_IMPLEMENTATIO
 
 ## Deferred
 
-- Build BFP-02 Part B offline evaluation dataset/baselines and optional demo-order history. Recommendation-request logging is already active.
+- Collect enough privacy-safe positive interaction history for the implemented BFP-02 evaluator to cross its evidence threshold; optional demo-order history remains separate.
 - Add password recovery or other identity features only if a later requirement explicitly accepts their privacy/security cost.
 - Add admin routes, deployment configuration, and observability.
-- Build a leakage-safe offline evaluation dataset and baseline comparison.
+- Re-run `npm run recommender:evaluate` when the retained dataset materially changes; do not add quality claims while its status is `insufficient-evidence`.
 
 Do not install packages or begin these changes solely because they appear here. Recheck current dependency versions and update decisions before future setup work.
 

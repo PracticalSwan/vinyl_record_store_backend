@@ -10,6 +10,7 @@ Read this file before every backend session.
 - The recommender is deterministic content-based logic for product similarity, a synthetic `demo-user`, and cold-start fallback.
 - Recommendation routes return server-generated request/list IDs. In MongoDB mode they log exactly what was served unless the usage-data header opts out; seed mode remains non-persistent.
 - Behavior tests prove implementation rules, not offline recommendation quality.
+- Catalog ingestion, backend-approved artwork, and the offline evaluation pipeline are implemented. The current evaluation output remains an evidence-bound non-conclusion.
 
 ## Working Rules
 
@@ -27,6 +28,9 @@ Read this file before every backend session.
 - Require complete request/list/version/mode/rank context for recommendation events. Keep request logs aligned to rendered surfaces and never trust a client-supplied authenticated owner.
 - Seeded identities (admin and demo-customer) are environment-backed, have ephemeral preferences, and cannot be deleted. Registration creates customers only; the administrator role is env-only with no promotion path.
 - The seed migration reconciles catalog content only; it must never rewrite the `deletedAt` tombstone, so operator soft-deletes survive re-runs.
+- Run catalog imports without `--apply` first. Keep batches atomic unless partial mode is explicitly justified, preserve source ownership and existing enrichment on seed re-runs, and treat supplied public-ID disagreement as a conflict.
+- Require MusicBrainz release or release-group identity before accepting artwork. External enrichment may fill missing genre/year/label but must never replace store price, stock, condition, or supplied metadata.
+- Pseudonymize evaluation subjects before dataset construction and keep generated reports aggregate-only. Below the minimum evidence boundary, report completeness and counts rather than metrics.
 - Run `npm test`, `npm run lint`, and `npm run build` after backend behavior changes.
 
 ## Safety

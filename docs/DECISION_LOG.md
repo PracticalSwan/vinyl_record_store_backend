@@ -44,7 +44,7 @@ Decision: Do not expose interaction, wishlist, cart, order, or recommendation-lo
 
 Rationale: Persistence models alone do not provide authorization, idempotency, privacy controls, or complete write-side consistency.
 
-Status update, 2026-07-05: BFP-04/BFP-03 satisfied the customer/event gate, and BFP-02 Part A added internal recommendation-request logging. Demo orders, BFP-02 Part B evaluation, and administrator catalog writes remain deferred.
+Status update, 2026-07-06: BFP-04/BFP-03 satisfied the customer/event gate, and both BFP-02 logging and evidence-gated offline evaluation are implemented. Demo orders and administrator catalog writes remain deferred.
 
 ## BDEC-006: Distinguish Behavior Tests From Quality Metrics
 
@@ -112,4 +112,20 @@ Date: 2026-07-05
 
 Decision: Generate request/list IDs on the server and, in MongoDB mode, persist the exact ordered recommendation output before returning it. Store scores, ranks, reasons, exclusions, mode, algorithm version, surface, safe subject, and 90-day expiry. Suppress persistence in seed mode or when the usage-data header opts out.
 
-Rationale: Interaction events are meaningful only when they can join the list actually served. Server-generated IDs and session-derived ownership prevent client forgery, while opt-out and TTL preserve the selected privacy boundary. Offline dataset construction and metrics remain a separate Part B task.
+Rationale: Interaction events are meaningful only when they can join the list actually served. Server-generated IDs and session-derived ownership prevent client forgery, while opt-out and TTL preserve the selected privacy boundary.
+
+## BDEC-014: Keep Catalog Import Preview-First And Source-Owned
+
+Date: 2026-07-06
+
+Decision: Accept bounded CSV/JSON through a no-write preview by default. Apply batches transactionally and atomically unless the operator explicitly selects partial mode. Treat source ownership, tombstones, ambiguous pressings, multiple matches, and supplied public-ID disagreement as conflicts. Seed migration does not manage external identifiers, artwork, or provenance.
+
+Rationale: Catalog maintenance must not silently overwrite another source, resurrect deleted products, erase enrichment, or turn a mistaken identity match into a destructive update. A reviewed action list and stable counter allocation make retries understandable and safe.
+
+## BDEC-015: Bind Artwork To Releases And Gate Offline Metrics
+
+Date: 2026-07-06
+
+Decision: Accept structured artwork only from approved hosts when its paths match a supplied or verified MusicBrainz release/release group, and generate retrieval/provenance metadata on the server. Build evaluation subjects under per-run pseudonyms and publish ranking metrics only with at least 20 eligible subjects and 5 final positive products per subject; otherwise publish aggregate completeness and an explicit non-conclusion.
+
+Rationale: Host allowlists alone cannot prove that a cover belongs to the imported record, and sparse behavioral data cannot support a defensible recommendation-quality claim. These boundaries make both provenance and evaluation claims auditable.

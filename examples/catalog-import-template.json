@@ -1,0 +1,22 @@
+{
+  "records": [
+    {
+      "publicId": null,
+      "title": "Example Album",
+      "artist": "Example Artist",
+      "genre": "Jazz",
+      "year": 2025,
+      "price": 29.99,
+      "currency": "USD",
+      "stock": "in",
+      "condition": "NM",
+      "label": "Example Label",
+      "format": "LP, 33 1/3 rpm",
+      "pressing": "2025 US pressing",
+      "description": "Store-authored description",
+      "source": "catalog-import",
+      "musicBrainzReleaseId": null,
+      "musicBrainzReleaseGroupId": null
+    }
+  ]
+}

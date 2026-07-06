@@ -18,7 +18,7 @@ The active seed in `src/data/records.js` contains:
 | `condition`, `format`, `pressing`, `description` | string | Display metadata. |
 | `reason` | string | Legacy seed fixture only; removed from public product responses. |
 
-Public products add `currency: "USD"` and `imageUrl: null`.
+Public products add `currency: "USD"`, the compatibility `imageUrl`, and a nullable structured `image` envelope. Imported MongoDB products may leave genre, year, label, pressing, and description unset; clients render explicit fallbacks.
 
 ## Current Synthetic Profile
 
@@ -28,8 +28,8 @@ The recommender contains one code-defined `demo-user` profile with purchased IDs
 
 | Collection | Current model boundary |
 | --- | --- |
-| `users` | Stable public identity, normalized unique username, role, versioned preferences, active state, session version, and non-selected password fields. |
-| `vinylRecords` | Stable numeric public ID and slug, catalog metadata, provenance/artwork fields, stock, and soft deletion. |
+| `users` | Stable public identity, normalized unique username, role, versioned preferences, active state, and non-selected password fields. |
+| `vinylRecords` | Stable numeric public ID and slug, required store fields, nullable descriptive metadata, MusicBrainz identifiers, release-bound artwork/provenance, stock, source ownership, and soft deletion. |
 | `interactions` | Unique event identity, optional user or anonymous subject, product/recommendation context, event times, and 90-day expiry. |
 | `wishlists`, `carts`, `ratings` | One list per user, unique cart/list product IDs, and one integer rating per user/product. |
 | `guestMerges` | Unique user/merge receipt, stable input hash, and original merge result for retry-safe guest-state migration. |
@@ -44,7 +44,9 @@ Schemas use strict unknown-field rejection, timestamps, bounded fields, enum val
 
 `npm run db:seed` plans creates, updates, unchanged records, and conflicts without writing. `npm run db:seed:apply` first creates the catalog indexes, refuses conflicts, performs only seed-owned creates/updates in a transaction, and never deletes records. `npm run db:indexes` verifies all declared indexes; `npm run db:indexes:ensure` creates declared collections and indexes additively before verification.
 
-Authentication, interaction ingestion, preferences, wishlist/cart state, ratings, guest-merge receipts, recommendation-request logging, and registered-customer deletion are active. Ratings create safe history events; account deletion transactionally removes the customer and owned state, interactions, logs, and merge receipts. Demo orders, BFP-02 Part B evaluation outputs, and administrator catalog mutations remain deferred.
+Authentication, interaction ingestion, preferences, wishlist/cart state, ratings, guest-merge receipts, recommendation-request logging, catalog import, offline evaluation outputs, and registered-customer deletion are active. Ratings create safe history events; account deletion transactionally removes the customer and owned state, interactions, logs, and merge receipts. Demo orders and administrator catalog mutations remain deferred.
+
+Catalog import is separate from the seed migration. Seed reconciliation does not manage MusicBrainz IDs, artwork, or provenance, so a seed re-run cannot erase enrichment. Import batches validate before planning, preserve source ownership, allocate numeric IDs atomically, and default to all-or-nothing writes.
 
 ## Privacy Boundary
 

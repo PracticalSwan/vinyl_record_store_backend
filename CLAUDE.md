@@ -14,17 +14,20 @@ The backend is an implemented integration and authenticated customer-state servi
 - Mongoose models, persistence repositories, signed sessions, authenticated customer writes, an idempotent seed migration, and live index verification are implemented.
 - Deterministic content-based recommendations with explanations, stock preference, exclusions, diversity limits, and an algorithm version.
 - MongoDB-mode recommendation request logging records exact ordered lists, reasons, surfaces, modes, versions, exclusions, and 90-day expiry; seed mode and usage opt-out suppress it.
-- Automated catalog, persistence, migration, authentication, write-state, recommender-behavior, and metric sanity tests.
+- Preview-first CSV/JSON catalog ingestion supports atomic apply, source ownership, duplicate/conflict detection, optional MusicBrainz/Cover Art Archive enrichment, release-bound artwork, local cache, and field provenance.
+- The offline evaluator builds pseudonymized leakage-safe datasets, compares random/popularity/content-based rankings only above the evidence threshold, and otherwise writes aggregate counts and captured-field coverage without quality claims.
+- Automated catalog, import, artwork, persistence, migration, authentication, write-state, recommender-behavior, evaluation, and metric sanity tests.
 
 ## Folder Boundary
 
 - `src/app/api/` owns route handlers.
-- `src/services/` owns catalog, authentication, customer-state, and account-lifecycle business logic.
+- `src/services/` owns catalog, import, authentication, customer-state, and account-lifecycle business logic.
 - `src/repositories/` owns seed and MongoDB data access.
 - `src/models/` owns strict Mongoose schemas and indexes.
 - `src/validation/` owns catalog, authentication, and mutation validation.
 - `src/lib/auth/` owns password, signed-session, cookie, and authorization helpers; `src/lib/interactionCap.js` bounds interaction ingestion per identity.
-- `src/lib/recommender/` owns scoring, explanations, diversity, and evaluation helpers.
+- `src/lib/catalog/` and `src/lib/external/` own import parsing/validation and rate-limited metadata clients.
+- `src/lib/recommender/` owns scoring, explanations, diversity, dataset construction, and evaluation helpers.
 - `src/data/records.js` is the approved catalog seed and seed-mode data source.
 - `src/lib/db/` owns connection, data-source selection, and migration support.
 - `../vinyl_record_store_frontend/` owns all customer-facing UI and client state.
@@ -48,12 +51,14 @@ Read `../AGENT_MEMORY.md` at session start and append a dated entry at session e
 - Exclude source and known-profile records from recommendations, prefer available records, and keep explanations tied to actual matching fields.
 - Label user results as `demo-profile` or `cold-start`; never imply real personalization.
 - Do not report recommendation quality metrics without leakage-safe held-out interactions and baselines. Behavior tests are not offline quality findings.
+- Below 20 eligible subjects with 5 final positive products each, the evaluator must emit an explicit non-conclusion with aggregate captured-field coverage only.
 - Use the project `recommender-evaluation` skill whenever computing or reporting ranking or beyond-accuracy metrics.
 
 ## Integration And Environment
 
 - `FRONTEND_ORIGIN` controls API CORS and defaults to `http://localhost:5173`.
 - `RECOMMENDER_ALGORITHM_VERSION` overrides the default `content-demo-v1` label.
+- `MUSICBRAINZ_USER_AGENT` identifies catalog enrichment requests. It must contain an application name, version, and contact.
 - `CATALOG_DATA_SOURCE` defaults to `seed`; set it to `mongodb` only when Atlas configuration and migrated data are ready.
 - `MONGODB_URI` and `MONGODB_DB_NAME` configure the server-only Atlas connection through an ignored `.env.local`. Explicit MongoDB mode never silently falls back to seed data.
 - `AUTH_SECRET` signs eight-hour HttpOnly sessions. The administrator account and the seed-catalog-mode demo customer are environment-backed (`AUTH_DEMO_ADMIN_*` / `AUTH_DEMO_CUSTOMER_*`) with ephemeral preferences; three showcase demo customers are seeded into MongoDB by `db:seed:users` (`src/data/demoUsers.js`) and their usernames are reserved. The admin role is env-only with no promotion path. Registered customers persist in MongoDB and require MongoDB mode.

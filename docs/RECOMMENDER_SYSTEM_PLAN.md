@@ -40,4 +40,4 @@ Every recommendation response receives server-generated `requestId` and `listId`
 
 ## Deferred Methods
 
-Collaborative filtering, matrix factorization, hybrid ranking, learned weights, and popularity signals remain deferred. Interaction ingestion, request logging, and frontend capture are active; BFP-02 Part B dataset construction and offline evaluation remain deferred until the evidence threshold is met.
+Collaborative filtering, matrix factorization, hybrid ranking, learned weights, and production popularity ranking remain deferred. Interaction ingestion, request logging, frontend capture, and BFP-02 Part B evaluation are active. Popularity exists only as a fair offline baseline; the current dataset is below the evidence threshold, so no quality metrics are reported.

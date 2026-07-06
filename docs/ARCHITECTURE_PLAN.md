@@ -7,7 +7,7 @@ This document describes the implemented read and authenticated mutation service 
 1. A Next.js route handler receives the request.
 2. Catalog/auth/write validation bounds route parameters, query strings, JSON size, allowed body keys, arrays, timestamps, and controlled values.
 3. Authentication verifies scrypt credentials and a signed session cookie; protected routes reload the subject and derive ownership from that session.
-4. Catalog, recommendation-serving/logging, auth, state, or account services apply business rules and call the appropriate repository.
+4. Catalog, import, recommendation-serving/logging, evaluation, auth, state, or account services apply business rules and call the appropriate repository.
 5. Repositories normalize catalog documents, execute state mutations, preserve idempotency receipts, and use transactions for multi-document consistency.
 6. `src/lib/http.js` produces the common success or error envelope.
 7. `next.config.mjs` adds exact-origin credentialed CORS; mutation handlers also verify the request origin.
@@ -21,6 +21,7 @@ This document describes the implemented read and authenticated mutation service 
 - Validation layer: `src/validation/` plus bounded JSON/origin checks in `src/lib/request.js`.
 - Authentication layer: `src/lib/auth/` for scrypt, signed cookies, sessions, and roles; `src/lib/interactionCap.js` bounds interaction ingestion per identity.
 - Recommender layer: `src/lib/recommender/`.
+- Catalog ingestion layer: `src/lib/catalog/`, `src/lib/external/`, `src/services/catalogImport.js`, and the preview/apply command.
 - Error/response helpers: `src/lib/errors.js` and `src/lib/http.js`.
 - Default data source: `src/data/records.js` through `seedCatalogRepository.js`.
 - Optional data source: Atlas through `mongoCatalogRepository.js` and `src/lib/db/mongodb.js`.
@@ -35,6 +36,7 @@ This document describes the implemented read and authenticated mutation service 
 - The default allowed frontend origin is `http://localhost:5173`; mutations require that exact origin and use credentialed requests.
 - Registered customer state requires MongoDB mode. Seeded identities can authenticate from environment configuration and store preferences/state when persistence is available.
 - Recommendation responses always receive request/list IDs. MongoDB mode logs a tracking-enabled served list before response; seed mode and usage opt-out skip persistence.
+- Offline evaluation is a command path, not a request route. It pseudonymizes subjects before dataset construction and emits only aggregate reports after enforcing the evidence gate.
 
 ## Security
 

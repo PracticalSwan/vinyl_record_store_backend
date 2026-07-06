@@ -22,6 +22,25 @@ test("vinyl record model accepts the approved seed shape and rejects unknown fie
   );
 });
 
+test("vinyl record model rejects unapproved structured artwork and malformed MusicBrainz IDs", async () => {
+  const product = new VinylRecord({
+    ...toPersistenceProduct(records[0]),
+    musicBrainzReleaseId: "not-an-mbid",
+    artwork: {
+      thumbnailUrl: "https://images.example.com/cover.jpg",
+      detailUrl: "https://images.example.com/cover-large.jpg",
+      source: "cover-art-archive",
+      sourceUrl: "https://musicbrainz.org/release/example",
+    },
+  });
+  await assert.rejects(
+    () => product.validate(),
+    (error) => error.name === "ValidationError"
+      && Boolean(error.errors.musicBrainzReleaseId)
+      && Boolean(error.errors["artwork.thumbnailUrl"]),
+  );
+});
+
 test("user secrets are excluded from default selections", () => {
   assert.equal(User.schema.path("passwordHash").options.select, false);
   assert.equal(User.schema.path("passwordSalt").options.select, false);

@@ -25,7 +25,7 @@ Query parameters:
 
 `q`, `artist`, and `label` use case-insensitive literal substring matching. Repeated values use OR semantics within a facet and different facets use AND semantics. Repeated controlled facets accept at most 20 values and reject unsupported values. Sorts use the stable numeric product ID as their final tie-breaker.
 
-Response: `{ data: { items }, meta: { page, limit, total, totalPages, sort, facets } }`. Facets describe the full active catalog and include genre, era, condition, stock counts, and the catalog price range.
+Response: `{ data: { items }, meta: { page, limit, total, totalPages, sort, facets } }`. Facets describe the full active catalog and include genre, era, condition, stock counts, and the catalog price range. A product may include `image: { thumbnailUrl, detailUrl, source, sourceUrl }` only when the backend has a complete approved Cover Art Archive mapping; `imageUrl` remains the compatibility URL and both are `null` when unresolved.
 
 ### `GET /api/products/:id`
 
@@ -79,9 +79,15 @@ Passwords are 10 to 128 characters and use scrypt with a random salt. Login fail
 
 Ownership comes only from the verified session; client-supplied user IDs are rejected as unknown fields. Interactions require stable unique event IDs, a controlled source/surface/type, a valid retention-window timestamp, and an anonymous ID only when no session exists. Merge retries return the original receipt, cart quantities are capped at 99, unavailable products produce warnings, and the newest rating timestamp wins.
 
+## Internal Operator Commands
+
+`npm run catalog:import -- --input <file>` previews a CSV/JSON import without writes. Explicit `--dry-run` is equivalent; `--apply` performs the reviewed atomic batch and `--allow-partial` is valid only with apply. Optional `--enrich` uses the configured MusicBrainz User-Agent, a one-request-per-second client, local cache, exact-match checks, and Cover Art Archive provenance.
+
+`npm run recommender:evaluate` reads retained interactions and recommendation logs, pseudonymizes subjects with a per-run salt, enforces the minimum-evidence boundary, and writes aggregate-only output under `reports/recommender/`. It is not a public API route.
+
 ## Deferred Routes
 
-Demo-order and administrator catalog routes are not implemented. Recommendation-request logging is an internal side effect of the implemented recommendation GET routes, not a public mutation route. BFP-02 Part B offline dataset/report commands remain deferred.
+Demo-order and administrator catalog routes are not implemented. Recommendation-request logging is an internal side effect of the implemented recommendation GET routes, not a public mutation route.
 
 ## CORS
 

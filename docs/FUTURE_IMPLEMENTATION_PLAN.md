@@ -1,6 +1,6 @@
 # Backend Future Implementation Plan
 
-Status: BFP-01/03/04, BFP-02 Part A, and the backend contracts for FFP-01/02/03/05 are complete. BFP-02 Part B and the remaining plans are future work only.
+Status: BFP-01/03/04/06, both parts of BFP-02, and the backend contracts for FFP-01/02/03/05/06 are complete. BFP-05 remains on hold; BFP-07 and later plans remain future work.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
@@ -22,11 +22,11 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 | ID | Plan | Status | Main Gate |
 | --- | --- | --- | --- |
 | BFP-01 | MongoDB persistence, schemas, indexes, and seed migration | Completed 2026-07-03 | Seed remains the default; explicit MongoDB mode, models, repositories, migration, parity checks, and live indexes are verified. |
-| BFP-02 | Recommendation logging and offline evaluation dataset | Part A completed 2026-07-05 | Exact request logging is active; Part B waits for sufficient persisted interactions. |
+| BFP-02 | Recommendation logging and offline evaluation dataset | Completed 2026-07-06 | The pipeline is active and evidence-gated; the current report is `insufficient-evidence`. |
 | BFP-03 | Write API contracts and implementation | Completed 2026-07-04 | Customer/event routes are implemented; optional demo orders and administrator writes remain in BFP-08/BFP-07 scope. |
 | BFP-04 | Simple authentication, registration, and authorization | Completed 2026-07-04 | Registered and seeded identities use signed server sessions and role checks. |
 | BFP-05 | Recommender algorithm selection | On hold | User will choose the future recommender method. |
-| BFP-06 | Catalog ingestion and metadata quality | Planned | The MongoDB product repository gate is complete; validated preview/apply and provenance work remain. |
+| BFP-06 | Catalog ingestion and metadata quality | Completed 2026-07-06 | Preview/apply, source/conflict rules, enrichment, artwork, caching, and provenance are verified. |
 | BFP-07 | Admin mode backend | Planned | Requires authentication, authorization, persistence, and product writes. |
 
 ## Approved Cross-Repository Implementation Order
@@ -44,9 +44,9 @@ The first nine milestones are complete. Implement the remaining plans in this or
 | 7 | FFP-02: onboarding and preferences | Completed 2026-07-05. |
 | 8 | BFP-02 Part A: recommendation-request logging | Completed 2026-07-05 with exact served-list persistence. |
 | 9 | FFP-01: recommendation interaction analytics | Completed 2026-07-05 with privacy-controlled attributed events. |
-| 10 | BFP-06: catalog ingestion and metadata quality | Add validated preview/apply imports and approved metadata enrichment. |
-| 11 | FFP-06: artwork and image handling | Consume only backend-approved artwork mappings with resilient fallbacks. |
-| 12 | BFP-02 Part B: offline evaluation dataset and benchmark | Evaluate only after the minimum interaction threshold and leakage-safe split are available. |
+| 10 | BFP-06: catalog ingestion and metadata quality | Completed 2026-07-06 with validated preview/apply imports and approved metadata enrichment. |
+| 11 | FFP-06: artwork and image handling | Completed 2026-07-06 with backend-approved mappings and resilient frontend fallbacks. |
+| 12 | BFP-02 Part B: offline evaluation dataset and benchmark | Completed 2026-07-06; the pipeline correctly reports insufficient evidence without metrics. |
 | 13 | BFP-07, then FFP-07: integrated admin mode | Implement protected backend administration before exposing its frontend workspace. |
 | 14 | FFP-08: simulated checkout and order demonstration | Add the low-risk classroom flow last, after catalog, state, identity, and testing are stable. |
 
@@ -150,7 +150,7 @@ All BFP-01 checks below passed on 2026-07-03:
 
 This plan defines the evidence pipeline required before the project reports recommendation quality.
 
-Status: Part A recommendation-request logging completed and verified on 2026-07-05. Part B dataset construction, baselines, and reporting remain deferred until the minimum evidence boundary is met.
+Status: Part A recommendation-request logging completed on 2026-07-05. Part B dataset construction, baselines, evidence gating, and aggregate reporting completed and verified on 2026-07-06. The current data remains below the quality-reporting threshold.
 
 ### Part A Completion
 
@@ -198,14 +198,14 @@ Demo checkout completion can be reported as a funnel event, but it must not be d
 - Report NDCG@10, MAP@10, HitRate@10, catalog coverage, and novelty. Precision@10, Recall@10, MRR, diversity, and personalization may be added when their inputs are valid.
 - The ideal-order NDCG sanity case must equal 1.0.
 
-### Proposed Files And Outputs
+### Implemented Files And Outputs
 
-- Extend `src/lib/recommender/evaluate.js` only with pure metric helpers and dataset-independent validation.
-- Add `src/lib/recommender/evaluationDataset.js` for relevance construction and leakage checks.
-- Add `scripts/evaluate-recommender.mjs` as the only report-generating command.
-- Add `tests/evaluation-dataset.test.mjs` and extend metric sanity tests.
-- Write generated results under `reports/recommender/<date>-<algorithm-version>/` as JSON inputs/outputs plus a short Markdown interpretation.
-- Generated reports must contain no username, anonymous browser ID, session ID, or raw interaction row.
+- `src/lib/recommender/evaluate.js` contains pure ranking and beyond-accuracy metric helpers with bounded inputs.
+- `src/lib/recommender/evaluationDataset.js` constructs final-state relevance, evidence counts, temporal splits, and leakage checks.
+- `src/repositories/evaluationRepository.js` selects the bounded window and pseudonymizes subjects immediately with a per-run HMAC salt.
+- `scripts/evaluate-recommender.mjs` is the only report-generating command and writes aggregate JSON/Markdown under `reports/recommender/<date>-<algorithm-version>/`.
+- `tests/evaluation-dataset.test.mjs` and `tests/offline-evaluation.test.mjs` cover relevance, splitting, privacy, determinism, baselines, metrics, and refusal below the evidence boundary.
+- Generated reports contain no username, anonymous browser ID, session ID, raw subject ID, or raw interaction row.
 
 ### Implementation Phases
 
@@ -415,6 +415,8 @@ Decision package required to reopen the plan:
 
 This plan defines how catalog data enters the system and how source quality remains reviewable.
 
+Status: completed and verified on 2026-07-06.
+
 ### Goal
 
 Replace manual source edits with a controlled import pipeline while keeping store-specific data authoritative and respecting source licensing.
@@ -447,15 +449,15 @@ Validation includes:
 - Require an explicit release or release-group match before accepting artwork. Ambiguous matches remain unresolved for administrator review.
 - Store external URLs and source metadata, not image binaries in MongoDB.
 - Preserve placeholders when artwork is missing, rejected, or broken.
-- Review the official terms and API behavior again when implementation starts.
+- The official API behavior and rate-limit guidance were reviewed during implementation; recheck them before future client changes.
 
-### Proposed Files
+### Implemented Files
 
 - `src/lib/catalog/normalize.js`, `validateImport.js`, and `deduplicate.js`.
 - `src/lib/external/musicBrainzClient.js` and `coverArtArchiveClient.js`.
 - `src/services/catalogImport.js`.
 - `scripts/import-catalog.mjs` supporting `--dry-run`, `--input`, and explicit `--apply`.
-- `tests/catalog-import.test.mjs` with malformed, duplicate, ambiguous, partial-failure, and external-service-unavailable cases.
+- `tests/catalog-import.test.mjs` with malformed, duplicate, ambiguous, atomic-rollback, and external-service-unavailable cases.
 
 ### Implementation Phases
 

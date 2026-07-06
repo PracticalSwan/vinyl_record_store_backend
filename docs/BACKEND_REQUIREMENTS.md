@@ -1,6 +1,6 @@
 # Backend Requirements
 
-Requirement status reflects the integrated academic demo as of 2026-07-04.
+Requirement status reflects the integrated academic demo as of 2026-07-06.
 
 ## Requirement Status
 
@@ -19,6 +19,8 @@ Requirement status reflects the integrated academic demo as of 2026-07-04.
 | BR-011 | Optional MongoDB catalog persistence. | Implemented | Explicit data-source selection, strict models, repository parity, conflict-safe seed migration, and index verification. |
 | BR-012 | Authentication and authorization. | Implemented | Registration, seeded/registered login, signed HttpOnly sessions, logout, restoration, role checks, and account deletion. |
 | BR-013 | Preferences and ratings. | Implemented | Validated preference replacement and current rating/history mutation routes. |
+| BR-014 | Controlled catalog ingestion and artwork. | Implemented | Preview/apply CSV/JSON import, source/conflict safeguards, verified enrichment, provenance, and structured public artwork. |
+| BR-015 | Offline recommender evaluation. | Implemented | Pseudonymized dataset, evidence gate, leakage-safe split, matched baselines, and aggregate-only reporting. |
 
 ## Non-Functional Requirements
 
@@ -30,4 +32,4 @@ Requirement status reflects the integrated academic demo as of 2026-07-04.
 
 ## Success Boundary
 
-The frontend consumes stable repository-backed reads, signed sessions, protected customer-state mutations, recommendation attribution, and interaction ingestion. Guest state is session-only and authenticated state is account-backed. The project does not claim order commerce or measured recommendation quality.
+The frontend consumes stable repository-backed reads, signed sessions, protected customer-state mutations, recommendation attribution, interaction ingestion, and backend-approved artwork. Guest state is session-only and authenticated state is account-backed. The evaluator is operational, but its current report is `insufficient-evidence`; the project does not claim order commerce or measured recommendation quality.

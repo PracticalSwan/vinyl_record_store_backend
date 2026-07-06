@@ -1,0 +1,2 @@
+publicId,title,artist,genre,year,price,currency,stock,condition,label,format,pressing,description,source,musicBrainzReleaseId,musicBrainzReleaseGroupId
+,Example Album,Example Artist,Jazz,2025,29.99,USD,in,NM,Example Label,"LP, 33 1/3 rpm",2025 US pressing,Store-authored description,catalog-import,,

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { getProduct, listProducts } from "../src/services/catalog.js";
+import { toPublicProduct } from "../src/repositories/catalogMapping.js";
 
 test("catalog filters by genre and stock", async () => {
   const params = new URLSearchParams({ genre: "Jazz", inStock: "true", limit: "100" });
@@ -15,6 +16,27 @@ test("product detail returns the public API shape", async () => {
   assert.equal(product.title, "Kind of Blue");
   assert.equal(product.currency, "USD");
   assert.equal("reason" in product, false);
+  assert.equal(product.image, null);
+});
+
+test("public products expose only a complete structured artwork mapping", () => {
+  const product = toPublicProduct({
+    publicId: 1,
+    title: "Kind of Blue",
+    artist: "Miles Davis",
+    artwork: {
+      thumbnailUrl: "https://coverartarchive.org/release/test/cover-500.jpg",
+      detailUrl: "https://coverartarchive.org/release/test/cover-1200.jpg",
+      source: "cover-art-archive",
+      sourceUrl: "https://musicbrainz.org/release/test",
+    },
+  });
+  assert.deepEqual(product.image, {
+    thumbnailUrl: "https://coverartarchive.org/release/test/cover-500.jpg",
+    detailUrl: "https://coverartarchive.org/release/test/cover-1200.jpg",
+    source: "cover-art-archive",
+    sourceUrl: "https://musicbrainz.org/release/test",
+  });
 });
 
 test("catalog rejects unsupported era filters", async () => {

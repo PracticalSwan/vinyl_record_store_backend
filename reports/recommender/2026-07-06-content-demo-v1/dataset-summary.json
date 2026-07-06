@@ -1,0 +1,143 @@
+{
+  "requestedWindow": {
+    "from": "2026-04-07T16:49:18.661Z",
+    "to": "2026-07-06T16:49:18.661Z"
+  },
+  "observedWindow": {
+    "from": "2026-07-04T12:40:52.691Z",
+    "to": "2026-07-06T16:25:05.635Z"
+  },
+  "counts": {
+    "interactions": 559,
+    "subjectsObserved": 168,
+    "eligibleSubjects": 0,
+    "positiveEvents": 47,
+    "products": 115,
+    "duplicateEvents": 0,
+    "outOfUniverseEvents": 3
+  },
+  "minimumEvidence": {
+    "subjects": 20,
+    "positiveEventsPerSubject": 5
+  },
+  "capturedFieldCoverage": {
+    "interactions": [
+      {
+        "field": "event ID",
+        "present": 559,
+        "total": 559,
+        "rate": 1
+      },
+      {
+        "field": "subject",
+        "present": 559,
+        "total": 559,
+        "rate": 1
+      },
+      {
+        "field": "type",
+        "present": 559,
+        "total": 559,
+        "rate": 1
+      },
+      {
+        "field": "product public ID",
+        "present": 437,
+        "total": 559,
+        "rate": 0.7818
+      },
+      {
+        "field": "value",
+        "present": 155,
+        "total": 559,
+        "rate": 0.2773
+      },
+      {
+        "field": "source",
+        "present": 559,
+        "total": 559,
+        "rate": 1
+      },
+      {
+        "field": "surface",
+        "present": 559,
+        "total": 559,
+        "rate": 1
+      },
+      {
+        "field": "recommendation request ID",
+        "present": 138,
+        "total": 559,
+        "rate": 0.2469
+      },
+      {
+        "field": "recommendation rank",
+        "present": 138,
+        "total": 559,
+        "rate": 0.2469
+      },
+      {
+        "field": "occurred at",
+        "present": 559,
+        "total": 559,
+        "rate": 1
+      }
+    ],
+    "recommendationLogs": [
+      {
+        "field": "request ID",
+        "present": 273,
+        "total": 273,
+        "rate": 1
+      },
+      {
+        "field": "list ID",
+        "present": 273,
+        "total": 273,
+        "rate": 1
+      },
+      {
+        "field": "algorithm version",
+        "present": 273,
+        "total": 273,
+        "rate": 1
+      },
+      {
+        "field": "mode",
+        "present": 273,
+        "total": 273,
+        "rate": 1
+      },
+      {
+        "field": "surface",
+        "present": 273,
+        "total": 273,
+        "rate": 1
+      },
+      {
+        "field": "items",
+        "present": 273,
+        "total": 273,
+        "rate": 1
+      },
+      {
+        "field": "served at",
+        "present": 273,
+        "total": 273,
+        "rate": 1
+      }
+    ]
+  },
+  "recommendationVersions": [
+    {
+      "algorithmVersion": "content-demo-v1",
+      "mode": "demo-profile",
+      "requests": 220
+    },
+    {
+      "algorithmVersion": "content-demo-v1",
+      "mode": "content-similarity",
+      "requests": 53
+    }
+  ]
+}

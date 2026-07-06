@@ -19,7 +19,7 @@ const DEMO_PROFILE = {
   favoriteGenres: ["Jazz", "Soul", "Electronic", "Folk"],
 };
 
-const era = (year) => Math.floor(year / 10) * 10;
+const era = (year) => Number.isInteger(year) ? Math.floor(year / 10) * 10 : null;
 
 function compareProducts(source, candidate) {
   let score = 0;
@@ -29,15 +29,15 @@ function compareProducts(source, candidate) {
     score += SCORE.sameArtist;
     reasons.push(`Same artist as ${source.title}.`);
   }
-  if (source.genre === candidate.genre) {
+  if (source.genre && source.genre === candidate.genre) {
     score += SCORE.sameGenre;
     reasons.push(`Shares the ${source.genre} genre.`);
   }
-  if (era(source.year) === era(candidate.year)) {
+  if (era(source.year) !== null && era(source.year) === era(candidate.year)) {
     score += SCORE.sameDecade;
     reasons.push(`Released in the same decade as ${source.title}.`);
   }
-  if (source.label === candidate.label) {
+  if (source.label && source.label === candidate.label) {
     score += SCORE.sameLabel;
     reasons.push(`Released by ${source.label}.`);
   }
@@ -59,6 +59,24 @@ function diversify(scored, limit) {
   }
 
   return selected.map((item, index) => ({ ...item, rank: index + 1 }));
+}
+
+export function rankCatalogFromHistory(records, trainingProductIds, limit = 10) {
+  const sources = records.filter((record) => trainingProductIds.has(record.id));
+  const scored = records
+    .filter((candidate) => !trainingProductIds.has(candidate.id) && candidate.stock !== "out")
+    .map((candidate) => {
+      let score = 0;
+      for (const source of sources) score += compareProducts(source, candidate).score;
+      return {
+        product: candidate,
+        score,
+        reasons: [],
+        algorithmVersion: ALGORITHM_VERSION,
+      };
+    })
+    .sort((a, b) => b.score - a.score || a.product.id - b.product.id);
+  return diversify(scored, limit).map((item) => item.product.id);
 }
 
 export async function recommendForProduct(
@@ -99,7 +117,7 @@ function genericRecommendations(records, limit) {
       reasons: ["Available now in the demo catalog."],
       algorithmVersion: ALGORITHM_VERSION,
     }))
-    .sort((a, b) => b.product.year - a.product.year || a.product.title.localeCompare(b.product.title));
+    .sort((a, b) => (b.product.year || 0) - (a.product.year || 0) || a.product.title.localeCompare(b.product.title));
 
   return diversify(scored, limit);
 }
