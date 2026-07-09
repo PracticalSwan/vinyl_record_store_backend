@@ -1,6 +1,6 @@
 import { records } from "../data/records.js";
 import { PRODUCT_CONDITIONS, PRODUCT_GENRES, PRODUCT_STOCK_LEVELS } from "../models/constants.js";
-import { toPublicProduct } from "./catalogMapping.js";
+import { toAdminProduct, toPublicProduct } from "./catalogMapping.js";
 
 const text = (value) => String(value || "").trim().toLowerCase();
 const CURRENT_CENTURY_START = 2000;
@@ -89,5 +89,37 @@ export const seedCatalogRepository = {
       .map(toPublicProduct)
       .sort((a, b) => a.id - b.id)
       .slice(0, MAX_RECOMMENDATION_CANDIDATES);
+  },
+
+  // --- Administrator surface (BFP-07), read-only. The seed catalog is an
+  // in-memory fixture; admin writes are mongodb-only and never reach here. ---
+
+  async listProductsForAdmin({ page = 1, limit = 20, includeDeleted = false } = {}) {
+    const source = includeDeleted ? records : records.filter((record) => !record.deletedAt);
+    const sorted = [...source].sort((a, b) => a.id - b.id);
+    const start = (page - 1) * limit;
+    return {
+      items: sorted.slice(start, start + limit).map(toAdminProduct),
+      total: sorted.length,
+      page,
+      limit,
+    };
+  },
+
+  async findProductForAdmin(publicId) {
+    return toAdminProduct(records.find((record) => record.id === publicId) || null);
+  },
+
+  async adminSummary() {
+    const active = records.filter((record) => !record.deletedAt);
+    return {
+      activeProducts: active.length,
+      lowStock: active.filter((record) => record.stock === "low").length,
+      outOfStock: active.filter((record) => record.stock === "out").length,
+      // The seed fixture carries no structured artwork, so every active record
+      // is reported as having unresolved artwork (an honest count, not 0).
+      unresolvedArtwork: active.length,
+      softDeleted: records.filter((record) => record.deletedAt).length,
+    };
   },
 };

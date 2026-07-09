@@ -1,6 +1,6 @@
 # Backend Future Implementation Plan
 
-Status: BFP-01/03/04/06, both parts of BFP-02, and the backend contracts for FFP-01/02/03/05/06 are complete. BFP-05 remains on hold; BFP-07 and later plans remain future work.
+Status: BFP-01/03/04/06/07, both parts of BFP-02, and the backend contracts for FFP-01/02/03/05/06/07/08 are complete. BFP-05 remains on hold; personalization (BFP-08+, in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`) remains future work pending a separate explicit task.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
@@ -27,7 +27,7 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 | BFP-04 | Simple authentication, registration, and authorization | Completed 2026-07-04 | Registered and seeded identities use signed server sessions and role checks. |
 | BFP-05 | Recommender algorithm selection | On hold | User will choose the future recommender method. |
 | BFP-06 | Catalog ingestion and metadata quality | Completed 2026-07-06 | Preview/apply, source/conflict rules, enrichment, artwork, caching, and provenance are verified. |
-| BFP-07 | Admin mode backend | Planned | Requires authentication, authorization, persistence, and product writes. |
+| BFP-07 | Admin mode backend | Completed 2026-07-09 | Administrator API is implemented: role-gated summary, product CRUD with `updatedAt` optimistic concurrency, soft-delete/restore, preview-token import apply, artwork refresh, and best-effort audit logging. Catalog writes are mongodb-only (503 in seed mode). |
 
 ## Approved Cross-Repository Implementation Order
 
@@ -479,6 +479,8 @@ Validation includes:
 
 ## BFP-07: Admin Mode Backend
 
+> Completed 2026-07-09. Implementation summary: every `/api/admin/*` route calls `requireRole("admin")` after session verification and `assertMutationOrigin` for writes. Routes: `GET /api/admin/summary`, `GET/POST /api/admin/products`, `GET/PATCH/DELETE /api/admin/products/[id]`, `POST /api/admin/products/[id]/restore`, `POST /api/admin/products/[id]/artwork/refresh`, `PATCH /api/admin/products/[id]/artwork`, `POST /api/admin/catalog/import/preview`, `POST /api/admin/catalog/import/apply`. Product create allocates a numeric public id via the `vinylRecords` counter (max(counter, max-existing)+1); edit/delete use compare-and-set on Mongoose-managed `updatedAt` for optimistic concurrency and return `CONFLICT` on stale state. Soft-delete sets `deletedAt`; restore clears it. Import preview is non-mutating and returns a one-time, expiring in-process preview token consumed by apply (which re-plans inside the existing transactional bulk-write). Artwork refresh reuses the MusicBrainz/Cover Art matching rules and only writes verified, approved-host artwork. Administrator actions append best-effort audit records (`AuditLog`, admin public id `select:false`, safe projection). Reads work in seed and mongodb mode; writes are mongodb-only and return `PERSISTENCE_UNAVAILABLE` (503) in seed mode. Verified: `node --test` 114/114, eslint clean, `next build` green, and a live seed-mode smoke (admin summary 116 active, list, customer=403, anonymous=401, seed write=503, artwork refresh 200/404).
+
 This plan defines the protected administrator API needed by the integrated frontend admin workspace.
 
 ### Goal
@@ -544,3 +546,43 @@ npm run build
 ```
 
 Database phases additionally require the relevant smoke, migration dry-run, parity, index, and failure-path checks described above. Passing seed-mode tests does not prove Atlas behavior, and an Atlas connection does not prove the frontend integration.
+
+## Personalization Roadmap (PERS-00 - PERS-09)
+
+This section records a planned, dependency-safe personalization roadmap that converts the deterministic demo recommender into a genuine personalized recommender. It is scheduled AFTER the entire existing roadmap above: BFP-07, FFP-07, FFP-08, and any backend support planned for the simulated checkout. It does not reorder, replace, remove, or silently redefine any existing plan. Full detail lives in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`. No milestone is in progress; none is marked completed.
+
+BFP-05 remains its own on-hold placeholder; PERS-00 records the method decision that resolves its open question under new IDs and does not reuse the BFP-05 ID.
+
+Collaborative filtering and matrix factorization are explicitly excluded; the project is not collecting sufficient real-user evidence. The existing offline evaluator, interaction logging, recommendation logging, algorithm versioning, and privacy boundaries are preserved; "evaluation with sufficient evidence" is not part of this roadmap, and the `insufficient-evidence` status is unchanged.
+
+### Plan Status Summary (Personalization)
+
+| ID | Plan | Status | Main Gate |
+| --- | --- | --- | --- |
+| PERS-00 / BDEC-016 | Audit and decision freeze | Planned | Records the architecture decisions and the no-regression checklist before any code. |
+| PERS-01 / BFP-08 | Proper identity enforcement | Planned | Restrict the arbitrary-user route; cross-user denial contract test. |
+| PERS-02 / BFP-09 | Session-owned signed-in-user endpoint | Planned | `GET /api/recommendations/me` with anonymous fallback; parity first. |
+| PERS-03 / BFP-10 | Unified profile and feedback domain | Planned | One backend-owned profile service; durable feedback collection. |
+| PERS-04 / BFP-11 | Preference-aware ranking | Planned | Hard constraints and soft scores; truthful explanations. |
+| PERS-05 / BFP-12 | Negative feedback | Planned | Not-interested, already-own, undo, optional show-fewer-like-this. |
+| PERS-06 / BFP-13 | Behavioral-signal personalization | Planned | Differentiated strength; opt-out boundary fix. |
+| PERS-07 / BFP-14 | Popularity baseline and fallback | Planned | Aggregate-evidence popularity; fallback ladder. |
+| PERS-08 / BFP-15 | Hybrid recommendation orchestration | Planned | Normalized components; diversity reranking; `personalized-hybrid-v1`. |
+| PERS-09 / BFP-16 | Integration, hardening, documentation closure | Planned | End-to-end integration; regression protection; documentation closure. |
+
+### Dependency-Safe Personalization Order (Appended After FFP-08)
+
+| Order | Plan | Dependency-safe outcome |
+| --- | --- | --- |
+| 15 | PERS-00: audit and decision freeze | Decisions recorded; no-regression checklist defined. |
+| 16 | PERS-01 / BFP-08: identity enforcement | Recommendation subject derived only from the verified session. |
+| 17 | PERS-02 / BFP-09 + FFP-09: session-owned endpoint | Authenticated users get their own recommendations; anonymous fallback works. |
+| 18 | PERS-03 / BFP-10: unified profile and feedback domain | One profile service; durable feedback; opt-out split. |
+| 19 | PERS-04 / BFP-11 + FFP-10: preference-aware ranking | Stored preferences drive ranking without silent constraint relaxation. |
+| 20 | PERS-05 / BFP-12 + FFP-11: negative feedback | Durable suppression and controlled negative evidence. |
+| 21 | PERS-06 / BFP-13 + FFP-12: behavioral signals | Differentiated behavioral personalization; opt-out fully honored. |
+| 22 | PERS-07 / BFP-14: popularity baseline and fallback | Real aggregate-evidence popularity; feedback-loop safeguards. |
+| 23 | PERS-08 / BFP-15 + FFP-13: hybrid orchestration | Preference, content, behavioral, and popularity combined truthfully. |
+| 24 | PERS-09 / BFP-16 + FFP-14: integration and hardening | End-to-end personalization; regression protection; documentation closed. |
+
+Each milestone ships behind a feature flag, preserves `content-demo-v1` for regression, and is independently reversible. Implementation requires a separate explicit task and must not begin before FFP-08 is complete and the user opens personalization work.

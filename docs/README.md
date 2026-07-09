@@ -10,6 +10,7 @@ These files document the implemented catalog/recommendation API, optional MongoD
 - `ARCHITECTURE_PLAN.md`: current modules and request flow.
 - `EVALUATION_PLAN.md`: automated behavior checks, implemented offline protocol, and the active evidence boundary.
 - `FUTURE_IMPLEMENTATION_PLAN.md`: completed BFP-01/02/03/04/06 records plus deferred admin plans; recommender selection is on hold.
+- `PERSONALIZATION_IMPLEMENTATION_PLAN.md`: planned PERS-00 through PERS-09 personalization roadmap, scheduled after BFP-07, FFP-07, and FFP-08; no milestone is in progress and no quality claim is made.
 - `ROADMAP.md` and `TASK_BACKLOG.md`: completed consolidation and deferred work.
 - `DECISION_LOG.md`, `RISK_REGISTER.md`, and `SETUP_LATER.md`: durable decisions, risks, and unstarted setup.
 

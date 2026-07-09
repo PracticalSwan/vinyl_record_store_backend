@@ -5,8 +5,9 @@ import {
   PRODUCT_GENRES,
   PRODUCT_STOCK_LEVELS,
 } from "../models/constants.js";
+import { Counter } from "../models/Counter.js";
 import { VinylRecord } from "../models/VinylRecord.js";
-import { toPublicProduct } from "./catalogMapping.js";
+import { slugifyProduct, toAdminProduct, toPublicProduct } from "./catalogMapping.js";
 
 const ERAS = ["1950s", "1960s", "1970s", "1980s", "1990s", "2000s+"];
 const MAX_RECOMMENDATION_CANDIDATES = 1_000;
@@ -130,6 +131,149 @@ export function createMongoCatalogRepository(
         .lean()
         .exec()
     ).map(toPublicProduct)),
+
+    // --- Administrator surface (BFP-07). Reads include soft-deleted rows when
+    // asked; writes use compare-and-set on Mongoose-managed updatedAt. ---
+
+    listProductsForAdmin: ({ page = 1, limit = 20, includeDeleted = false } = {}) => runMongo(async () => {
+      const filter = includeDeleted ? {} : { deletedAt: null };
+      const [items, total] = await Promise.all([
+        model.find(filter)
+          .sort({ publicId: 1 })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean(),
+        model.countDocuments(filter),
+      ]);
+      return {
+        items: items.map(toAdminProduct),
+        total,
+        page,
+        limit,
+      };
+    }),
+
+    findProductForAdmin: (publicId) => runMongo(async () => toAdminProduct(
+      await model.findOne({ publicId }).lean(),
+    )),
+
+    // Raw full-doc read for catalog import planning (duplicate/conflict
+    // detection needs provenance, artwork, and soft-delete state).
+    listAllRawForImport: () => runMongo(async () => await model.find({}).lean()),
+
+    adminSummary: () => runMongo(async () => {
+      const [active, lowStock, outOfStock, softDeleted, withArtwork] = await Promise.all([
+        model.countDocuments({ deletedAt: null }),
+        model.countDocuments({ deletedAt: null, stock: "low" }),
+        model.countDocuments({ deletedAt: null, stock: "out" }),
+        model.countDocuments({ deletedAt: { $ne: null } }),
+        model.countDocuments({
+          deletedAt: null,
+          "artwork.thumbnailUrl": { $in: [null, ""] },
+        }),
+      ]);
+      return {
+        activeProducts: active,
+        lowStock,
+        outOfStock,
+        // "unresolved artwork" = active products whose thumbnail is missing,
+        // which `withArtwork` already counted directly.
+        unresolvedArtwork: withArtwork,
+        softDeleted,
+      };
+    }),
+
+    createProduct: (desired, { counterModel = Counter } = {}) => runMongo(async () => {
+      // Allocate a publicId that is strictly greater than both the counter and
+      // the max existing publicId, mirroring reservePublicIds so a re-seeded
+      // catalog that did not advance the counter cannot cause a collision.
+      const maxExisting = await model.findOne({})
+        .sort({ publicId: -1 })
+        .limit(1)
+        .lean();
+      const maxExistingId = maxExisting?.publicId || 0;
+      const counter = await counterModel.findOneAndUpdate(
+        { _id: "vinylRecords" },
+        [{
+          $set: {
+            value: { $add: [{ $max: [{ $ifNull: ["$value", 0] }, maxExistingId] }, 1] },
+            updatedAt: "$$NOW",
+            createdAt: { $ifNull: ["$createdAt", "$$NOW"] },
+          },
+        }],
+        { upsert: true, returnDocument: "after" },
+      ).lean();
+      const publicId = counter.value;
+      const slug = slugifyProduct({ ...desired, id: publicId });
+      const created = await model.create({ ...desired, publicId, slug, deletedAt: null });
+      return toAdminProduct(created);
+    }),
+
+    updateProduct: (publicId, patch, expectedUpdatedAt) => runMongo(async () => {
+      const current = await model.findOne({ publicId }).lean();
+      if (!current || current.deletedAt) return { status: "not_found" };
+      const expected = expectedUpdatedAt ? new Date(expectedUpdatedAt).toISOString() : null;
+      const actual = current.updatedAt ? new Date(current.updatedAt).toISOString() : null;
+      if (expected && expected !== actual) {
+        return { status: "conflict", current: toAdminProduct(current) };
+      }
+      // Compare-and-set on the read updatedAt closes the race between the
+      // existence check above and the write below.
+      const updated = await model.findOneAndUpdate(
+        { publicId, updatedAt: current.updatedAt },
+        { $set: patch },
+        { new: true },
+      ).lean();
+      if (!updated) {
+        const refreshed = await model.findOne({ publicId }).lean();
+        return { status: "conflict", current: refreshed ? toAdminProduct(refreshed) : null };
+      }
+      return { status: "ok", product: toAdminProduct(updated) };
+    }),
+
+    softDeleteProduct: (publicId, expectedUpdatedAt) => runMongo(async () => {
+      const now = new Date();
+      const current = await model.findOne({ publicId }).lean();
+      if (!current) return { status: "not_found" };
+      if (current.deletedAt) return { status: "not_found" };
+      const expected = expectedUpdatedAt ? new Date(expectedUpdatedAt).toISOString() : null;
+      const actual = current.updatedAt ? new Date(current.updatedAt).toISOString() : null;
+      if (expected && expected !== actual) {
+        return { status: "conflict", current: toAdminProduct(current) };
+      }
+      const updated = await model.findOneAndUpdate(
+        { publicId, deletedAt: null, updatedAt: current.updatedAt },
+        { $set: { deletedAt: now } },
+        { new: true },
+      ).lean();
+      if (!updated) {
+        const refreshed = await model.findOne({ publicId }).lean();
+        return { status: "conflict", current: refreshed ? toAdminProduct(refreshed) : null };
+      }
+      return { status: "ok", product: toAdminProduct(updated) };
+    }),
+
+    restoreProduct: (publicId) => runMongo(async () => {
+      const updated = await model.findOneAndUpdate(
+        { publicId, deletedAt: { $ne: null } },
+        { $set: { deletedAt: null } },
+        { new: true },
+      ).lean();
+      if (!updated) return { status: "not_found" };
+      return { status: "ok", product: toAdminProduct(updated) };
+    }),
+
+    applyImport: (preparedRows, { allowPartial = false, connection } = {}) => runMongo(async () => {
+      // applyCatalogImport requires a live connection; the repository reuses
+      // the transactional bulk-write path owned by the import service.
+      const { applyCatalogImport } = await import("../services/catalogImport.js");
+      return applyCatalogImport(preparedRows, {
+        connection: connection || await connect(),
+        model,
+        counterModel: Counter,
+        allowPartial,
+      });
+    }),
   };
 }
 

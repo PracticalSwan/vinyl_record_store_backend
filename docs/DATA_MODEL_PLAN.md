@@ -51,3 +51,11 @@ Catalog import is separate from the seed migration. Seed reconciliation does not
 ## Privacy Boundary
 
 Do not add real emails, orders, ratings, interaction histories, or identifiers to the demo seed. Registered usernames and activity are privacy-sensitive; raw private interaction logs, password material, cookies, and internal identifiers must never be returned by public routes.
+
+## Planned Models (Personalization Roadmap)
+
+The following are planned in `PERSONALIZATION_IMPLEMENTATION_PLAN.md` (PERS-03 / BFP-10 onward), scheduled after BFP-07, FFP-07, and FFP-08. None is implemented.
+
+- `feedback` collection: durable explicit user feedback (`userPublicId`, `productPublicId`, `kind` of `not-interested`/`already-own`/`show-fewer-like-this`, optional `scope`/`reason`, timestamps, `schemaVersion`), unique on `(userPublicId, productPublicId, kind)`, not TTL-limited. It is the authoritative source for suppression and is removed by the existing account-deletion transaction.
+- A recomputed recommendation-profile domain (not persisted): explicit preferences, explicit feedback, strong/weak implicit behavior, and operational state, assembled per request with provenance, polarity, level, weight, confidence, and recency. Passive analytics remain TTL-limited and honor the tracking opt-out; explicit functional actions persist and feed the profile regardless of opt-out.
+- Additive aggregation indexes for popularity ranking (PERS-07). No destructive migration; no schema change to existing collections except the additive `feedback` collection and indexes.

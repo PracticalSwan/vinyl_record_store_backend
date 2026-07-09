@@ -2,6 +2,18 @@ const valueOf = (record) => (
   typeof record?.toObject === "function" ? record.toObject() : record
 );
 
+const toIso = (value) => (value instanceof Date ? value.toISOString() : (value ? new Date(value).toISOString() : null));
+
+const toProvenance = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value.map((entry) => ({
+    field: entry.field ?? null,
+    source: entry.source ?? null,
+    sourceId: entry.sourceId ?? null,
+    retrievedAt: toIso(entry.retrievedAt),
+  }));
+};
+
 const approvedUrl = (value, hosts) => {
   if (!value) return null;
   try {
@@ -59,6 +71,33 @@ export function toPublicProduct(record) {
       source: value.artwork.source,
       sourceUrl,
     } : null,
+  };
+}
+
+// Admin-facing product view. Extends the public product with the fields an
+// administrator needs for maintenance (optimistic-concurrency token, soft-delete
+// state, source ownership, provenance, and raw MusicBrainz/artwork state).
+// It does NOT surface the seed-only recommendation `reason`.
+export function toAdminProduct(record) {
+  const value = valueOf(record);
+  if (!value) return null;
+  const base = toPublicProduct(value);
+  const artwork = value.artwork && typeof value.artwork === "object" ? value.artwork : {};
+  return {
+    ...base,
+    musicBrainzReleaseId: value.musicBrainzReleaseId ?? null,
+    musicBrainzReleaseGroupId: value.musicBrainzReleaseGroupId ?? null,
+    artwork: {
+      thumbnailUrl: artwork.thumbnailUrl ?? null,
+      detailUrl: artwork.detailUrl ?? null,
+      source: artwork.source ?? null,
+      sourceUrl: artwork.sourceUrl ?? null,
+      retrievedAt: toIso(artwork.retrievedAt),
+    },
+    source: value.source ?? null,
+    provenance: toProvenance(value.provenance),
+    updatedAt: toIso(value.updatedAt),
+    deletedAt: toIso(value.deletedAt),
   };
 }
 

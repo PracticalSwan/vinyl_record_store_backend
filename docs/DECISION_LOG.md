@@ -129,3 +129,23 @@ Date: 2026-07-06
 Decision: Accept structured artwork only from approved hosts when its paths match a supplied or verified MusicBrainz release/release group, and generate retrieval/provenance metadata on the server. Build evaluation subjects under per-run pseudonyms and publish ranking metrics only with at least 20 eligible subjects and 5 final positive products per subject; otherwise publish aggregate completeness and an explicit non-conclusion.
 
 Rationale: Host allowlists alone cannot prove that a cover belongs to the imported record, and sparse behavioral data cannot support a defensible recommendation-quality claim. These boundaries make both provenance and evaluation claims auditable.
+
+## BDEC-016: Personalization Architecture Freeze (Planned)
+
+Date: 2026-07-07
+
+Decision: Plan, without implementing, a personalization roadmap (PERS-00 through PERS-09) scheduled after BFP-07, FFP-07, and FFP-08. Freeze the architecture the later milestones depend on: a canonical session-owned endpoint `GET /api/recommendations/me`; a restricted (not removed) arbitrary-user route that keeps `demo-user` as the only profile trigger and never reads private data for other ids; durable account state for preferences, ratings, wishlist, cart, and explicit feedback versus 90-day TTL analytics for impressions, views, clicks, and searches; explicit functional actions persist and feed the profile regardless of tracking opt-out while passive analytics honor opt-out (this closes the current gap where opt-out suppresses only request logging); a recommendation profile recomputed on demand rather than stored; component scores normalized to `[0,1]` per request with weight renormalization when a component is unavailable; new algorithm versions `preference-profile-v1`, `behavior-profile-v1`, `popularity-v1`, and `personalized-hybrid-v1` alongside the preserved `content-demo-v1`; deterministic labelled showcase preference profiles; and account-deletion cleanup of all personalization state. Collaborative filtering and matrix factorization are excluded. BFP-05 remains its own on-hold placeholder; its open method decision is resolved by PERS-00 under new IDs and is not reused.
+
+Rationale: Identity, data, and contract foundations must be fixed before any ranking milestone so later plans do not rediscover dependencies or produce contradictory contracts. The opt-out split preserves user control over passive tracking while keeping user-authored features functional. No quality claim is made or implied; the existing `insufficient-evidence` evaluator status and its evidence threshold are unchanged.
+
+Status: Planned. No source code changed. Enables BDEC-017 through BDEC-019 to be recorded when their respective milestones land.
+
+## BDEC-017: Administrator Mode Is Role-Gated, Optimistic-Concurrent, And Mongodb-Only For Writes
+
+Date: 2026-07-09
+
+Decision: BFP-07 administrator catalog management reuses the existing session/role machinery (`requireRole("admin")` on every `/api/admin/*` route; the admin account is env-only with no promotion path). Product create allocates a numeric public id as `max(counter, max-existing)+1` so a re-seeded catalog that did not advance the counter cannot collide. Edit and soft-delete use compare-and-set on Mongoose-managed `updatedAt` (the schema keeps `versionKey:false`) and return `CONFLICT` on stale state. Soft-delete sets `deletedAt`; restore clears it. Catalog import reuses the transactional bulk-write behind a one-time, expiring, in-process preview token so apply cannot be replayed. Artwork refresh reuses the MusicBrainz/Cover Art matching rules and only writes verified, approved-host artwork. Administrator actions append best-effort audit records (admin public id is `select:false` and projected out). Reads work in seed and mongodb mode; writes are mongodb-only and return `PERSISTENCE_UNAVAILABLE` (503) in seed mode.
+
+Rationale: Reusing the role/session/import machinery avoids a parallel admin system and keeps the security boundary server-owned. `updatedAt` compare-and-set gives optimistic concurrency without a schema migration. Best-effort audit prevents a flaky audit store from rolling back a successful catalog mutation. Seed-mode write blocking keeps the safe read-only default while letting the dashboard/list render in every environment.
+
+Status: Implemented and verified (node --test 114/114, eslint clean, build green; live seed-mode smoke). The frontend `RequireRole` guard is navigation only and is not a security control.

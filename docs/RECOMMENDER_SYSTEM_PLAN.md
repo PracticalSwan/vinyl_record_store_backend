@@ -41,3 +41,7 @@ Every recommendation response receives server-generated `requestId` and `listId`
 ## Deferred Methods
 
 Collaborative filtering, matrix factorization, hybrid ranking, learned weights, and production popularity ranking remain deferred. Interaction ingestion, request logging, frontend capture, and BFP-02 Part B evaluation are active. Popularity exists only as a fair offline baseline; the current dataset is below the evidence threshold, so no quality metrics are reported.
+
+## Personalization Roadmap (Planned)
+
+`PERSONALIZATION_IMPLEMENTATION_PLAN.md` plans, without implementing, a genuine personalization system scheduled after BFP-07, FFP-07, and FFP-08. It introduces a session-owned endpoint, a recomputed recommendation profile, preference-aware ranking, first-class negative feedback, differentiated behavioral signals, an aggregate-evidence popularity baseline, and a hybrid orchestrator, all behind per-milestone flags with `content-demo-v1` preserved for regression. Collaborative filtering and matrix factorization are explicitly excluded. No quality claim is made; the `insufficient-evidence` evaluator status and its evidence threshold are unchanged.

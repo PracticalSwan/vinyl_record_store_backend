@@ -4,7 +4,7 @@ This is the backend source of truth for the Vinyl Record Store Recommender Syste
 
 ## Current State
 
-The backend is a Next.js 16.2.9 integration service. It serves the approved catalog from the default seed adapter or explicitly selected MongoDB adapter, imports controlled catalog data, exposes approved artwork mappings, produces explainable content-based recommendations, provides signed sessions and customer-state mutations, ingests interactions, records served recommendation lists, and generates privacy-safe offline evaluation reports.
+The backend is a Next.js 16.2.9 integration service. It serves the approved catalog from the default seed adapter or explicitly selected MongoDB adapter, imports controlled catalog data, exposes approved artwork mappings, produces explainable content-based recommendations, provides signed sessions and customer-state mutations, ingests interactions, records served recommendation lists, exposes a role-gated administrator catalog-management surface, and generates privacy-safe offline evaluation reports.
 
 ## Implemented Scope
 
@@ -19,7 +19,8 @@ The backend is a Next.js 16.2.9 integration service. It serves the approved cata
 - Rate-limited, cached MusicBrainz and Cover Art Archive enrichment with exact-match review, release-bound artwork, server-generated provenance, and placeholders on absence or failure.
 - BFP-02 Part B dataset construction, final-state relevance, temporal leave-last-positive-out split, leakage checks, shared full-catalog candidate policy, random/popularity/content-based comparison, and aggregate-only reports.
 - Consistent safe envelopes, exact-origin credentialed mutations, server-derived ownership, and transaction-backed multi-document operations.
-- Automated catalog, persistence, migration, authentication, write, request-log, recommender behavior, and metric-sanity tests.
+- BFP-07 administrator surface: role-gated `/api/admin/*` routes for summary, product CRUD with `updatedAt` optimistic concurrency, soft-delete/restore, one-time preview-token catalog import apply, artwork refresh, and best-effort audit logging. Reads work in seed and mongodb mode; writes are mongodb-only (`PERSISTENCE_UNAVAILABLE` in seed mode).
+- Automated catalog, persistence, migration, authentication, write, request-log, recommender behavior, metric-sanity, and administrator tests.
 
 ## Data And Privacy Boundary
 
@@ -29,9 +30,10 @@ The current report is `insufficient-evidence`: no ranking-quality metrics are em
 
 ## Deferred Scope
 
-- Demo orders, administrator catalog APIs, payments, collaborative/hybrid ranking, and deployment automation.
+- Demo orders, payments, collaborative/hybrid ranking, and deployment automation. (Administrator catalog APIs are implemented in BFP-07; only demo orders/payments remain deferred.)
+- Genuine personalization (PERS-00 through PERS-09), scheduled after BFP-07, FFP-07, and FFP-08. See `PERSONALIZATION_IMPLEMENTATION_PLAN.md`. No milestone is in progress; no quality claim is made; collaborative filtering and matrix factorization are excluded.
 
-BFP-01, BFP-03, BFP-04, BFP-06, both parts of BFP-02, and the shared FFP-01/02/03/05/06 contracts are complete. Behavior tests and insufficient interaction evidence do not establish recommendation quality.
+BFP-01, BFP-03, BFP-04, BFP-06, BFP-07, both parts of BFP-02, and the shared FFP-01/02/03/05/06/07/08 contracts are complete. Behavior tests and insufficient interaction evidence do not establish recommendation quality.
 
 ## Update Rule
 

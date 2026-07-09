@@ -16,11 +16,13 @@ The backend is an implemented integration and authenticated customer-state servi
 - MongoDB-mode recommendation request logging records exact ordered lists, reasons, surfaces, modes, versions, exclusions, and 90-day expiry; seed mode and usage opt-out suppress it.
 - Preview-first CSV/JSON catalog ingestion supports atomic apply, source ownership, duplicate/conflict detection, optional MusicBrainz/Cover Art Archive enrichment, release-bound artwork, local cache, and field provenance.
 - The offline evaluator builds pseudonymized leakage-safe datasets, compares random/popularity/content-based rankings only above the evidence threshold, and otherwise writes aggregate counts and captured-field coverage without quality claims.
-- Automated catalog, import, artwork, persistence, migration, authentication, write-state, recommender-behavior, evaluation, and metric sanity tests.
+- Administrator mode (BFP-07) exposes role-gated `/api/admin/*` routes (summary, product CRUD with `updatedAt` optimistic concurrency, soft-delete/restore, preview-token catalog import apply, artwork refresh) with best-effort audit logging. Reads work in seed and mongodb mode; writes are mongodb-only and return `PERSISTENCE_UNAVAILABLE` (503) in seed mode.
+- Automated catalog, import, artwork, persistence, migration, authentication, write-state, recommender-behavior, evaluation, metric, and administrator sanity tests.
 
 ## Folder Boundary
 
-- `src/app/api/` owns route handlers.
+- `src/app/api/` owns route handlers, including the `admin/` administrator surface.
+- `src/services/adminCatalog.js` and `src/services/artworkRefresh.js` own administrator catalog and artwork business logic; `src/lib/admin/previewTokens.js` owns the one-time import preview-token store; `src/validation/admin.js` owns administrator input validation.
 - `src/services/` owns catalog, import, authentication, customer-state, and account-lifecycle business logic.
 - `src/repositories/` owns seed and MongoDB data access.
 - `src/models/` owns strict Mongoose schemas and indexes.

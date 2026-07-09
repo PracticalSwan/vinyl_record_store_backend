@@ -10,6 +10,7 @@ The approved design and dependency gates are documented in `FUTURE_IMPLEMENTATIO
 - Add password recovery or other identity features only if a later requirement explicitly accepts their privacy/security cost.
 - Add admin routes, deployment configuration, and observability.
 - Re-run `npm run recommender:evaluate` when the retained dataset materially changes; do not add quality claims while its status is `insufficient-evidence`.
+- Genuine personalization (PERS-00 through PERS-09), scheduled after BFP-07, FFP-07, and FFP-08. See `PERSONALIZATION_IMPLEMENTATION_PLAN.md`. Do not start until the user explicitly opens personalization work; do not add collaborative filtering, matrix factorization, or any quality claim.
 
 Do not install packages or begin these changes solely because they appear here. Recheck current dependency versions and update decisions before future setup work.
 

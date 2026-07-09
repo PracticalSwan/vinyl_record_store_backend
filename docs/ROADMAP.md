@@ -21,5 +21,6 @@ This file records current completion and deferred scope. It does not authorize c
 - Sufficient interaction evidence for a ranking-quality conclusion; the implemented evaluator currently reports `insufficient-evidence` without metrics.
 - Demo orders, administrator catalog APIs, payments, scraping, and deployment automation.
 - Collaborative or hybrid recommendation; BFP-05 remains on hold pending the user's algorithm decision.
+- Genuine personalization (PERS-00 through PERS-09 / BFP-08 through BFP-16), scheduled after BFP-07, FFP-07, and FFP-08. See `PERSONALIZATION_IMPLEMENTATION_PLAN.md`. No milestone is in progress; no quality claim is made; collaborative filtering and matrix factorization are excluded.
 
 Detailed plans and the cross-repository order are in `FUTURE_IMPLEMENTATION_PLAN.md`. Deferred items require a separate explicit task.

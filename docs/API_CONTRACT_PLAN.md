@@ -85,9 +85,35 @@ Ownership comes only from the verified session; client-supplied user IDs are rej
 
 `npm run recommender:evaluate` reads retained interactions and recommendation logs, pseudonymizes subjects with a per-run salt, enforces the minimum-evidence boundary, and writes aggregate-only output under `reports/recommender/`. It is not a public API route.
 
+## Administrator Routes (BFP-07)
+
+Every `/api/admin/*` route calls `requireRole("admin")` after session verification; writes also call `assertMutationOrigin`. Reads work in seed and mongodb mode; writes are mongodb-only and return `PERSISTENCE_UNAVAILABLE` (503) in seed mode. Product create allocates a numeric public id (`max(counter, max-existing)+1`); edit and delete use compare-and-set on Mongoose-managed `updatedAt` and return `CONFLICT` (409) on stale state. Administrator actions append best-effort audit records.
+
+| Method | Route | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/summary` | Admin | Active/low/out-of-stock counts, unresolved-artwork count, soft-deleted count, and recent safe audit actions. |
+| `GET` | `/api/admin/products` | Admin | Paginated product list (`page`, `limit`, `includeDeleted`). |
+| `POST` | `/api/admin/products` | Admin | Create a product (mongodb-only). |
+| `GET` | `/api/admin/products/:id` | Admin | Admin product view (includes `updatedAt`, `deletedAt`, `source`, `provenance`, MB ids). |
+| `PATCH` | `/api/admin/products/:id` | Admin | Update fields; body must include `updatedAt` for optimistic concurrency. |
+| `DELETE` | `/api/admin/products/:id?updatedAt=` | Admin | Soft-delete (`updatedAt` query param required). |
+| `POST` | `/api/admin/products/:id/restore` | Admin | Restore a soft-deleted product. |
+| `POST` | `/api/admin/products/:id/artwork/refresh` | Admin | Resolve a MusicBrainz release and Cover Art artwork preview without writing. |
+| `PATCH` | `/api/admin/products/:id/artwork` | Admin | Save verified artwork for a chosen `releaseId` (body includes `updatedAt`). |
+| `POST` | `/api/admin/catalog/import/preview` | Admin | Validate/enrich a CSV/JSON payload and return a summary, action sample, and a one-time preview token. |
+| `POST` | `/api/admin/catalog/import/apply` | Admin | Consume the one-time preview token and apply the import transactionally. |
+
 ## Deferred Routes
 
-Demo-order and administrator catalog routes are not implemented. Recommendation-request logging is an internal side effect of the implemented recommendation GET routes, not a public mutation route.
+Demo-order and payment routes are not implemented (the storefront ships a client-only simulated checkout in FFP-08). Recommendation-request logging is an internal side effect of the implemented recommendation GET routes, not a public mutation route.
+
+## Planned Routes (Personalization Roadmap)
+
+The following are planned in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`, scheduled after BFP-07, FFP-07, and FFP-08. None is implemented; none authorizes implementation by itself.
+
+- `GET /api/recommendations/me` (PERS-02 / BFP-09): session-owned signed-in-user recommendations with an anonymous fallback. The subject is derived only from the verified session. The existing `GET /api/recommendations/user/:userId` is restricted, not removed: `demo-user` keeps `demo-profile`; every other id returns `cold-start` and never reads private profile data.
+- `PUT`, `DELETE`, `GET /api/me/feedback[/:productId]` (PERS-05 / BFP-12): durable explicit feedback (not-interested, already-own, optional show-fewer-like-this) with idempotent undo.
+- Extended `/api/recommendations/me` response fields: `mode` (`preference-profile`, `behavior-profile`, `popularity`, `personalized-hybrid`, `anonymous-fallback`, plus existing `demo-profile`/`cold-start`), `algorithmVersion` (`preference-profile-v1`, `behavior-profile-v1`, `popularity-v1`, `personalized-hybrid-v1`, with `content-demo-v1` preserved), safe `profileSummary`, safe `dataSourceFlags`, and `profileCompleteness`. No raw interaction rows, no MongoDB object ids, no internal exclusions, and no raw component weights are exposed.
 
 ## CORS
 
