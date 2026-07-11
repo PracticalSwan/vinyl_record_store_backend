@@ -9,7 +9,7 @@ This service is the core of the demo. It owns the product catalog, the recommend
 Two things worth knowing up front:
 
 - The catalog ships with an approved demo seed dataset and can optionally persist to MongoDB Atlas. Seed mode works out of the box with no database required.
-- Recommendations are deterministic, explainable demonstrations labeled `demo-profile` or `cold-start`, not real-customer personalization.
+- Recommendations remain deterministic `content-demo-v1` behavior: the restricted legacy showcase is `demo-profile`, verified customers use a session-owned `cold-start` path, and visitors receive an `anonymous-fallback`. Preferences and behavior do not affect ranking yet, and no recommendation-quality claim is made.
 - MongoDB mode also supports preview-first catalog imports, approved release artwork, and an aggregate-only offline evaluation command. The current report is an explicit `insufficient-evidence` result, not a quality score.
 
 ## API
@@ -21,7 +21,8 @@ Two things worth knowing up front:
 | `GET` | `/api/products/:id` | Product detail. |
 | `GET` | `/api/search?q=` | Text search with catalog filters. |
 | `GET` | `/api/recommendations/product/:id` | Similar records with explanations. |
-| `GET` | `/api/recommendations/user/:userId` | `demo-profile` or `cold-start` list. |
+| `GET` | `/api/recommendations/me` | Session-owned customer `cold-start` or anonymous fallback list. |
+| `GET` | `/api/recommendations/user/:userId` | Restricted legacy showcase: `demo-user` or generic cold-start only. |
 | `POST` | `/api/auth/register` | Create a customer account and session. |
 | `POST` | `/api/auth/login` | Sign in a registered or demo identity. |
 | `POST` | `/api/auth/logout` | End the session. |

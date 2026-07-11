@@ -123,17 +123,32 @@ function genericRecommendations(records, limit) {
 }
 
 export async function recommendForUser(
-  requestedUserId,
+  subject,
   limit = 8,
   { repository = getCatalogRepository() } = {},
 ) {
+  if (
+    !["anonymous", "cold-start", "demo", "registered"].includes(subject?.kind)
+    || (subject.kind === "registered" && !subject.publicId)
+  ) {
+    throw new TypeError("A valid recommendation subject descriptor is required.");
+  }
   const records = await repository.listRecommendationCandidates();
-  if (requestedUserId !== "demo-user") {
+  if (subject?.kind !== "demo") {
+    const profileSummary = subject.kind === "anonymous"
+      ? [
+          "No signed-in customer session is available.",
+          "Results use the in-stock demo catalog.",
+        ]
+      : [
+          "No stored history is available.",
+          "Results use the in-stock demo catalog.",
+        ];
     return {
-      userId: requestedUserId,
+      ...(subject.responseUserId ? { userId: subject.responseUserId } : {}),
       excludedProductIds: [],
-      mode: "cold-start",
-      profileSummary: ["No stored history is available.", "Results use the in-stock demo catalog."],
+      mode: subject.kind === "anonymous" ? "anonymous-fallback" : "cold-start",
+      profileSummary,
       recommendations: genericRecommendations(records, limit),
       algorithmVersion: ALGORITHM_VERSION,
     };
@@ -168,7 +183,7 @@ export async function recommendForUser(
     .sort((a, b) => b.score - a.score || a.product.title.localeCompare(b.product.title));
 
   return {
-    userId: requestedUserId,
+    userId: subject.responseUserId || "demo-user",
     excludedProductIds: sourceIds,
     mode: "demo-profile",
     profileSummary: [

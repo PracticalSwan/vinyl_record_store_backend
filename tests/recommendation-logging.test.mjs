@@ -5,6 +5,7 @@ import {
   serveProductRecommendations,
   serveUserRecommendations,
 } from "../src/services/recommendations.js";
+import { legacyRecommendationSubject } from "../src/lib/auth/recommendationSubject.js";
 
 const mongoEnvironment = {
   CATALOG_DATA_SOURCE: "mongodb",
@@ -34,8 +35,8 @@ test("BFP-02 logs the exact ordered product recommendation response", async () =
 
 test("BFP-02 derives authenticated ownership and never returns the stored subject", async () => {
   let logged;
-  const result = await serveUserRecommendations("demo-user", 3, {
-    user: { publicId: "user-1" },
+  const result = await serveUserRecommendations(legacyRecommendationSubject("demo-user"), 3, {
+    actor: { kind: "registered", publicId: "user-1" },
     anonymousId: "forged-anonymous",
     surface: "recommendations",
   }, {
@@ -51,8 +52,8 @@ test("BFP-02 derives authenticated ownership and never returns the stored subjec
 
 test("seed mode labels recommendation logging as disabled without touching MongoDB", async () => {
   let calls = 0;
-  const result = await serveUserRecommendations("demo-user", 2, {
-    user: null,
+  const result = await serveUserRecommendations(legacyRecommendationSubject("demo-user"), 2, {
+    actor: { kind: "anonymous" },
     anonymousId: "anon-1",
     surface: "home",
   }, {
@@ -66,8 +67,8 @@ test("seed mode labels recommendation logging as disabled without touching Mongo
 
 test("usage-data opt-out suppresses MongoDB request logs", async () => {
   let calls = 0;
-  const result = await serveUserRecommendations("demo-user", 2, {
-    user: null,
+  const result = await serveUserRecommendations(legacyRecommendationSubject("demo-user"), 2, {
+    actor: { kind: "anonymous" },
     anonymousId: null,
     surface: "home",
     trackingAllowed: false,

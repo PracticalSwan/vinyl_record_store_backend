@@ -1,6 +1,6 @@
 # Personalization Implementation Plan (Backend)
 
-This plan converts the existing deterministic demo recommender into a genuine personalized recommender system for the Vinyl Record Store (CSX4207). It is a planning document only. It authorizes no implementation by itself and changes no source code.
+This roadmap converts the existing deterministic demo recommender into a genuine personalized recommender system for the Vinyl Record Store (CSX4207). PERS-00 through PERS-02 were implemented and verified on 2026-07-10. PERS-03 through PERS-09 remain planning-only and authorize no implementation by themselves.
 
 This plan is scheduled AFTER the entire existing documented roadmap: BFP-07 (admin backend), FFP-07 (admin frontend), FFP-08 (simulated checkout), and any backend support already planned for the simulated checkout. It does not reorder, replace, remove, or silently redefine any existing BFP/FFP plan. BFP-05 (recommender algorithm selection) remains its own on-hold placeholder; PERS-00 records the method decision that resolves BFP-05's open question without reusing the BFP-05 ID.
 
@@ -31,13 +31,14 @@ The project may use deterministic synthetic fixtures and clearly labelled classr
 
 The existing offline evaluator, interaction logging, recommendation logging, algorithm versioning, and privacy boundaries are preserved so evaluation can be performed later. "Evaluation with sufficient evidence" is not part of this roadmap.
 
-## Current State (Verified Against Source On 2026-07-07)
+## Current State (Re-Verified Against Source On 2026-07-10)
 
 These facts were verified by reading the source, not by trusting doc status tables. Implementation agents must re-verify before editing.
 
-- The user-recommendation route is `GET /api/recommendations/user/[userId]` (`src/app/api/recommendations/user/[userId]/route.js:7`). The subject is the URL `userId`, validated only as `^[a-zA-Z0-9_-]+$` (`src/validation/catalog.js:59-65`). The signed session is read with `getOptionalSession` (`route.js:14`) but is used solely as a logging subject; it never overrides or authorizes the `userId`.
+- The legacy route `GET /api/recommendations/user/[userId]` validates the URL but immediately maps it to an explicit demo or generic cold-start descriptor. Only `demo-user` selects the synthetic profile; every other ID produces identical cold-start ranking and cannot read private state. `PERS_IDENTITY_STRICT` defaults on, rejects administrators, and keeps any resolved customer session limited to logging ownership.
+- `GET /api/recommendations/me` is implemented behind the default-on `PERS_ME_ENDPOINT` rollback flag. It derives a verified customer descriptor from the signed session, rejects administrators, and otherwise serves `anonymous-fallback`; the response never exposes a customer ID.
 - The product-similarity route is `GET /api/recommendations/product/[id]` (`src/app/api/recommendations/product/[id]/route.js:6`). It does not read the session at all.
-- The literal `"demo-user"` is the only personalization switch (`src/lib/recommender/contentBased.js:131`). Every other publicId, including authenticated demo logins (`demo-customer`, `demo-jazz`, `demo-rock`, `demo-soul`) and registered users (`user-<uuid>`), falls into the cold-start branch.
+- The literal `"demo-user"` is isolated to `legacyRecommendationSubject`; `recommendForUser` accepts only validated subject descriptors. Verified customers still use cold-start item ranking, so PERS-02 changes identity ownership and mode labelling without activating preference or behavioral personalization.
 - The content-based weights are `sameArtist 6, sameGenre 4, sameDecade 2, sameLabel 1, preferredGenre 2` with stock boosts `in 1, low 0.5, out excluded` (`src/lib/recommender/contentBased.js:6-14`). The artist cap is 2 (`diversify`, `contentBased.js:49-62`).
 - The algorithm version label is `content-demo-v1` from `RECOMMENDER_ALGORITHM_VERSION` (`contentBased.js:4`).
 - The hard-coded demo profile is `purchasedIds [1], wishlistIds [2,3,4], favoriteGenres [Jazz, Soul, Electronic, Folk]` (`contentBased.js:16-20`).
@@ -84,7 +85,7 @@ PERS-00 — Repository audit and architecture decision freeze (cross-cutting). R
 
 ### Status
 
-Planned. Blocked by the existing roadmap (BFP-07, FFP-07, FFP-08, and any backend support planned for the simulated checkout). Ready to start only after FFP-08 is complete and the user explicitly opens personalization work.
+Completed 2026-07-10. BFP-07, FFP-07, and FFP-08 were already complete, and the user explicitly opened PERS-00 through PERS-02.
 
 ### Goal
 
@@ -96,7 +97,7 @@ PERS-01 through PERS-09 share identity, data, and contract foundations. If those
 
 ### Current Implementation Gap
 
-There is no personalization architecture of record. The current system has a single hard-coded `demo-user` switch, an inert preference schema, write-only dismissal telemetry, an opt-out that leaks interaction persistence, and no session-owned recommendation endpoint.
+Closed for the architecture layer. BDEC-016 and FDEC-011 now freeze the endpoint, identity, privacy, version/mode, normalization, fallback, and honesty decisions. Preference use, feedback, and the passive-analytics opt-out gap remain for their later milestones.
 
 ### Dependencies
 
@@ -205,9 +206,7 @@ PERS-00 is documentation only. Rollback is deleting the added plan and decision/
 
 ### Decisions Still Requiring Approval
 
-- Final confirmation that personalization work opens after FFP-08 (not earlier).
-- Confirmation that the canonical endpoint name is `/api/recommendations/me` (the architecture strongly justifies it; an alternative needs explicit approval).
-- Confirmation that explicit functional actions persist regardless of tracking opt-out (this is the proposed privacy model; it needs user sign-off because it changes what opt-out means).
+None for PERS-00. The implementation request confirms that personalization opens after FFP-08, keeps `/api/recommendations/me`, and freezes the explicit-functional-action versus passive-tracking opt-out split. Later milestone-specific decisions remain listed under those milestones.
 
 ---
 
@@ -219,7 +218,7 @@ PERS-01 / BFP-08 — Proper identity enforcement for recommendation routes.
 
 ### Status
 
-Planned. Blocked by PERS-00. No ranking logic changes; this milestone hardens identity only.
+Completed and verified 2026-07-10. No ranking weights, candidate rules, or quality claims changed.
 
 ### Goal
 
@@ -227,13 +226,11 @@ Ensure the recommendation subject is derived only from the verified signed sessi
 
 ### Why It Is Required
 
-Today the URL `userId` is the entire identity contract. The session is read but used only for logging. Any client can request any user id, and once PERS-03 attaches real profiles to users, that route would expose one account's profile-derived results to anyone. Identity must be enforced before any private data is attached.
+Before PERS-01 the URL `userId` was the identity contract and the session affected logging only. The completed restriction prevents that legacy route from becoming a private-profile exposure when PERS-03 arrives.
 
 ### Current Implementation Gap
 
-- `GET /api/recommendations/user/:userId` trusts the URL param (`route.js:7,15-27`).
-- The session is resolved but only passed as `context.user` for logging.
-- No contract test proves one account cannot obtain another's personalized data.
+- Closed. The legacy URL maps only to demo or generic cold-start descriptors, verified customer identity comes from `recommendationSubject.js`, and contract tests prove arbitrary IDs cannot select distinct/private results.
 
 ### Dependencies
 
@@ -248,10 +245,10 @@ Today the URL `userId` is the entire identity contract. The session is read but 
 
 ### Backend Changes
 
-- In `src/app/api/recommendations/user/[userId]/route.js`: keep `demo-user` returning `demo-profile`. For every other `userId`, return `cold-start` WITHOUT reading any user profile, preferences, interactions, or feedback. The session, when present, is used only for logging subject and must not influence the result for non-`demo-user` ids. Add an explicit comment that this route is deprecated for authenticated use and must not become a private-profile endpoint.
-- Ensure `GET /api/recommendations/product/:id` does not import or call any session or profile code. Add a guard test that it never reads user state.
-- Centralize the "derive subject from verified session" path used by PERS-02 in a new helper (for example `src/lib/auth/recommendationSubject.js`) that wraps `requireSession` and returns only the safe subject. PERS-01 adds the helper; PERS-02 wires the route.
-- Add a contract test file `tests/recommendation-identity.test.mjs` proving cross-user denial.
+- Implemented `src/lib/auth/recommendationSubject.js` with optional and required verified-customer derivation plus legacy demo/cold-start mapping.
+- Restricted `src/app/api/recommendations/user/[userId]/route.js`; the URL never selects a registered profile, administrator access is rejected under the default-on strict flag, and anonymous IDs are ignored when a customer session resolves.
+- Refactored `recommendForUser` to reject legacy string subjects before catalog access.
+- Added `tests/recommendation-identity.test.mjs`, including cross-user parity, admin/invalid/inactive-session cases, feature rollback, and a product-route no-user-state source guard.
 
 ### Frontend Changes
 
@@ -296,16 +293,13 @@ None. Ranking is untouched.
 
 ### Migration Strategy
 
-- Behind a feature flag `PERS_IDENTITY_STRICT` (default off until tests pass).
-- When strict mode is on, the old route rejects attempts that try to read private data for non-`demo-user` ids (there is nothing to read yet, so behavior is identical; the flag exists so PERS-03 can gate profile reads on it).
+- Behind `PERS_IDENTITY_STRICT`, enabled by default after the identity suite passed. Explicit `false` restores the prior optional-session logging behavior without making the ranker accept arbitrary subjects.
 - No data migration.
 
 ### Tests
 
-- `tests/recommendation-identity.test.mjs`: one account cannot obtain another account's recommendation-derived data (contract test using two registered users once PERS-03 attaches profiles; in PERS-01 it asserts the old route returns identical cold-start output for any two distinct non-`demo-user` ids, proving no per-user data is exposed yet).
-- Product route never reads session/profile (assert via module import inspection or a spy fixture).
-- Admin session rejected from any future customer-personalization path.
-- Disabled/deleted account behaves as anonymous on optional-session routes.
+- `tests/recommendation-identity.test.mjs` passes for verified customer derivation, missing/tampered/inactive sessions, administrator rejection, two-ID cold-start parity, legacy-string rejection before catalog access, product-route isolation, and rollback flags.
+- Browser integration additionally proves a signed-in customer cannot use the legacy URL to select a distinct list.
 
 ### Documentation Updates
 
@@ -315,10 +309,7 @@ None. Ranking is untouched.
 
 ### Definition Of Done
 
-- The old route never reads private profile data for non-`demo-user` ids.
-- Contract test proves cross-user denial.
-- Product route never reads user state.
-- No ranking behavior change; all existing tests pass.
+- Achieved: the old route never reads private profile data for non-`demo-user` ids; cross-user and product-route guards pass; existing ranking behavior remains reproducible.
 
 ### Rollback Criteria
 
@@ -330,7 +321,7 @@ Disable `PERS_IDENTITY_STRICT`. The route reverts to current behavior. No data t
 
 ### Decisions Still Requiring Approval
 
-- Whether admin sessions are rejected (`403`) or served the anonymous fallback on personalization endpoints. Proposed default: reject.
+None. Customer-personalization endpoints reject verified administrator sessions with `403 FORBIDDEN`.
 
 ---
 
@@ -342,7 +333,7 @@ PERS-02 / BFP-09 (backend) + FFP-09 (frontend) — Canonical session-owned recom
 
 ### Status
 
-Planned. Blocked by PERS-01. Introduces the new endpoint with behavior parity to the current `demo-user` path first, then the frontend switches to it.
+Completed and verified 2026-07-10 after PERS-01.
 
 ### Goal
 
@@ -354,9 +345,7 @@ The old route cannot safely carry private data (PERS-01). Personalization needs 
 
 ### Current Implementation Gap
 
-- No `/api/recommendations/me` exists.
-- The frontend hard-codes `demo-user` (`vinyl_record_store_frontend/src/context/CatalogProvider.jsx:89`, `src/lib/api.js:101`).
-- `CatalogProvider` wraps `AuthProvider` so recommendations fire before auth resolves (`App.jsx:27-28`).
+- Closed. `/api/recommendations/me` exists, the production client has no arbitrary-user parameter, `CatalogProvider` is below `AuthProvider`, and recommendation loading is gated until auth restoration resolves.
 
 ### Dependencies
 
@@ -365,22 +354,19 @@ The old route cannot safely carry private data (PERS-01). Personalization needs 
 
 ### Non-goals
 
-- Changing ranking. PERS-02 serves the same content the old route serves today (parity), then the frontend switches. Ranking changes begin in PERS-04.
+- Changing ranking. PERS-02 preserves the existing generic cold-start item ordering for customers and anonymous fallback; ranking changes begin in PERS-04.
 - Deprecating the old route entirely (it stays restricted).
 
 ### Backend Changes
 
-- Add `src/app/api/recommendations/me/route.js`. It calls `requireSession(request)` (or optional session for anonymous fallback), derives the subject via the PERS-01 helper, and calls `serveUserRecommendations(subject, limit, context)` where the service now branches on a real subject rather than the literal `demo-user`.
-- Refactor `src/lib/recommender/contentBased.js` and `src/services/recommendations.js` so the demo/cold-start/personalized branches key off an explicit subject descriptor (for example `{ kind: "demo" | "cold-start" | "registered", publicId, preferences, profile }`) instead of string-comparing the userId. The `demo-user` literal stays only as the showcase trigger on the old route.
-- Parity behavior: a registered user with no preferences/interactions receives the same cold-start output they get today; `demo-user` showcase output is unchanged.
-- Logging uses the verified subject (`subjectType:"user"`, `subjectId: publicId`), exactly as today.
+- Implemented `src/app/api/recommendations/me/route.js` with optional-session customer derivation, administrator denial, limit 12/cap 20, controlled surfaces, anonymous-only ID handling, safe errors, and the default-on `PERS_ME_ENDPOINT` rollback flag.
+- Refactored recommender/service calls to explicit subject and actor descriptors. Registered and anonymous lists retain identical `content-demo-v1` item ranking while modes differ honestly.
+- Logging uses the verified public ID for a customer and a bounded anonymous ID only when no customer resolves; neither subject is returned.
 
 ### Frontend Changes (FFP-09)
 
-- Reorder providers so recommendation loading cannot start before auth restoration resolves (move the recommendation resource below `AuthProvider`, or gate the loader on `auth.status !== "loading"`).
-- Add `fetchMyRecommendations({signal, surface})` to `src/lib/api.js` calling `GET /api/recommendations/me`.
-- Switch `CatalogProvider` to call `fetchMyRecommendations` when authenticated and the documented anonymous fallback when anonymous; keep the `demo-user` showcase path only for the explicitly labelled showcase.
-- Resource key includes the authenticated subject so sign-in/sign-out invalidates results; abort in-flight requests on identity change.
+- Implemented provider reorder plus `auth.status !== "loading"` gating, fixed-subject `fetchMyRecommendations`, anonymous-only headers, subject-aware resource keys, abort on identity change, and generation guards that discard transports which ignore abort.
+- The fixed `fetchShowcaseRecommendations` rollback helper cannot accept a user ID and always calls `demo-user`.
 
 ### API Contract
 
@@ -404,7 +390,7 @@ Parity first. The branch refactor is structural; output for current inputs is id
 
 ### Privacy And Security Rules
 
-- Subject always from `requireSession`.
+- Subject always comes from the verified optional-session resolver; only an active customer session can produce a registered subject.
 - Anonymous id only accepted when no session.
 - Recommendation log subject is the verified publicId.
 
@@ -425,15 +411,15 @@ Parity first. The branch refactor is structural; output for current inputs is id
 
 ### Migration Strategy
 
-- Add the endpoint behind `PERS_ME_ENDPOINT` flag with parity tests first.
-- Switch authenticated frontend surfaces after the endpoint is stable.
+- `PERS_ME_ENDPOINT` and `VITE_PERS_ME_ENDPOINT` are enabled by default after parity and integration tests passed; explicit `false` rolls both sides back to the labelled showcase path.
+- Authenticated and anonymous frontend surfaces now use `/me`; the legacy route remains restricted.
 - Keep the old route restricted (PERS-01).
 - No data migration.
 
 ### Tests
 
-- `tests/recommendations-me.test.mjs`: authenticated subject derives from session; anonymous fallback; admin rejected; parity with old route for cold-start; log subject is the verified publicId.
-- Frontend FFP-09: auth-restoration-before-load, authenticated endpoint selection, anonymous fallback, sign-in refresh, sign-out cleanup, stale-response prevention.
+- Backend tests cover verified ownership, anonymous logging, cold-start/fallback parity, admin denial through the identity helper, malformed actor rejection before catalog access, feature rollback, and no identity in the public result.
+- Frontend API/provider/browser tests cover auth-before-load, endpoint selection, anonymous headers/fallback, sign-in abort, sign-out cleanup, stale-response prevention even when abort is ignored, retry, tampered-cookie fallback, admin denial, and legacy cross-user parity.
 
 ### Documentation Updates
 
@@ -443,24 +429,20 @@ Parity first. The branch refactor is structural; output for current inputs is id
 
 ### Definition Of Done
 
-- `/api/recommendations/me` serves session-owned recommendations.
-- Anonymous fallback works.
-- Frontend uses it for authenticated users; showcase demo language preserved where applicable.
-- Old route still serves `demo-user` showcase and cold-start only.
-- All existing tests pass; parity tests pass.
+- Achieved: `/api/recommendations/me` is session-owned for customers, anonymous fallback works, administrators are rejected, the frontend is auth-gated and stale-safe, the old route remains demo/cold-start-only, and parity/regression suites pass.
 
 ### Rollback Criteria
 
-- Disable `PERS_ME_ENDPOINT`; frontend falls back to the old `demo-user` call. No data to roll back.
+- Disable backend `PERS_ME_ENDPOINT` and frontend `VITE_PERS_ME_ENDPOINT`; the client falls back to the fixed `demo-user` showcase. No data rolls back.
 
 ### Risks
 
-- BR-022: provider reorder breaks catalog state. Mitigation: FFP-09 regression tests.
-- FR-015: recommendation loading races auth restoration. Mitigation: gate loader on auth status.
+- FR-014: stale identity responses overwrite current results. Controlled by abort plus generation/resource-key guards.
+- FR-016: recommendation loading races auth restoration. Controlled by provider order, auth gating, and component/browser tests.
 
 ### Decisions Still Requiring Approval
 
-- Final `limit` default for `/me` (proposed 12 to match current frontend usage).
+None. The default is 12 with a cap of 20.
 
 ---
 
@@ -1433,18 +1415,17 @@ Deterministic synthetic fixtures and labelled classroom demo profiles only. No r
 
 Each stage is reversible. Recommended release pattern:
 
-1. Add data models and repositories without changing live ranking (PERS-03 behind flag).
-2. Add identity enforcement and tests (PERS-01).
-3. Add the new endpoint with current-behavior parity (PERS-02).
-4. Add profile construction behind a flag (PERS-03).
-5. Add preference ranking behind a flag (PERS-04).
-6. Add negative feedback (PERS-05).
-7. Add behavioral ranking behind a flag (PERS-06).
-8. Add popularity baseline (PERS-07).
-9. Add hybrid mode behind a flag (PERS-08).
-10. Switch authenticated frontend surfaces (PERS-09).
-11. Retain rollback to `content-demo-v1`.
-12. Remove or restrict insecure legacy paths only after all consumers migrate (the old route stays restricted, never private).
+1. Add identity enforcement and tests (PERS-01, completed 2026-07-10).
+2. Add the new endpoint with current-behavior parity and switch the auth-gated frontend (PERS-02, completed 2026-07-10).
+3. Add data models, repositories, and profile construction without changing live ranking (PERS-03 behind a flag).
+4. Add preference ranking behind a flag (PERS-04).
+5. Add negative feedback (PERS-05).
+6. Add behavioral ranking behind a flag (PERS-06).
+7. Add popularity baseline (PERS-07).
+8. Add hybrid mode behind a flag (PERS-08).
+9. Complete cross-repository hardening and documentation closure (PERS-09).
+10. Retain rollback to `content-demo-v1`.
+11. Keep the legacy route restricted and never private.
 
 Rules: schema migrations additive and dry-run-verified; no destructive migration without export; feature flags per milestone; algorithm-version flags; route rollout behind flags; frontend switch-over after endpoint stability; backward compatibility maintained; old route deprecation documented; cache invalidation on writes; rollback procedure per milestone; seed-mode and MongoDB-mode verification; cross-repository release order backend-first.
 
@@ -1460,7 +1441,7 @@ Recorded across milestones:
 - BDEC-018 — Durable feedback authoritative source; pessimistic vs optimistic create.
 - BDEC-019 — Opt-out split between passive and explicit; behavioral aggregation assumptions.
 
-Proposed decisions still requiring user approval: see each milestone's final section. The most significant are: opening personalization after FFP-08; the `/api/recommendations/me` name; the opt-out model (explicit functional actions persist regardless of opt-out); hard-vs-soft preference defaults; pessimistic feedback creates; initial popularity variant and window; initial hybrid weights; whether any flag is enabled by default at closure.
+PERS-00 through PERS-02 resolved opening personalization after FFP-08, the `/api/recommendations/me` name, the explicit-functional-action versus passive-tracking opt-out model, administrator rejection, limit 12, auth gating/provider order, and default-on reversible identity/endpoint flags. Decisions still requiring approval belong to later milestones: hard-vs-soft preference defaults, pessimistic feedback creates, initial popularity variant/window, initial hybrid weights, and final closure defaults.
 
 ## Honesty Contract
 

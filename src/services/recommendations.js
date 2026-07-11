@@ -46,11 +46,18 @@ async function record(result, context, {
   };
 }
 
-export async function serveUserRecommendations(requestedUserId, limit, context, options = {}) {
-  const result = await recommendForUser(requestedUserId, limit, options);
+export async function serveUserRecommendations(subject, limit, context, options = {}) {
+  const actor = context?.actor;
+  if (
+    !["anonymous", "registered"].includes(actor?.kind)
+    || (actor.kind === "registered" && !actor.publicId)
+  ) {
+    throw new TypeError("A verified recommendation actor is required.");
+  }
+  const result = await recommendForUser(subject, limit, options);
   return record(result, {
-    subjectType: context.user ? "user" : "anonymous",
-    subjectId: context.user?.publicId || context.anonymousId || null,
+    subjectType: actor.kind === "registered" ? "user" : "anonymous",
+    subjectId: actor.kind === "registered" ? actor.publicId : context.anonymousId || null,
     surface: context.surface,
     trackingAllowed: context.trackingAllowed,
   }, options);

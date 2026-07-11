@@ -7,7 +7,7 @@ Read this file before every backend session.
 - The backend is an implemented Next.js catalog, recommender, authentication, and customer-state API, not a starter or planning-only scaffold.
 - The approved demo seed remains the default catalog. Explicit `CATALOG_DATA_SOURCE=mongodb` selection uses the Atlas catalog repository; never describe MongoDB as an automatic fallback.
 - Strict Mongoose models, repositories, signed sessions, customer write routes, an idempotent seed migration, and index verification exist.
-- The recommender is deterministic content-based logic for product similarity, a synthetic `demo-user`, and cold-start fallback.
+- The recommender is deterministic `content-demo-v1` logic for product similarity, a restricted synthetic `demo-user`, session-owned customer cold-start, and anonymous fallback.
 - Recommendation routes return server-generated request/list IDs. In MongoDB mode they log exactly what was served unless the usage-data header opts out; seed mode remains non-persistent.
 - Behavior tests prove implementation rules, not offline recommendation quality.
 - Catalog ingestion, backend-approved artwork, and the offline evaluation pipeline are implemented. The current evaluation output remains an evidence-bound non-conclusion.
@@ -18,7 +18,8 @@ Read this file before every backend session.
 - Keep `AGENTS.md` and `CLAUDE.md` aligned.
 - Keep route handlers thin, validate inputs before service calls, and preserve safe response envelopes.
 - Remove seed-only `reason` fields from public product responses; recommendation reasons must be generated from actual matching logic.
-- Never describe `demo-profile` output as a real customer's personalization.
+- Never describe `demo-profile`, session-owned cold-start, or anonymous fallback output as preference/behavior personalization or measured recommendation quality.
+- Build customer recommendation subjects only through `src/lib/auth/recommendationSubject.js`. The legacy URL may select only demo or generic cold-start behavior; it must never become a private-profile lookup.
 - Use the recommender-evaluation protocol before computing or reporting ranking-quality metrics.
 - Run `npm run db:ping` after changing Atlas credentials or connection code; a successful ping does not prove persistence behavior.
 - Run `npm run db:seed` before `npm run db:seed:apply`; abort on conflicts. Use `npm run db:indexes` to verify the connected database after model or index changes.
@@ -31,6 +32,7 @@ Read this file before every backend session.
 - Run catalog imports without `--apply` first. Keep batches atomic unless partial mode is explicitly justified, preserve source ownership and existing enrichment on seed re-runs, and treat supplied public-ID disagreement as a conflict.
 - Require MusicBrainz release or release-group identity before accepting artwork. External enrichment may fill missing genre/year/label but must never replace store price, stock, condition, or supplied metadata.
 - Pseudonymize evaluation subjects before dataset construction and keep generated reports aggregate-only. Below the minimum evidence boundary, report completeness and counts rather than metrics.
+- Keep the root PostCSS override at a patched 8.5.x release while stable Next.js still pins the vulnerable 8.4.31 copy; verify with `npm ls next postcss` and `npm audit`, and do not accept npm's breaking `next@9` force-fix suggestion.
 - Run `npm test`, `npm run lint`, and `npm run build` after backend behavior changes.
 
 ## Safety

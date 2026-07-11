@@ -15,6 +15,7 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 | Source/out-of-stock exclusions | Passing Node test. |
 | Demo-profile exclusion and mode | Passing Node test. |
 | Cold-start mode and language | Passing Node test. |
+| Session-owned identity, anonymous fallback, admin denial, and cross-user-safe legacy behavior | Passing Node and browser contract tests. |
 | Ideal-order NDCG sanity | Passing Node test equals 1.0. |
 | Frontend CORS origin rule | Passing Node test. |
 | Authentication, signed/tampered cookies, roles, registration, and the interaction cap | Passing Node tests plus browser session flows. |

@@ -4,6 +4,7 @@ import {
   recommendForProduct,
   recommendForUser,
 } from "../src/lib/recommender/contentBased.js";
+import { legacyRecommendationSubject } from "../src/lib/auth/recommendationSubject.js";
 import { ndcgAtK } from "../src/lib/recommender/evaluate.js";
 
 test("product recommendations rank the same artist first", async () => {
@@ -15,14 +16,14 @@ test("product recommendations rank the same artist first", async () => {
 });
 
 test("demo profile excludes its known records and labels its mode", async () => {
-  const result = await recommendForUser("demo-user", 8);
+  const result = await recommendForUser(legacyRecommendationSubject("demo-user"), 8);
   const excluded = new Set([1, 2, 3, 4]);
   assert.equal(result.mode, "demo-profile");
   assert.ok(result.recommendations.every((item) => !excluded.has(item.product.id)));
 });
 
 test("unknown users receive an explicit cold-start list", async () => {
-  const result = await recommendForUser("new-user", 5);
+  const result = await recommendForUser(legacyRecommendationSubject("new-user"), 5);
   assert.equal(result.mode, "cold-start");
   assert.match(result.profileSummary[0], /No stored history/);
 });

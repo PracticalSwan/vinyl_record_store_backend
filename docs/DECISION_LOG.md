@@ -130,7 +130,7 @@ Decision: Accept structured artwork only from approved hosts when its paths matc
 
 Rationale: Host allowlists alone cannot prove that a cover belongs to the imported record, and sparse behavioral data cannot support a defensible recommendation-quality claim. These boundaries make both provenance and evaluation claims auditable.
 
-## BDEC-016: Personalization Architecture Freeze (Planned)
+## BDEC-016: Personalization Architecture Freeze
 
 Date: 2026-07-07
 
@@ -138,7 +138,7 @@ Decision: Plan, without implementing, a personalization roadmap (PERS-00 through
 
 Rationale: Identity, data, and contract foundations must be fixed before any ranking milestone so later plans do not rediscover dependencies or produce contradictory contracts. The opt-out split preserves user control over passive tracking while keeping user-authored features functional. No quality claim is made or implied; the existing `insufficient-evidence` evaluator status and its evidence threshold are unchanged.
 
-Status: Planned. No source code changed. Enables BDEC-017 through BDEC-019 to be recorded when their respective milestones land.
+Status: Frozen and completed 2026-07-10. The user opened personalization after FFP-08 and approved the planned defaults by requesting PERS-00 through PERS-02: `/api/recommendations/me`, explicit functional actions surviving passive-tracking opt-out, customer-only personalization access with administrator rejection, limit 12, and auth-state gating/provider reorder. PERS-01/02 implement only the identity/session seam; ranking remains `content-demo-v1` and the evaluator remains `insufficient-evidence`.
 
 ## BDEC-017: Administrator Mode Is Role-Gated, Optimistic-Concurrent, And Mongodb-Only For Writes
 

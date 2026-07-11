@@ -8,12 +8,13 @@ The backend is a Next.js 16.2.9 integration service. It serves the approved cata
 
 ## Implemented Scope
 
-- Health, product list/detail, literal search, product recommendation, and user recommendation routes.
+- Health, product list/detail, literal search, product recommendation, restricted legacy user recommendation, and session-owned `/api/recommendations/me` routes.
 - Customer registration, environment-backed and MongoDB showcase logins, signed HttpOnly sessions, logout/restoration, role authorization, and registered-customer deletion.
 - Protected profile/preferences, wishlist, cart, ratings, and idempotent guest-state merge routes.
 - Idempotent anonymous/authenticated interaction ingestion with bounded schemas, per-identity cap, complete recommendation context, and 90-day eventual TTL.
 - BFP-02 Part A request logging: server request/list IDs, exact ordered items/scores/ranks/reasons, algorithm version, mode, exclusions, surface, safe subject, and 90-day eventual TTL.
 - Usage-data opt-out suppresses request logs; seed catalog mode returns attribution IDs but does not persist logs.
+- PERS-00/01/02 identity boundary: safe subject descriptors, cross-user-safe legacy behavior, customer-only verified-session ownership, administrator rejection, anonymous fallback, auth-aware frontend consumption, and default-on rollback flags. Ranking remains `content-demo-v1` parity.
 - Strict Mongoose models, repositories, conflict-safe seed migration, showcase-account seed workflow, and additive index verification.
 - Preview-first CSV/JSON catalog imports with validation, duplicate/conflict reports, atomic apply by default, source ownership, collision-free public IDs, optional controlled partial mode, and no implicit deletion.
 - Rate-limited, cached MusicBrainz and Cover Art Archive enrichment with exact-match review, release-bound artwork, server-generated provenance, and placeholders on absence or failure.
@@ -31,9 +32,9 @@ The current report is `insufficient-evidence`: no ranking-quality metrics are em
 ## Deferred Scope
 
 - Demo orders, payments, collaborative/hybrid ranking, and deployment automation. (Administrator catalog APIs are implemented in BFP-07; only demo orders/payments remain deferred.)
-- Genuine personalization (PERS-00 through PERS-09), scheduled after BFP-07, FFP-07, and FFP-08. See `PERSONALIZATION_IMPLEMENTATION_PLAN.md`. No milestone is in progress; no quality claim is made; collaborative filtering and matrix factorization are excluded.
+- Preference, feedback, behavioral, popularity, and hybrid personalization (PERS-03 through PERS-09) remains planned. PERS-00 through PERS-02 are complete; no ranking-quality claim is made, and collaborative filtering and matrix factorization remain excluded.
 
-BFP-01, BFP-03, BFP-04, BFP-06, BFP-07, both parts of BFP-02, and the shared FFP-01/02/03/05/06/07/08 contracts are complete. Behavior tests and insufficient interaction evidence do not establish recommendation quality.
+BFP-01, BFP-03, BFP-04, BFP-06, BFP-07, BFP-08, BFP-09, both parts of BFP-02, and the shared FFP-01/02/03/05/06/07/08/09 contracts are complete. Behavior tests and insufficient interaction evidence do not establish recommendation quality.
 
 ## Update Rule
 

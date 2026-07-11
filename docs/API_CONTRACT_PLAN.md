@@ -41,12 +41,20 @@ Optional `limit` defaults to 6 and is capped at 20.
 
 Response data: `{ sourceProductId, mode, recommendations, algorithmVersion, requestId, listId, recommendationLogged }`, where each item contains `{ product, score, reasons, algorithmVersion, rank }`. Optional `surface` is controlled; the default is `product-detail`.
 
+### `GET /api/recommendations/me`
+
+Optional authentication. A verified customer session receives `mode: "cold-start"`; no, expired, tampered, disabled, or deleted customer session receives `mode: "anonymous-fallback"`; a verified administrator receives `403 FORBIDDEN`. Optional `limit` defaults to 12 and is capped at 20. Optional `surface` is controlled.
+
+The client never sends a customer ID. Authenticated logging ownership is the verified public ID, and `X-Anonymous-Id` is accepted only when no customer session resolves. The response is `{ mode, algorithmVersion, requestId, listId, recommendationLogged, profileSummary, recommendations }` and never exposes `userId`, raw events, internal exclusions, or database IDs. PERS-02 preserves the `content-demo-v1` item ranking; preference and behavioral ranking remain deferred.
+
 ### `GET /api/recommendations/user/:userId`
 
 User IDs allow letters, numbers, underscores, and hyphens. Optional `limit` defaults to 8 and is capped at 20.
 
 - `demo-user` returns `mode: "demo-profile"` and a synthetic profile summary.
 - Other valid IDs return `mode: "cold-start"` without claiming user history.
+
+This is a restricted legacy showcase route, not a private-profile endpoint. Non-`demo-user` IDs never read customer preferences, interactions, or feedback. With `PERS_IDENTITY_STRICT` enabled (the default), a valid administrator session is rejected.
 
 Response data also includes `requestId`, `listId`, and `recommendationLogged`. Optional `surface` is controlled. In MongoDB mode, a tracking-enabled request logs the exact ordered list before response; seed mode and `X-Tracking-Enabled: false` do not persist it. Authenticated log ownership comes from the verified cookie; anonymous user requests may send bounded `X-Anonymous-Id`.
 
@@ -107,13 +115,12 @@ Every `/api/admin/*` route calls `requireRole("admin")` after session verificati
 
 Demo-order and payment routes are not implemented (the storefront ships a client-only simulated checkout in FFP-08). Recommendation-request logging is an internal side effect of the implemented recommendation GET routes, not a public mutation route.
 
-## Planned Routes (Personalization Roadmap)
+## Planned Routes (Remaining Personalization Roadmap)
 
-The following are planned in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`, scheduled after BFP-07, FFP-07, and FFP-08. None is implemented; none authorizes implementation by itself.
+The following remain planned in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`. PERS-00 through PERS-02 are complete; later entries do not authorize implementation by themselves.
 
-- `GET /api/recommendations/me` (PERS-02 / BFP-09): session-owned signed-in-user recommendations with an anonymous fallback. The subject is derived only from the verified session. The existing `GET /api/recommendations/user/:userId` is restricted, not removed: `demo-user` keeps `demo-profile`; every other id returns `cold-start` and never reads private profile data.
 - `PUT`, `DELETE`, `GET /api/me/feedback[/:productId]` (PERS-05 / BFP-12): durable explicit feedback (not-interested, already-own, optional show-fewer-like-this) with idempotent undo.
-- Extended `/api/recommendations/me` response fields: `mode` (`preference-profile`, `behavior-profile`, `popularity`, `personalized-hybrid`, `anonymous-fallback`, plus existing `demo-profile`/`cold-start`), `algorithmVersion` (`preference-profile-v1`, `behavior-profile-v1`, `popularity-v1`, `personalized-hybrid-v1`, with `content-demo-v1` preserved), safe `profileSummary`, safe `dataSourceFlags`, and `profileCompleteness`. No raw interaction rows, no MongoDB object ids, no internal exclusions, and no raw component weights are exposed.
+- Future `/api/recommendations/me` response extensions: `mode` (`preference-profile`, `behavior-profile`, `popularity`, `personalized-hybrid`), corresponding algorithm versions, safe `dataSourceFlags`, and `profileCompleteness`. No raw interaction rows, MongoDB object IDs, internal exclusions, or raw component weights will be exposed.
 
 ## CORS
 

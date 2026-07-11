@@ -1,6 +1,6 @@
 # Backend Future Implementation Plan
 
-Status: BFP-01/03/04/06/07, both parts of BFP-02, and the backend contracts for FFP-01/02/03/05/06/07/08 are complete. BFP-05 remains on hold; personalization (BFP-08+, in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`) remains future work pending a separate explicit task.
+Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, and the backend contracts for FFP-01/02/03/05/06/07/08/09 are complete. BFP-05 remains a historical on-hold placeholder whose open method decision was frozen by PERS-00; personalization from BFP-10 onward remains future work pending a separate explicit task.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
@@ -23,9 +23,9 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 | --- | --- | --- | --- |
 | BFP-01 | MongoDB persistence, schemas, indexes, and seed migration | Completed 2026-07-03 | Seed remains the default; explicit MongoDB mode, models, repositories, migration, parity checks, and live indexes are verified. |
 | BFP-02 | Recommendation logging and offline evaluation dataset | Completed 2026-07-06 | The pipeline is active and evidence-gated; the current report is `insufficient-evidence`. |
-| BFP-03 | Write API contracts and implementation | Completed 2026-07-04 | Customer/event routes are implemented; optional demo orders and administrator writes remain in BFP-08/BFP-07 scope. |
+| BFP-03 | Write API contracts and implementation | Completed 2026-07-04 | Customer/event routes are implemented; administrator writes landed in BFP-07, while backend order APIs remain deferred. |
 | BFP-04 | Simple authentication, registration, and authorization | Completed 2026-07-04 | Registered and seeded identities use signed server sessions and role checks. |
-| BFP-05 | Recommender algorithm selection | On hold | User will choose the future recommender method. |
+| BFP-05 | Recommender algorithm selection | On hold (superseded decision) | PERS-00 / BDEC-016 resolved the method direction under new IDs; this historical placeholder is not reused. |
 | BFP-06 | Catalog ingestion and metadata quality | Completed 2026-07-06 | Preview/apply, source/conflict rules, enrichment, artwork, caching, and provenance are verified. |
 | BFP-07 | Admin mode backend | Completed 2026-07-09 | Administrator API is implemented: role-gated summary, product CRUD with `updatedAt` optimistic concurrency, soft-delete/restore, preview-token import apply, artwork refresh, and best-effort audit logging. Catalog writes are mongodb-only (503 in seed mode). |
 
@@ -402,7 +402,7 @@ Work allowed while this plan is held:
 - Capture versioned interactions and recommendation logs.
 - Build the leakage-safe dataset and baseline evaluation pipeline.
 - Store explicit user preferences without claiming the current algorithm uses them.
-- Preserve the current content-based behavior and honest `demo-profile`, `content-similarity`, and `cold-start` labels.
+- Preserve the current content-based behavior and honest `demo-profile`, `content-similarity`, `cold-start`, and `anonymous-fallback` labels.
 
 Decision package required to reopen the plan:
 
@@ -549,9 +549,9 @@ Database phases additionally require the relevant smoke, migration dry-run, pari
 
 ## Personalization Roadmap (PERS-00 - PERS-09)
 
-This section records a planned, dependency-safe personalization roadmap that converts the deterministic demo recommender into a genuine personalized recommender. It is scheduled AFTER the entire existing roadmap above: BFP-07, FFP-07, FFP-08, and any backend support planned for the simulated checkout. It does not reorder, replace, remove, or silently redefine any existing plan. Full detail lives in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`. No milestone is in progress; none is marked completed.
+This section records the dependency-safe personalization roadmap. PERS-00 through PERS-02 were completed on 2026-07-10 after BFP-07, FFP-07, and FFP-08; PERS-03 through PERS-09 remain planned. The sequence does not reorder, replace, remove, or silently redefine any existing plan. Full detail lives in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`.
 
-BFP-05 remains its own on-hold placeholder; PERS-00 records the method decision that resolves its open question under new IDs and does not reuse the BFP-05 ID.
+BFP-05 remains its own on-hold placeholder; completed PERS-00 records the method decision that resolves its open question under new IDs and does not reuse the BFP-05 ID.
 
 Collaborative filtering and matrix factorization are explicitly excluded; the project is not collecting sufficient real-user evidence. The existing offline evaluator, interaction logging, recommendation logging, algorithm versioning, and privacy boundaries are preserved; "evaluation with sufficient evidence" is not part of this roadmap, and the `insufficient-evidence` status is unchanged.
 
@@ -559,9 +559,9 @@ Collaborative filtering and matrix factorization are explicitly excluded; the pr
 
 | ID | Plan | Status | Main Gate |
 | --- | --- | --- | --- |
-| PERS-00 / BDEC-016 | Audit and decision freeze | Planned | Records the architecture decisions and the no-regression checklist before any code. |
-| PERS-01 / BFP-08 | Proper identity enforcement | Planned | Restrict the arbitrary-user route; cross-user denial contract test. |
-| PERS-02 / BFP-09 | Session-owned signed-in-user endpoint | Planned | `GET /api/recommendations/me` with anonymous fallback; parity first. |
+| PERS-00 / BDEC-016 | Audit and decision freeze | Completed 2026-07-10 | Architecture, privacy, modes, rollback, and no-quality-claim decisions are frozen. |
+| PERS-01 / BFP-08 | Proper identity enforcement | Completed 2026-07-10 | Safe subject descriptors restrict the arbitrary-user route; cross-user and product-route guards pass. |
+| PERS-02 / BFP-09 | Session-owned signed-in-user endpoint | Completed 2026-07-10 | `GET /api/recommendations/me` serves verified-customer cold-start or anonymous fallback with parity ranking. |
 | PERS-03 / BFP-10 | Unified profile and feedback domain | Planned | One backend-owned profile service; durable feedback collection. |
 | PERS-04 / BFP-11 | Preference-aware ranking | Planned | Hard constraints and soft scores; truthful explanations. |
 | PERS-05 / BFP-12 | Negative feedback | Planned | Not-interested, already-own, undo, optional show-fewer-like-this. |
