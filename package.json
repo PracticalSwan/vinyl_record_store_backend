@@ -16,6 +16,8 @@
     "db:seed:users:apply": "node --env-file-if-exists=.env.local scripts/seed-demo-users.mjs --apply",
     "db:indexes": "node --env-file-if-exists=.env.local scripts/verify-indexes.mjs",
     "db:indexes:ensure": "node --env-file-if-exists=.env.local scripts/verify-indexes.mjs --ensure",
+    "db:clean:test": "node --env-file-if-exists=.env.local scripts/clean-test-residue.mjs",
+    "db:clean:test:apply": "node --env-file-if-exists=.env.local scripts/clean-test-residue.mjs --apply",
     "catalog:import": "node --env-file-if-exists=.env.local scripts/import-catalog.mjs",
     "recommender:evaluate": "node --env-file-if-exists=.env.local scripts/evaluate-recommender.mjs",
     "auth:hash": "node scripts/create-password-hash.mjs",

@@ -81,6 +81,8 @@ npm run build
 
 Use live endpoint and cross-origin checks when the environment permits them.
 
+After any E2E or auth-write run that exercised MongoDB mode, remove the test-generated documents from Atlas with `npm run db:clean:test:apply` (dry-run: `npm run db:clean:test`). This is the standalone form of the root `CLAUDE.md`/`AGENTS.md` "Post-test Atlas cleanup" rule; the frontend Playwright suite also runs it automatically via its global teardown. The tool deletes only `e2e_`-prefixed users and the test-residue collections (`interactions`, `recommendationLogs`, `carts`, `wishlists`, `ratings`, `guestMerges`), never `vinylRecords`, the demo users, `counters`, `orders`, or `auditLogs`.
+
 ## Documentation Synchronization
 
 Use `docs/PROJECT_CONTEXT.md` as the backend source of truth. Update only affected files, including API, architecture, data, recommender, evaluation, risk, roadmap, backlog, decision, setup, README, lessons, and environment docs. Keep `AGENTS.md` and `CLAUDE.md` aligned.
