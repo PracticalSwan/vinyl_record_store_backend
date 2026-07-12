@@ -15,12 +15,12 @@ const httpsUrl = (value) => {
   return url.toString();
 };
 
-const sourceUrl = (value, releaseId) => {
+const sourceUrl = (value, entity, entityId) => {
   try {
     const url = new URL(value);
     return url.protocol === "https:"
       && ["musicbrainz.org", "www.musicbrainz.org"].includes(url.hostname.toLowerCase())
-      && url.pathname === `/release/${releaseId}`
+      && url.pathname === `/${entity}/${entityId}`
       ? url.toString()
       : null;
   } catch {
@@ -33,10 +33,9 @@ export function createCoverArtArchiveClient({
   cache = createJsonFileCache(),
   userAgent = process.env.MUSICBRAINZ_USER_AGENT,
 } = {}) {
-  return {
-    async getReleaseArtwork(releaseId) {
-      if (!UUID_PATTERN.test(String(releaseId))) throw new Error("Cover Art Archive release ID is invalid.");
-      const url = `${API_ROOT}/release/${releaseId}`;
+  async function getArtwork(entity, entityId) {
+      if (!UUID_PATTERN.test(String(entityId))) throw new Error(`Cover Art Archive ${entity} ID is invalid.`);
+      const url = `${API_ROOT}/${entity}/${entityId}`;
       const cacheKey = `cover-art-archive:${url}`;
       const cached = await cache.get(cacheKey);
       if (cached?.resolvedArtwork) {
@@ -44,7 +43,7 @@ export function createCoverArtArchiveClient({
           ...cached.resolvedArtwork,
           thumbnailUrl: httpsUrl(cached.resolvedArtwork.thumbnailUrl),
           detailUrl: httpsUrl(cached.resolvedArtwork.detailUrl),
-          sourceUrl: sourceUrl(cached.resolvedArtwork.sourceUrl, releaseId),
+          sourceUrl: sourceUrl(cached.resolvedArtwork.sourceUrl, entity, entityId),
           retrievedAt: new Date(cached.resolvedArtwork.retrievedAt),
         };
         if (
@@ -84,15 +83,19 @@ export function createCoverArtArchiveClient({
 
       const image = (payload?.images || []).find((item) => item.approved && item.front);
       if (!image) return null;
-      const thumbnailUrl = httpsUrl(image.thumbnails?.["500"] || image.thumbnails?.large);
-      const detailUrl = httpsUrl(image.thumbnails?.["1200"] || image.image || thumbnailUrl);
+      const thumbnailUrl = httpsUrl(entity === "release-group"
+        ? `${API_ROOT}/${entity}/${entityId}/front-500`
+        : image.thumbnails?.["500"] || image.thumbnails?.large);
+      const detailUrl = httpsUrl(entity === "release-group"
+        ? `${API_ROOT}/${entity}/${entityId}/front-1200`
+        : image.thumbnails?.["1200"] || image.image || thumbnailUrl);
       if (!thumbnailUrl || !detailUrl) return null;
       const resolvedArtwork = {
         url: detailUrl,
         thumbnailUrl,
         detailUrl,
         source: "cover-art-archive",
-        sourceUrl: sourceUrl(`https://musicbrainz.org/release/${releaseId}`, releaseId),
+        sourceUrl: sourceUrl(`https://musicbrainz.org/${entity}/${entityId}`, entity, entityId),
         retrievedAt: new Date(),
       };
       await cache.set(cacheKey, {
@@ -102,6 +105,15 @@ export function createCoverArtArchiveClient({
         },
       });
       return resolvedArtwork;
+  }
+
+  return {
+    async getReleaseArtwork(releaseId) {
+      return getArtwork("release", releaseId);
+    },
+
+    async getReleaseGroupArtwork(releaseGroupId) {
+      return getArtwork("release-group", releaseGroupId);
     },
   };
 }

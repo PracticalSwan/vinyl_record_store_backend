@@ -1,5 +1,5 @@
-// Removes test/demo residue from the Atlas `vinyl_record_store` database so the
-// classroom DB stays clean for offline evaluation and inspection. Safe by
+// Removes automated-test residue from the Atlas `vinyl_record_store` database
+// so evaluation and catalog inspection start from a clean state. Safe by
 // design: dry-run by default; never touches `vinylRecords` (the catalog) or any
 // non-test user. Intended to run after every E2E/auth-write run that exercised a
 // MongoDB-mode backend, and any time accumulated test cruft needs clearing.
@@ -10,17 +10,17 @@
 // What this deletes:
 //   - users whose username starts with `e2e_` (Playwright-registered test accounts)
 //   - interactions, recommendationLogs, carts, wishlists, ratings, guestMerges
-//     (in this classroom project every document in these collections is
-//     test/demo generated; account deletion already cleans per-user data, this
-//     also removes anonymous traffic and orphans from failed/aborted test runs)
+//     (every document in these collections is currently test-generated; account
+//     deletion already cleans per-user data, and this also removes anonymous
+//     traffic and orphans from failed or aborted test runs)
 // What this never deletes:
 //   - vinylRecords (the 116-title catalog), counters, orders, auditLogs
-//   - demo users (jazzlistener / rockcollector / soulseeker), admin, demo-customer
+//   - showcase users (jazzlistener / rockcollector / soulseeker) and admin
 import { connectMongoDB, disconnectMongoDB } from "../src/lib/db/mongodb.js";
 
 const apply = process.argv.includes("--apply");
 
-// Customer-operational collections that hold only test/demo data here. Each
+// Customer-operational collections that currently hold only automated-test data. Each
 // entry is wiped completely; vinylRecords and the admin/accounting collections
 // are deliberately absent from this list.
 const RESIDUE_COLLECTIONS = [

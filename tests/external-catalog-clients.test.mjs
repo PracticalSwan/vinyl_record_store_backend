@@ -68,6 +68,34 @@ test("Cover Art Archive client accepts only approved front art from its own host
   assert.equal(await hostile.getReleaseArtwork(releaseId), null);
 });
 
+test("Cover Art Archive client resolves approved release-group artwork with group provenance", async () => {
+  const releaseGroupId = "22222222-2222-4222-8222-222222222222";
+  let requestedUrl = null;
+  const client = createCoverArtArchiveClient({
+    cache: noCache,
+    fetchImpl: async (url) => {
+      requestedUrl = url;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ images: [{
+          approved: true,
+          front: true,
+          image: "https://coverartarchive.org/release/example/full.jpg",
+          thumbnails: {
+            500: "https://coverartarchive.org/release/example/500.jpg",
+            1200: "https://coverartarchive.org/release/example/1200.jpg",
+          },
+        }] }),
+      };
+    },
+  });
+  const artwork = await client.getReleaseGroupArtwork(releaseGroupId);
+  assert.equal(requestedUrl, `https://coverartarchive.org/release-group/${releaseGroupId}`);
+  assert.equal(artwork.sourceUrl, `https://musicbrainz.org/release-group/${releaseGroupId}`);
+  assert.equal(artwork.thumbnailUrl, `https://coverartarchive.org/release-group/${releaseGroupId}/front-500`);
+});
+
 test("Cover Art Archive client ignores a tampered resolved cache entry", async () => {
   const releaseId = "11111111-1111-4111-8111-111111111111";
   let fetched = 0;

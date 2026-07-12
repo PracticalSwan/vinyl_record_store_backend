@@ -154,14 +154,27 @@ export async function enrichCatalogRows(validatedRows, {
             next.value.provenance.push(provenance("genre", "musicbrainz", release.id, retrievedAt));
           }
         }
-        const artwork = await coverArt.getReleaseArtwork(release.id);
+        let artwork = await coverArt.getReleaseArtwork(release.id);
+        if (!artwork && release.releaseGroupId && typeof coverArt.getReleaseGroupArtwork === "function") {
+          artwork = await coverArt.getReleaseGroupArtwork(release.releaseGroupId);
+          if (artwork) {
+            next.warnings.push(reportIssue(
+              "ARTWORK_RELEASE_GROUP_FALLBACK",
+              "The exact release had no approved front artwork; approved artwork from the same release group was used.",
+              { field: "artwork" },
+            ));
+          }
+        }
         if (artwork) {
           next.value.artwork = artwork;
           next.value.provenance = next.value.provenance.filter((item) => item.field !== "artwork");
+          const artworkSourceId = artwork.sourceUrl?.includes("/release-group/")
+            ? release.releaseGroupId
+            : release.id;
           next.value.provenance.push(provenance(
             "artwork",
             "cover-art-archive",
-            release.id,
+            artworkSourceId,
             artwork.retrievedAt,
           ));
         } else {

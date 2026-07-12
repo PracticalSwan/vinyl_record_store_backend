@@ -102,6 +102,7 @@ export function toAdminProduct(record) {
 }
 
 export function slugifyProduct(record) {
+  if (record.slug) return record.slug;
   const base = `${record.artist}-${record.title}`
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")

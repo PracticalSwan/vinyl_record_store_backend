@@ -1,4 +1,4 @@
-import { records } from "../data/records.js";
+import { catalogRecords as records } from "../data/catalogRecords.js";
 import { PRODUCT_CONDITIONS, PRODUCT_GENRES, PRODUCT_STOCK_LEVELS } from "../models/constants.js";
 import { toAdminProduct, toPublicProduct } from "./catalogMapping.js";
 
@@ -116,9 +116,7 @@ export const seedCatalogRepository = {
       activeProducts: active.length,
       lowStock: active.filter((record) => record.stock === "low").length,
       outOfStock: active.filter((record) => record.stock === "out").length,
-      // The seed fixture carries no structured artwork, so every active record
-      // is reported as having unresolved artwork (an honest count, not 0).
-      unresolvedArtwork: active.length,
+      unresolvedArtwork: active.filter((record) => !record.artwork?.thumbnailUrl).length,
       softDeleted: records.filter((record) => record.deletedAt).length,
     };
   },

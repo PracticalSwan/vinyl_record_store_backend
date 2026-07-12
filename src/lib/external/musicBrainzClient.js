@@ -3,7 +3,7 @@ import { createJsonFileCache } from "./jsonFileCache.js";
 const API_ROOT = "https://musicbrainz.org/ws/2";
 const REQUEST_INTERVAL_MS = 1_000;
 const REQUEST_TIMEOUT_MS = 10_000;
-const DEFAULT_USER_AGENT = "GroovehausAcademic/0.1 (https://github.com/PracticalSwan/vinyl_record_store_backend)";
+const DEFAULT_USER_AGENT = "GroovehausVinyl/0.1 (https://github.com/PracticalSwan/vinyl_record_store_backend)";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export class ExternalCatalogError extends Error {

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { hashPassword, verifyPassword } from "../src/lib/auth/password.js";
 import { createSessionToken, verifySessionToken } from "../src/lib/auth/session.js";
 import { clearSessionCookie } from "../src/lib/auth/cookie.js";
+import { getSeededAccounts } from "../src/lib/auth/config.js";
 import { getOptionalSession, requireRole, requireSession } from "../src/lib/auth/requireSession.js";
 import { login, register } from "../src/services/auth.js";
 import { parseLoginInput, parseRegistrationInput } from "../src/validation/auth.js";
@@ -43,20 +44,20 @@ test("weak scrypt hashes are rejected at verification time", async () => {
 
 test("session tokens reject tampering and expiration", () => {
   const environment = { AUTH_SECRET: secret };
-  const user = { publicId: "demo-customer", role: "customer" };
+  const user = { publicId: "user-session", role: "customer" };
   const token = createSessionToken(user, { environment, now: 1_000_000 });
-  assert.equal(verifySessionToken(token, { environment, now: 1_000_000 }).sub, "demo-customer");
+  assert.equal(verifySessionToken(token, { environment, now: 1_000_000 }).sub, "user-session");
   assert.equal(verifySessionToken(`${token}x`, { environment, now: 1_000_000 }), null);
   assert.equal(verifySessionToken(token, { environment, now: 1_000_000 + (8 * 60 * 60 * 1000) }), null);
 });
 
-test("seeded login succeeds and returns the generic error on a bad password", async () => {
-  const passwordFields = await hashPassword("classroom customer password");
+test("environment-backed administrator login succeeds and returns the generic error on a bad password", async () => {
+  const passwordFields = await hashPassword("administrator password");
   const environment = {
     AUTH_SECRET: secret,
-    AUTH_DEMO_CUSTOMER_USERNAME: "listener",
-    AUTH_DEMO_CUSTOMER_PASSWORD_HASH: passwordFields.passwordHash,
-    AUTH_DEMO_CUSTOMER_PASSWORD_SALT: passwordFields.passwordSalt,
+    AUTH_DEMO_ADMIN_USERNAME: "admin",
+    AUTH_DEMO_ADMIN_PASSWORD_HASH: passwordFields.passwordHash,
+    AUTH_DEMO_ADMIN_PASSWORD_SALT: passwordFields.passwordSalt,
   };
   let repositoryLookups = 0;
   const repository = {
@@ -65,17 +66,26 @@ test("seeded login succeeds and returns the generic error on a bad password", as
       return null;
     },
   };
-  const valid = parseLoginInput({ username: "Listener", password: "classroom customer password" });
+  const valid = parseLoginInput({ username: "Admin", password: "administrator password" });
   const result = await login(valid, { environment, repository });
-  assert.equal(result.user.publicId, "demo-customer");
-  assert.equal(result.user.role, "customer");
+  assert.equal(result.user.publicId, "demo-admin");
+  assert.equal(result.user.role, "admin");
   assert.equal(repositoryLookups, 1);
 
-  const invalid = parseLoginInput({ username: "listener", password: "incorrect password" });
+  const invalid = parseLoginInput({ username: "admin", password: "incorrect password" });
   await assert.rejects(
     () => login(invalid, { environment, repository }),
     (error) => error.code === "UNAUTHENTICATED" && error.message === "The username or password is incorrect.",
   );
+});
+
+test("legacy environment customer fields no longer create a shared customer account", () => {
+  const accounts = getSeededAccounts({
+    AUTH_DEMO_CUSTOMER_USERNAME: "listener",
+    AUTH_DEMO_CUSTOMER_PASSWORD_HASH: "unused-hash",
+    AUTH_DEMO_CUSTOMER_PASSWORD_SALT: "unused-salt",
+  });
+  assert.deepEqual(accounts, []);
 });
 
 test("unknown usernames run a dummy hash and return the generic login error", async () => {

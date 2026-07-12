@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { records } from "../src/data/records.js";
+import { catalogRecords as records } from "../src/data/catalogRecords.js";
 import { planSeedMigration, summarizeMigration } from "../src/lib/db/seedMigration.js";
 import { toPersistenceProduct } from "../src/repositories/catalogMapping.js";
 
@@ -33,6 +33,8 @@ test("seed migration reports updates and refuses ownership conflicts", () => {
     { type: "update", reason: undefined },
     { type: "conflict", reason: "source-owned" },
   ]);
+  assert.equal("publicId" in actions[0].desired, false);
+  assert.equal("slug" in actions[0].desired, false);
 });
 
 test("seed migration never plans deletes for extra records", () => {
@@ -69,4 +71,3 @@ test("seed migration never rewrites a tombstone, so soft-deletes survive re-runs
   assert.ok(update, "expected a content-driven update");
   assert.equal("deletedAt" in update.desired, false);
 });
-

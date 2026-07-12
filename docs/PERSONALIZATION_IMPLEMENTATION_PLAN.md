@@ -280,7 +280,7 @@ None. Ranking is untouched.
 - Disabled account: `resolveSessionSubject` returns null; treated as anonymous on optional-session routes, rejected on required-session routes.
 - Deleted account mid-request: session resolution fails closed.
 - Admin session hitting a customer-personalization path: rejected.
-- Seeded environment account (`demo-customer`), MongoDB showcase accounts (`demo-jazz/rock/soul`), registered accounts: on the old route all return `cold-start` (they are not `demo-user`). On the new PERS-02 endpoint they get their own profile.
+- MongoDB showcase accounts (`demo-jazz/rock/soul`) and ordinary registered accounts return `cold-start` on the old route (they are not `demo-user`). On the PERS-02 endpoint they receive their own session-owned profile. BDEC-018 removed the former environment-backed `demo-customer`; the only environment identity is the administrator, which customer-personalization routes reject.
 - Concurrent sign-in and recommendation request: the verified subject on each request is independent; no cross-identity leakage.
 - Sign-out during an in-flight request: the in-flight request resolves against the subject captured at request start; the next request is anonymous.
 - Multiple tabs: each request is independently authorized.

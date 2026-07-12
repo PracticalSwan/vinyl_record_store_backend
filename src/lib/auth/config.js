@@ -48,7 +48,6 @@ function seededAccount(environment, kind, publicId, role) {
 
 export function getSeededAccounts(environment = process.env) {
   return [
-    seededAccount(environment, "CUSTOMER", "demo-customer", "customer"),
     seededAccount(environment, "ADMIN", "demo-admin", "admin"),
   ].filter(Boolean);
 }

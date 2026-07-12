@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { records } from "../src/data/records.js";
+import { catalogRecords as records } from "../src/data/catalogRecords.js";
 import { toPersistenceProduct } from "../src/repositories/catalogMapping.js";
 import { createMongoCatalogRepository } from "../src/repositories/mongoCatalogRepository.js";
 import { seedCatalogRepository } from "../src/repositories/seedCatalogRepository.js";

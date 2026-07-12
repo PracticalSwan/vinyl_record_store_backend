@@ -9,6 +9,7 @@ import {
   setCart,
 } from "../src/services/userState.js";
 import { deleteAccount } from "../src/services/account.js";
+import { DEMO_USER_PUBLIC_IDS } from "../src/data/demoUsers.js";
 import { mergeRatingsByNewest } from "../src/repositories/userStateRepository.js";
 
 const user = {
@@ -116,15 +117,29 @@ test("guest merge filters unavailable products before the idempotent repository 
   assert.equal(result.warnings.some((warning) => warning.productId === 99), true);
 });
 
-test("account deletion blocks seeded and administrator identities", async () => {
+test("account deletion blocks seeded, administrator, and MongoDB showcase identities", async () => {
+  let repositoryCalled = false;
+  const repository = {
+    deleteCustomerAccount: async () => {
+      repositoryCalled = true;
+      return true;
+    },
+  };
   await assert.rejects(
-    () => deleteAccount({ ...user, seeded: true }),
+    () => deleteAccount({ ...user, seeded: true }, { repository }),
     (error) => error.code === "FORBIDDEN",
   );
   await assert.rejects(
-    () => deleteAccount({ ...user, role: "admin" }),
+    () => deleteAccount({ ...user, role: "admin" }, { repository }),
     (error) => error.code === "FORBIDDEN",
   );
+  for (const publicId of DEMO_USER_PUBLIC_IDS) {
+    await assert.rejects(
+      () => deleteAccount({ ...user, publicId }, { repository }),
+      (error) => error.code === "FORBIDDEN",
+    );
+  }
+  assert.equal(repositoryCalled, false);
 });
 
 test("sequential guest merges preserve unchanged server chronology", () => {

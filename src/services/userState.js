@@ -34,9 +34,8 @@ export function profile(user) {
 export async function replacePreferences(user, preferences, {
   users = userRepository,
 } = {}) {
-  // Env-backed demo accounts have ephemeral preferences by design: they are
-  // shared classroom accounts, and not persisting keeps every tester on a
-  // clean profile. Registered customers persist through updatePreferences.
+  // Environment-backed identities never write profile state. Customer
+  // accounts persist through updatePreferences in the user repository.
   if (user.seeded) {
     return profile({ ...user, preferences });
   }

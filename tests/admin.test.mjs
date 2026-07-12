@@ -55,7 +55,7 @@ function adminCookie(environment = { AUTH_SECRET: secret }) {
 }
 
 function customerAccount() {
-  return { publicId: "demo-customer", username: "listener", displayName: null, role: "customer", active: true, preferences: {} };
+  return { publicId: "user-customer", username: "listener", displayName: null, role: "customer", active: true, preferences: {} };
 }
 
 // ---------- Authorization ----------
@@ -92,7 +92,7 @@ test("admin summary against the seed catalog returns honest counts", async () =>
   });
   assert.equal(summary.activeProducts, 116);
   assert.equal(summary.softDeleted, 0);
-  assert.equal(summary.unresolvedArtwork, 116);
+  assert.equal(summary.unresolvedArtwork, 0);
   assert.ok(summary.lowStock >= 0);
   assert.deepEqual(recentActions, []);
 });

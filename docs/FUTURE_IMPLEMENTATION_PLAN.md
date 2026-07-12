@@ -26,7 +26,7 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 | BFP-03 | Write API contracts and implementation | Completed 2026-07-04 | Customer/event routes are implemented; administrator writes landed in BFP-07, while backend order APIs remain deferred. |
 | BFP-04 | Simple authentication, registration, and authorization | Completed 2026-07-04 | Registered and seeded identities use signed server sessions and role checks. |
 | BFP-05 | Recommender algorithm selection | On hold (superseded decision) | PERS-00 / BDEC-016 resolved the method direction under new IDs; this historical placeholder is not reused. |
-| BFP-06 | Catalog ingestion and metadata quality | Completed 2026-07-06 | Preview/apply, source/conflict rules, enrichment, artwork, caching, and provenance are verified. |
+| BFP-06 | Catalog ingestion and metadata quality | Completed; curated 2026-07-12 | Preview/apply, source/conflict rules, enrichment, caching, provenance, and a reviewed 116-record artwork manifest are verified. |
 | BFP-07 | Admin mode backend | Completed 2026-07-09 | Administrator API is implemented: role-gated summary, product CRUD with `updatedAt` optimistic concurrency, soft-delete/restore, preview-token import apply, artwork refresh, and best-effort audit logging. Catalog writes are mongodb-only (503 in seed mode). |
 
 ## Approved Cross-Repository Implementation Order
@@ -327,19 +327,18 @@ Excluded:
 - Any client-controlled role selection.
 - Any public route that can create or promote an administrator.
 
-### Seeded Demo Accounts
+### Environment-Backed Administrator
 
-- Configure usernames and scrypt password hashes through uncommitted environment values. Never commit demo plaintext passwords.
-- Seeded identities use stable public IDs such as `demo-customer` and `demo-admin` and fixed roles.
-- Login is disabled with a safe configuration message if the selected account variables or `AUTH_SECRET` are missing.
-- The frontend may display classroom credentials only if the user explicitly decides to expose them in demo documentation; the backend never returns password material.
+- BDEC-018 supersedes the earlier environment-customer design. Configure only the administrator username and scrypt password hash through uncommitted `AUTH_DEMO_ADMIN_*` values; never commit administrator credentials.
+- The administrator uses the stable `demo-admin` public ID and fixed `admin` role. No environment-backed customer or promotion path remains.
+- Administrator login is disabled with a safe configuration message if its account variables or `AUTH_SECRET` are missing. The backend never returns password material.
 
 ### MongoDB Showcase Demo Customers
 
 - Three showcase demo customer accounts (`jazzlistener`, `rockcollector`, `soulseeker`) are seeded into MongoDB as real `users` documents by `scripts/seed-demo-users.mjs` (`npm run db:seed:users[:apply]`), driven by `src/data/demoUsers.js`. Their public classroom passwords are documented in the frontend README; only scrypt hashes are stored.
-- The seed is idempotent: it classifies each account as create/update/skip by `publicId`, never overwrites a username held by a different account, and applies transactionally. The demo usernames are reserved in `register`, so visitors cannot claim them.
+- The seed is idempotent: it classifies each account as create/update/skip by `publicId`, never overwrites a username held by a different account, and applies transactionally. The demo usernames are reserved in `register`, so visitors cannot claim them, and account deletion rejects all three immutable showcase public IDs before repository access.
 - These accounts carry EMPTY preferences for now. Distinct per-account preference profiles (for example a jazz listener, a rock collector, and a soul seeker) are DEFERRED until recommender algorithm selection is finalized. At that point they will be added to `src/data/demoUsers.js`, re-seeded, and the offline recommender evaluation re-baselined against them. Tracking this here is the agreed placeholder; do not implement it until the recommender decision is made.
-- Unlike the environment-backed demo accounts, these MongoDB customers have PERSISTENT preferences (they are real customer documents, not ephemeral), so a tester's preference edits survive until the next `db:seed:users:apply` resets them to the canonical profile.
+- These MongoDB customers have PERSISTENT preferences (they are real customer documents), so a tester's preference edits survive until the next `db:seed:users:apply` resets them to the canonical profile.
 
 ### Registration After User Persistence
 

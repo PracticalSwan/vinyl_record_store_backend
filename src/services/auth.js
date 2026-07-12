@@ -104,8 +104,9 @@ export async function resolveSessionSubject(payload, {
   environment = process.env,
   repository = userRepository,
 } = {}) {
-  // Seeded (env-backed) accounts resolve from configuration alone and never
-  // touch the database, so demo login works even in seed-catalog mode.
+  // The environment-backed administrator resolves from configuration alone
+  // and never touches the database. Customer accounts always resolve through
+  // the persistent user repository.
   const seeded = getSeededAccounts(environment)
     .find((account) => account.publicId === payload.sub);
   const user = seeded ?? await repository.findByPublicId(payload.sub);

@@ -3,7 +3,7 @@ export const records = [
   {
     id: 1, title: 'Kind of Blue', artist: 'Miles Davis', genre: 'Jazz',
     year: 1959, price: 48, stock: 'in', condition: 'NM',
-    label: 'Columbia Records', format: 'LP, 33 1/3 rpm', pressing: '1980 US reissue',
+    label: 'Columbia Records', format: 'LP, 33 1/3 rpm', pressing: '1959 US original',
     description: 'The best-selling jazz album of all time. Davis assembled a sextet featuring Coltrane, Adderley, Evans, Kelly, Chambers, and Cobb. Recorded in two sessions with minimal rehearsal, giving the album its famously unhurried, meditative quality.',
     reason: 'Recommended because you bought another jazz album.',
   },
@@ -31,7 +31,7 @@ export const records = [
   {
     id: 14, title: 'Moanin\'', artist: 'Art Blakey and the Jazz Messengers', genre: 'Jazz',
     year: 1958, price: 58, stock: 'low', condition: 'VG+',
-    label: 'Blue Note Records', format: 'LP, 33 1/3 rpm', pressing: '1958 US original',
+    label: 'Blue Note Records', format: 'LP, 33 1/3 rpm', pressing: '2014 US reissue',
     description: 'A hard-bop landmark led by drummer Art Blakey, with Bobby Timmons\'s title track becoming a genre-defining anthem of soulful, gospel-tinged jazz.',
     reason: 'Recommended because it shares similar tags and is in stock.',
   },
@@ -52,14 +52,14 @@ export const records = [
   {
     id: 100, title: 'Saxophone Colossus', artist: 'Sonny Rollins', genre: 'Jazz',
     year: 1956, price: 50, stock: 'in', condition: 'VG+',
-    label: 'Prestige Records', format: 'LP, 33 1/3 rpm', pressing: '1956 US original',
+    label: 'Prestige Records', format: 'LP, 33 1/3 rpm', pressing: '1957 US original',
     description: 'A tenor saxophone showcase built around the calypso-tinged "St. Thomas," capturing Rollins at his most melodically inventive.',
     reason: 'Recommended because you bought another jazz album.',
   },
   {
     id: 101, title: 'Blue Train', artist: 'John Coltrane', genre: 'Jazz',
     year: 1957, price: 64, stock: 'in', condition: 'NM',
-    label: 'Blue Note Records', format: 'LP, 33 1/3 rpm', pressing: '1957 US original',
+    label: 'Blue Note Records', format: 'LP, 33 1/3 rpm', pressing: '1958 US original',
     description: "Coltrane's only Blue Note date as leader, pairing hard-driving hard bop with a title track that became an instant standard.",
     reason: 'Recommended because you bought another record by John Coltrane.',
   },
@@ -108,9 +108,9 @@ export const records = [
     reason: 'Recommended because it matches records in your wishlist.',
   },
   {
-    id: 17, title: 'Exile in Godhead', artist: 'Sault', genre: 'Soul',
+    id: 17, title: 'UNTITLED (God)', artist: 'Sault', genre: 'Soul',
     year: 2022, price: 35, stock: 'in', condition: 'M',
-    label: 'Forever Living Originals', format: 'LP, 33 1/3 rpm', pressing: '2022 UK original',
+    label: 'Forever Living Originals', format: '2xLP', pressing: '2023 UK original',
     description: 'A mysterious, genre-blurring collective that fuses gospel, funk, and protest soul into hypnotic, communal grooves with almost no public profile.',
     reason: 'Recommended because it shares similar tags to your wishlist.',
   },
@@ -159,7 +159,7 @@ export const records = [
   {
     id: 108, title: 'Channel Orange', artist: 'Frank Ocean', genre: 'Soul',
     year: 2012, price: 44, stock: 'low', condition: 'M',
-    label: 'Def Jam Recordings', format: '2xLP', pressing: '2012 US original',
+    label: 'Def Jam Recordings', format: '2xLP', pressing: '2025 US first official vinyl',
     description: "A genre-blurring debut that traded conventional song structure for impressionistic storytelling, instantly recognized as a modern classic.",
     reason: 'Recommended because it has similar tags and is in stock.',
   },
@@ -168,7 +168,7 @@ export const records = [
   {
     id: 7, title: 'Disintegration', artist: 'The Cure', genre: 'Rock',
     year: 1989, price: 50, stock: 'in', condition: 'NM',
-    label: 'Fiction Records', format: 'LP, 33 1/3 rpm', pressing: '1989 UK original',
+    label: 'Fiction Records', format: 'LP, 33 1/3 rpm', pressing: '1990 UK reissue',
     description: 'The Cure\'s magnum opus. Eight minutes of "Plainsong" alone justify owning this on vinyl. Dense, atmospheric, and relentlessly beautiful.',
     reason: 'Recommended because it has similar tags and is in stock.',
   },
@@ -245,7 +245,7 @@ export const records = [
   {
     id: 113, title: 'Funeral', artist: 'Arcade Fire', genre: 'Rock',
     year: 2004, price: 36, stock: 'in', condition: 'M',
-    label: 'Merge Records', format: 'LP, 33 1/3 rpm', pressing: '2004 Canadian original',
+    label: 'Merge Records', format: 'LP, 33 1/3 rpm', pressing: '2005 US pressing',
     description: 'A debut written largely in the wake of personal loss, channeling grief into anthemic, orchestral indie rock that reshaped the genre\'s ambitions.',
     reason: 'Recommended because it shares similar tags to your wishlist.',
   },
@@ -254,7 +254,7 @@ export const records = [
   {
     id: 4, title: 'Homework', artist: 'Daft Punk', genre: 'Electronic',
     year: 1997, price: 44, stock: 'out', condition: 'VG+',
-    label: 'Virgin Records', format: 'LP, 33 1/3 rpm', pressing: '1997 EU original',
+    label: 'Virgin Records', format: '2xLP', pressing: '1997 UK original',
     description: 'The debut album that launched French house into the mainstream. Homework blends Chicago house, funk, and techno into an irresistibly danceable package.',
     reason: 'Recommended because you rated an electronic album 5 stars.',
   },
@@ -268,21 +268,21 @@ export const records = [
   {
     id: 25, title: 'Discovery', artist: 'Daft Punk', genre: 'Electronic',
     year: 2001, price: 42, stock: 'in', condition: 'NM',
-    label: 'Virgin Records', format: 'LP, 33 1/3 rpm', pressing: '2001 EU original',
+    label: 'Virgin Records', format: '2xLP', pressing: '2001 French original',
     description: 'A euphoric, disco-soaked follow-up to Homework, built almost entirely from sampled vinyl. The record that gave us "One More Time."',
     reason: 'Recommended because you bought another record by this artist.',
   },
   {
     id: 26, title: 'Selected Ambient Works 85–92', artist: 'Aphex Twin', genre: 'Electronic',
     year: 1992, price: 56, stock: 'low', condition: 'VG+',
-    label: 'Apollo Records', format: '2xLP', pressing: '1992 UK original',
+    label: 'Apollo Records', format: '2xLP', pressing: '1992 Belgian original',
     description: 'Hypnotic, melancholic, and quietly strange — this collection of bedroom productions became the foundational text of ambient techno.',
     reason: 'Recommended because you rated an electronic album 5 stars.',
   },
   {
     id: 27, title: 'Reflection', artist: 'Brian Eno', genre: 'Electronic',
     year: 2017, price: 39, stock: 'in', condition: 'M',
-    label: 'Warp Records', format: 'LP, 33 1/3 rpm', pressing: '2017 UK original',
+    label: 'Warp Records', format: '2xLP', pressing: '2017 worldwide original',
     description: 'A single continuous piece of generative ambient music, designed to evolve endlessly. Eno at his most meditative and patient.',
     reason: 'Recommended because it has similar tags and is in stock.',
   },
@@ -296,12 +296,12 @@ export const records = [
   {
     id: 114, title: 'Oxygène', artist: 'Jean-Michel Jarre', genre: 'Electronic',
     year: 1976, price: 34, stock: 'in', condition: 'VG+',
-    label: 'Polydor Records', format: 'LP, 33 1/3 rpm', pressing: '1976 French original',
+    label: 'Polydor Records', format: 'LP, 33 1/3 rpm', pressing: '1976 New Zealand original',
     description: 'One of the earliest fully electronic albums to become a mainstream hit, built entirely on analog synthesizers in a home studio.',
     reason: 'Recommended because you rated an electronic album 5 stars.',
   },
   {
-    id: 115, title: 'Substance', artist: 'New Order', genre: 'Electronic',
+    id: 115, title: 'Substance 1987', artist: 'New Order', genre: 'Electronic',
     year: 1987, price: 40, stock: 'in', condition: 'NM',
     label: 'Factory Records', format: '2xLP', pressing: '1987 UK original',
     description: 'A singles compilation that bridged post-punk and dance music, including "Blue Monday," still the best-selling 12-inch single of all time.',
@@ -354,7 +354,7 @@ export const records = [
   {
     id: 32, title: 'For Emma, Forever Ago', artist: 'Bon Iver', genre: 'Folk',
     year: 2007, price: 34, stock: 'in', condition: 'NM',
-    label: 'Jagjaguwar', format: 'LP, 33 1/3 rpm', pressing: '2007 US original',
+    label: 'Jagjaguwar', format: 'LP, 33 1/3 rpm', pressing: '2008 US original',
     description: 'Recorded alone in a Wisconsin cabin during a hard winter, this whispery, reverb-soaked debut redefined what indie folk could sound like.',
     reason: 'Recommended because it has similar tags and is in stock.',
   },
@@ -384,14 +384,14 @@ export const records = [
   {
     id: 33, title: 'Illmatic', artist: 'Nas', genre: 'Hip-Hop',
     year: 1994, price: 46, stock: 'in', condition: 'NM',
-    label: 'Columbia Records', format: 'LP, 33 1/3 rpm', pressing: '1994 US original',
+    label: 'Columbia Records', format: 'LP, 33 1/3 rpm', pressing: '1994 EU original',
     description: 'A dense, cinematic portrait of Queensbridge life, widely regarded as one of the greatest hip-hop albums ever recorded. Ten tracks, zero filler.',
     reason: 'Recommended because it shares similar tags to your wishlist.',
   },
   {
     id: 34, title: 'The Low End Theory', artist: 'A Tribe Called Quest', genre: 'Hip-Hop',
     year: 1991, price: 44, stock: 'in', condition: 'VG+',
-    label: 'Jive Records', format: 'LP, 33 1/3 rpm', pressing: '1991 US original',
+    label: 'Jive Records', format: 'LP, 33 1/3 rpm', pressing: '1991 UK original',
     description: 'A jazz-rap landmark built on upright bass samples and laid-back flows, bridging the gap between bebop and golden-age hip-hop.',
     reason: 'Recommended because it shares the same era and genre as records you own.',
   },
@@ -412,7 +412,7 @@ export const records = [
   {
     id: 121, title: 'Ready to Die', artist: 'The Notorious B.I.G.', genre: 'Hip-Hop',
     year: 1994, price: 48, stock: 'in', condition: 'NM',
-    label: 'Bad Boy Records', format: 'LP, 33 1/3 rpm', pressing: '1994 US original',
+    label: 'Bad Boy Records', format: '2xLP', pressing: '1995 US first vinyl',
     description: 'A vivid, cinematic debut chronicling life and death in Brooklyn, delivered with effortless flow over some of the era\'s richest production.',
     reason: 'Recommended because it shares the same era and genre as records you own.',
   },
@@ -461,7 +461,7 @@ export const records = [
     reason: 'Recommended because it shares the same genre and release era.',
   },
   {
-    id: 125, title: 'Hoodoo Man Blues', artist: 'Junior Wells', genre: 'Blues',
+    id: 125, title: 'Hoodoo Man Blues', artist: 'Junior Wells\' Chicago Blues Band with Buddy Guy', genre: 'Blues',
     year: 1965, price: 38, stock: 'in', condition: 'VG',
     label: 'Delmark Records', format: 'LP, 33 1/3 rpm', pressing: '1965 US original',
     description: 'A raw, club-recorded Chicago blues session featuring Buddy Guy on guitar, considered one of the most authentic live-sounding blues records ever made.',
@@ -470,35 +470,35 @@ export const records = [
 
   // ── Classical ─────────────────────────────────────────
   {
-    id: 40, title: 'Glenn Gould Plays Bach: Goldberg Variations', artist: 'Glenn Gould', genre: 'Classical',
+    id: 40, title: 'The Goldberg Variations', artist: 'Glenn Gould', genre: 'Classical',
     year: 1955, price: 42, stock: 'in', condition: 'VG+',
-    label: 'Columbia Masterworks', format: 'LP, 33 1/3 rpm', pressing: '1955 US original',
+    label: 'Columbia Masterworks', format: 'LP, 33 1/3 rpm', pressing: '1956 US original',
     description: 'Gould\'s electrifying debut recording, played at a tempo that scandalized critics and reinvented how Bach\'s keyboard works could be heard.',
     reason: 'Recommended because it shares the same era as your recent views.',
   },
   {
     id: 41, title: 'The Four Seasons', artist: 'Antonio Vivaldi (I Musici)', genre: 'Classical',
     year: 1959, price: 28, stock: 'in', condition: 'VG',
-    label: 'Philips Records', format: 'LP, 33 1/3 rpm', pressing: '1959 EU original',
+    label: 'Philips Records', format: 'LP, 33 1/3 rpm', pressing: '1959 UK original',
     description: 'One of the most beloved recordings of Vivaldi\'s violin concertos, prized for its warmth and the clarity of I Musici\'s chamber playing.',
     reason: 'Recommended because it has similar tags and is in stock.',
   },
   {
-    id: 42, title: 'Symphony No. 9 "Choral"', artist: 'Beethoven (Berlin Philharmonic, Karajan)', genre: 'Classical',
+    id: 42, title: '9 Symphonien', artist: 'Beethoven (Berlin Philharmonic, Karajan)', genre: 'Classical',
     year: 1963, price: 38, stock: 'low', condition: 'VG+',
-    label: 'Deutsche Grammophon', format: '2xLP', pressing: '1963 German original',
-    description: 'Karajan\'s first complete Beethoven cycle with the Berlin Philharmonic, capped by a thunderous, definitive reading of the Ninth.',
+    label: 'Deutsche Grammophon', format: '8xLP', pressing: '1962 German original',
+    description: 'Karajan\'s first complete Beethoven cycle with the Berlin Philharmonic, capped by a thunderous reading of the Ninth.',
     reason: 'Recommended because it shares the same era as your recent views.',
   },
   {
-    id: 126, title: 'The Planets', artist: 'Gustav Holst (London Philharmonic)', genre: 'Classical',
-    year: 1968, price: 32, stock: 'in', condition: 'VG+',
-    label: 'EMI Records', format: 'LP, 33 1/3 rpm', pressing: '1968 UK original',
+    id: 126, title: 'The Planets', artist: 'Gustav Holst (London Philharmonic, Haitink)', genre: 'Classical',
+    year: 1970, price: 32, stock: 'in', condition: 'VG+',
+    label: 'Philips Records', format: 'LP, 33 1/3 rpm', pressing: '1970 UK original',
     description: 'A vivid orchestral suite depicting the astrological character of each planet, famous for inspiring decades of film score composers.',
     reason: 'Recommended because it shares similar tags and is in stock.',
   },
   {
-    id: 127, title: 'Rhapsody in Blue', artist: 'George Gershwin (Bernstein, NY Phil.)', genre: 'Classical',
+    id: 127, title: 'Rhapsody in Blue / An American in Paris', artist: 'George Gershwin (Bernstein, NY Phil.)', genre: 'Classical',
     year: 1959, price: 30, stock: 'low', condition: 'VG',
     label: 'Columbia Masterworks', format: 'LP, 33 1/3 rpm', pressing: '1959 US original',
     description: 'Bernstein conducts and plays piano on this definitive recording of Gershwin\'s jazz-classical hybrid, a defining work of American concert music.',
@@ -522,8 +522,8 @@ export const records = [
   },
   {
     id: 201, title: 'Speak No Evil', artist: 'Wayne Shorter', genre: 'Jazz',
-    year: 1966, price: 52, stock: 'in', condition: 'NM',
-    label: 'Blue Note Records', format: 'LP, 33 1/3 rpm', pressing: '1966 US original',
+    year: 1965, price: 52, stock: 'in', condition: 'NM',
+    label: 'Blue Note Records', format: 'LP, 33 1/3 rpm', pressing: '1965 US original',
     description: "One of Blue Note's finest post-bop dates, showcasing Shorter's unique ability to write melodies that feel ancient and futuristic at the same time.",
     reason: 'Recommended because it shares the same era as your recent views.',
   },
@@ -535,9 +535,9 @@ export const records = [
     reason: 'Recommended because you bought another record by this artist.',
   },
   {
-    id: 203, title: 'Grant Green Idle Moments', artist: 'Grant Green', genre: 'Jazz',
-    year: 1965, price: 44, stock: 'in', condition: 'VG+',
-    label: 'Blue Note Records', format: 'LP, 33 1/3 rpm', pressing: '1965 US original',
+    id: 203, title: 'Idle Moments', artist: 'Grant Green', genre: 'Jazz',
+    year: 1964, price: 44, stock: 'in', condition: 'VG+',
+    label: 'Blue Note Records', format: 'LP, 33 1/3 rpm', pressing: '1964 US original',
     description: 'A supremely laid-back session anchored by a 14-minute title track, showcasing the melodic simplicity and blues feeling that defined Green\'s style.',
     reason: 'Recommended because it shares the same genre and era.',
   },
@@ -563,9 +563,9 @@ export const records = [
     reason: 'Recommended because it shares the same era as your recent views.',
   },
   {
-    id: 207, title: 'We Insist! Freedom Now Suite', artist: 'Max Roach', genre: 'Jazz',
-    year: 1960, price: 64, stock: 'low', condition: 'VG+',
-    label: 'Candid Records', format: 'LP, 33 1/3 rpm', pressing: '1960 US original',
+    id: 207, title: "We Insist! Max Roach's Freedom Now Suite", artist: 'Max Roach', genre: 'Jazz',
+    year: 1961, price: 64, stock: 'low', condition: 'VG+',
+    label: 'Candid Records', format: 'LP, 33 1/3 rpm', pressing: '1961 US original',
     description: "A landmark of protest jazz, written in response to the civil rights movement, featuring Abbey Lincoln's wordless screaming as a call to action.",
     reason: 'Recommended because it shares the same era and genre.',
   },
@@ -616,7 +616,7 @@ export const records = [
   {
     id: 214, title: 'The Miseducation of Lauryn Hill', artist: 'Lauryn Hill', genre: 'Soul',
     year: 1998, price: 44, stock: 'in', condition: 'NM',
-    label: 'Ruffhouse Records', format: 'LP, 33 1/3 rpm', pressing: '1998 US original',
+    label: 'Ruffhouse Records', format: '2xLP', pressing: '1998 EU original',
     description: 'A genre-straddling classic blending neo-soul, hip-hop, and reggae, anchored by raw personal storytelling and a Grammy-record-breaking debut.',
     reason: 'Recommended because it has similar tags and is in stock.',
   },
@@ -690,14 +690,14 @@ export const records = [
   {
     id: 224, title: 'The Man-Machine', artist: 'Kraftwerk', genre: 'Electronic',
     year: 1978, price: 46, stock: 'in', condition: 'NM',
-    label: 'Capitol Records', format: 'LP, 33 1/3 rpm', pressing: '1978 German original',
+    label: 'Capitol Records', format: 'LP, 33 1/3 rpm', pressing: '2009 EU reissue',
     description: "Featuring 'The Model' and 'Neon Lights,' this precise, icily beautiful record was a primary influence on new wave, synth-pop, and electro.",
     reason: 'Recommended because you bought another record by this artist.',
   },
   {
     id: 225, title: 'Vespertine', artist: 'Bjork', genre: 'Electronic',
     year: 2001, price: 40, stock: 'in', condition: 'NM',
-    label: 'One Little Indian', format: 'LP, 33 1/3 rpm', pressing: '2001 UK original',
+    label: 'One Little Indian', format: '2xLP', pressing: '2008 UK reissue',
     description: 'An intimate, microscopic album built from harps, music boxes, and microsampled household sounds, wrapped in orchestral arrangements.',
     reason: 'Recommended because it has similar tags and is in stock.',
   },
@@ -711,7 +711,7 @@ export const records = [
   {
     id: 227, title: 'Random Access Memories', artist: 'Daft Punk', genre: 'Electronic',
     year: 2013, price: 45, stock: 'in', condition: 'M',
-    label: 'Columbia Records', format: '2xLP', pressing: '2013 EU original',
+    label: 'Columbia Records', format: '2xLP', pressing: '2013 French original',
     description: 'Recorded almost entirely with live musicians, this nostalgic love letter to 1970s Los Angeles studio pop won Album of the Year at the Grammys.',
     reason: 'Recommended because you bought another record by this artist.',
   },
@@ -792,7 +792,7 @@ export const records = [
 
   // ── Blues (continued) ─────────────────────────────────
   {
-    id: 238, title: 'Muddy Waters at Newport', artist: 'Muddy Waters', genre: 'Blues',
+    id: 238, title: 'Muddy Waters at Newport 1960', artist: 'Muddy Waters', genre: 'Blues',
     year: 1960, price: 42, stock: 'in', condition: 'VG',
     label: 'Chess Records', format: 'LP, 33 1/3 rpm', pressing: '1960 US original',
     description: "A legendary live recording from the Newport Jazz Festival, introducing urban electric Chicago blues to a largely white folk audience.",
@@ -815,16 +815,16 @@ export const records = [
 
   // ── Classical (continued) ─────────────────────────────
   {
-    id: 241, title: 'Cello Suite No. 1 in G Major', artist: 'J.S. Bach (Pablo Casals)', genre: 'Classical',
-    year: 1936, price: 48, stock: 'in', condition: 'VG',
-    label: 'EMI Records', format: 'LP, 33 1/3 rpm', pressing: '1955 reissue',
-    description: "Casals's 1930s recordings of Bach's Cello Suites were the first ever made, rescuing these works from obscurity and establishing them as central to the repertoire.",
+    id: 241, title: 'The Six Cello Suites', artist: 'J.S. Bach (Pablo Casals)', genre: 'Classical',
+    year: 1974, price: 48, stock: 'in', condition: 'VG',
+    label: 'His Master\'s Voice', format: '3xLP', pressing: '1974 UK reissue',
+    description: "Casals's 1930s recordings of Bach's Cello Suites were the first complete cycle on record, rescuing the works from obscurity and establishing them as central to the repertoire.",
     reason: 'Recommended because it shares the same era as your recent views.',
   },
   {
-    id: 242, title: 'Piano Sonatas Vol. 1', artist: 'Beethoven (Wilhelm Kempff)', genre: 'Classical',
-    year: 1964, price: 35, stock: 'in', condition: 'VG+',
-    label: 'Deutsche Grammophon', format: '2xLP', pressing: '1964 German original',
+    id: 242, title: 'Die Klaviersonaten', artist: 'Beethoven (Wilhelm Kempff)', genre: 'Classical',
+    year: 1967, price: 35, stock: 'in', condition: 'VG+',
+    label: 'Deutsche Grammophon', format: '11xLP', pressing: '1967 German original',
     description: "Kempff's second stereo traversal of the Beethoven sonatas, prized for its singing tone and the sense of spontaneity in every phrase.",
     reason: 'Recommended because it shares similar tags and is in stock.',
   },
@@ -836,7 +836,7 @@ export const records = [
     reason: 'Recommended because it has similar tags and is in stock.',
   },
   {
-    id: 244, title: 'Symphony No. 5 & 7', artist: 'Beethoven (Carlos Kleiber, Vienna Philharmonic)', genre: 'Classical',
+    id: 244, title: 'Symphony No. 5', artist: 'Beethoven (Carlos Kleiber, Vienna Philharmonic)', genre: 'Classical',
     year: 1975, price: 40, stock: 'low', condition: 'NM',
     label: 'Deutsche Grammophon', format: 'LP, 33 1/3 rpm', pressing: '1975 German original',
     description: "Carlos Kleiber's legendary Fifth is widely considered the definitive recording — propulsive, alive, and conducted with terrifying precision.",

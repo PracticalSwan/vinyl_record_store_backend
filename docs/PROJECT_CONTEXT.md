@@ -15,9 +15,9 @@ The backend is a Next.js 16.2.9 integration service. It serves the approved cata
 - BFP-02 Part A request logging: server request/list IDs, exact ordered items/scores/ranks/reasons, algorithm version, mode, exclusions, surface, safe subject, and 90-day eventual TTL.
 - Usage-data opt-out suppresses request logs; seed catalog mode returns attribution IDs but does not persist logs.
 - PERS-00/01/02 identity boundary: safe subject descriptors, cross-user-safe legacy behavior, customer-only verified-session ownership, administrator rejection, anonymous fallback, auth-aware frontend consumption, and default-on rollback flags. Ranking remains `content-demo-v1` parity.
-- Strict Mongoose models, repositories, conflict-safe seed migration, showcase-account seed workflow, and additive index verification.
+- Strict Mongoose models, repositories, conflict-safe seed migration, exactly three MongoDB showcase customers, one environment-backed administrator, and additive index verification.
 - Preview-first CSV/JSON catalog imports with validation, duplicate/conflict reports, atomic apply by default, source ownership, collision-free public IDs, optional controlled partial mode, and no implicit deletion.
-- Rate-limited, cached MusicBrainz and Cover Art Archive enrichment with exact-match review, release-bound artwork, server-generated provenance, and placeholders on absence or failure.
+- Rate-limited, cached MusicBrainz and Cover Art Archive enrichment with exact-match review, same-release-group fallback, server-generated provenance, and placeholders on absence or failure. The bundled 116-record catalog is fully covered by a generated human-reviewed manifest (110 exact album-vinyl matches and 6 documented manual-review bindings), and both seed and Atlas modes expose the same hotlinks.
 - BFP-02 Part B dataset construction, final-state relevance, temporal leave-last-positive-out split, leakage checks, shared full-catalog candidate policy, random/popularity/content-based comparison, and aggregate-only reports.
 - Consistent safe envelopes, exact-origin credentialed mutations, server-derived ownership, and transaction-backed multi-document operations.
 - BFP-07 administrator surface: role-gated `/api/admin/*` routes for summary, product CRUD with `updatedAt` optimistic concurrency, soft-delete/restore, one-time preview-token catalog import apply, artwork refresh, and best-effort audit logging. Reads work in seed and mongodb mode; writes are mongodb-only (`PERSISTENCE_UNAVAILABLE` in seed mode).
@@ -25,7 +25,7 @@ The backend is a Next.js 16.2.9 integration service. It serves the approved cata
 
 ## Data And Privacy Boundary
 
-`src/data/records.js` remains the approved seed/default catalog. Explicit MongoDB mode never silently falls back. MongoDB stores registered/showcase users, lists, ratings, interactions, merge receipts, and recommendation logs. Public responses omit internal IDs, secrets, subjects, cookies, and raw events. Recommendation logs and interactions use eventual TTL deletion, and account deletion removes owned demo data.
+`src/data/catalogRecords.js` combines approved store metadata with the reviewed artwork manifest for the seed/default catalog and migration. Explicit MongoDB mode never silently falls back. MongoDB stores registered/showcase users, lists, ratings, interactions, merge receipts, and recommendation logs. Public responses omit internal IDs, secrets, subjects, cookies, and raw events. Recommendation logs and interactions use eventual TTL deletion, and account deletion removes owned customer data.
 
 The current report is `insufficient-evidence`: no ranking-quality metrics are emitted until at least 20 subjects have 5 final positive products each. Captured-field coverage and counts remain reportable below that boundary.
 

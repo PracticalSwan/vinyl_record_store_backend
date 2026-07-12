@@ -29,6 +29,8 @@ const FORMAT_ALIASES = new Map([
   ["33 1/3 rpm", "LP, 33 1/3 rpm"],
   ["double lp", "2xLP"],
   ["triple lp", "3xLP"],
+  ["eight lp", "8xLP"],
+  ["eleven lp", "11xLP"],
 ]);
 
 export function normalizeWhitespace(value) {

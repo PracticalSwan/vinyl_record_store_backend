@@ -37,3 +37,4 @@ export const DEMO_USERS = [
 // normalizedUsername is the hard guarantee; this gives a cleaner "reserved"
 // message before any hashing work.
 export const DEMO_USER_USERNAMES = DEMO_USERS.map((user) => user.username.toLowerCase());
+export const DEMO_USER_PUBLIC_IDS = DEMO_USERS.map((user) => user.publicId);

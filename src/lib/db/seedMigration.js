@@ -1,4 +1,4 @@
-import { records } from "../../data/records.js";
+import { catalogRecords as records } from "../../data/catalogRecords.js";
 import { toPersistenceProduct } from "../../repositories/catalogMapping.js";
 
 // Catalog content managed by the seed. The `deletedAt` tombstone is intentionally
@@ -20,14 +20,23 @@ const managedFields = [
   "pressing",
   "description",
   "imageUrl",
+  "musicBrainzReleaseId",
+  "musicBrainzReleaseGroupId",
+  "artwork",
   "source",
+  "provenance",
 ];
 
 const sameValue = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 
 // Strip the tombstone from update payloads so a re-run can never resurrect a
 // soft-deleted record by writing `deletedAt: null` back over a tombstone date.
-const withoutTombstone = ({ deletedAt: _omit, ...fields }) => fields;
+const withoutImmutableAndTombstone = ({
+  publicId: _publicId,
+  slug: _slug,
+  deletedAt: _deletedAt,
+  ...fields
+}) => fields;
 
 function groupBy(records, selector) {
   const groups = new Map();
@@ -86,7 +95,7 @@ export function planSeedMigration(existingRecords, seedRecords = records) {
     actions.push({
       type: changed ? "update" : "unchanged",
       publicId: desired.publicId,
-      ...(changed ? { desired: withoutTombstone(desired) } : {}),
+      ...(changed ? { desired: withoutImmutableAndTombstone(desired) } : {}),
     });
   }
 

@@ -118,7 +118,7 @@ Rationale: Interaction events are meaningful only when they can join the list ac
 
 Date: 2026-07-06
 
-Decision: Accept bounded CSV/JSON through a no-write preview by default. Apply batches transactionally and atomically unless the operator explicitly selects partial mode. Treat source ownership, tombstones, ambiguous pressings, multiple matches, and supplied public-ID disagreement as conflicts. Seed migration does not manage external identifiers, artwork, or provenance.
+Decision: Accept bounded CSV/JSON through a no-write preview by default. Apply batches transactionally and atomically unless the operator explicitly selects partial mode. Treat source ownership, tombstones, ambiguous pressings, multiple matches, and supplied public-ID disagreement as conflicts. Status update, 2026-07-12: seed migration now manages the separately reviewed artwork manifest for seed-owned records; immutable slugs and tombstones remain protected.
 
 Rationale: Catalog maintenance must not silently overwrite another source, resurrect deleted products, erase enrichment, or turn a mistaken identity match into a destructive update. A reviewed action list and stable counter allocation make retries understandable and safe.
 
@@ -149,3 +149,19 @@ Decision: BFP-07 administrator catalog management reuses the existing session/ro
 Rationale: Reusing the role/session/import machinery avoids a parallel admin system and keeps the security boundary server-owned. `updatedAt` compare-and-set gives optimistic concurrency without a schema migration. Best-effort audit prevents a flaky audit store from rolling back a successful catalog mutation. Seed-mode write blocking keeps the safe read-only default while letting the dashboard/list render in every environment.
 
 Status: Implemented and verified (node --test 114/114, eslint clean, build green; live seed-mode smoke). The frontend `RequireRole` guard is navigation only and is not a security control.
+
+## BDEC-018: Keep Exactly Three Showcase Customers And One Environment Administrator
+
+Date: 2026-07-12
+
+Decision: Remove the legacy environment-backed customer login. Keep exactly three MongoDB showcase customers (`jazzlistener`, `rockcollector`, and `soulseeker`) plus one environment-backed administrator. The showcase usernames remain reserved, and registration still creates only ordinary customers.
+
+Rationale: One account source per role boundary removes a fourth customer path with ephemeral state, keeps the classroom identities inspectable, and preserves the administrator as an explicit environment-only security boundary.
+
+## BDEC-019: Treat The Reviewed Artwork Manifest As Seed-Owned Catalog Data
+
+Date: 2026-07-12
+
+Decision: Generate `src/data/artworkManifest.js` only from a complete visual-review report. Prefer exact official album-vinyl MusicBrainz releases; permit the six documented manual-review bindings where MusicBrainz lacks the cataloged vinyl edition or uses a materially different title. Use exact-release Cover Art Archive images first and stable same-release-group hotlinks only when the exact release has no approved front image. The seed and Atlas migration both manage the reviewed external IDs, artwork, and provenance while preserving immutable slugs and soft-delete tombstones.
+
+Rationale: A committed review boundary makes all 116 images reproducible in both catalog modes, prevents single/album and edition drift, keeps external storage low, and retains local fallbacks for network or coverage failures.

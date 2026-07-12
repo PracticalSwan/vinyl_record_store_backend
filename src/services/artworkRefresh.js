@@ -93,9 +93,18 @@ export async function resolveArtworkForProduct(product, {
 
     if (!release) return { release: null, artwork: null, warnings };
 
-    const artwork = await coverArt.getReleaseArtwork(release.id);
+    let artwork = await coverArt.getReleaseArtwork(release.id);
+    if (!artwork && release.releaseGroupId && typeof coverArt.getReleaseGroupArtwork === "function") {
+      artwork = await coverArt.getReleaseGroupArtwork(release.releaseGroupId);
+      if (artwork) {
+        warnings.push(warning(
+          "ARTWORK_RELEASE_GROUP_FALLBACK",
+          "The exact release has no approved front artwork; approved artwork from the same release group was used.",
+        ));
+      }
+    }
     if (!artwork) {
-      warnings.push(warning("ARTWORK_NOT_FOUND", "No approved front artwork was found for this release."));
+      warnings.push(warning("ARTWORK_NOT_FOUND", "No approved front artwork was found for this release or its release group."));
     }
     return { release: toSafeRelease(release), artwork, warnings };
   } catch (error) {

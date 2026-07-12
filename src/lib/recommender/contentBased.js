@@ -93,7 +93,7 @@ export async function recommendForProduct(
       return {
         product: candidate,
         score: match.score,
-        reasons: match.reasons.length ? match.reasons.slice(0, 2) : ["Available in the demo catalog."],
+        reasons: match.reasons.length ? match.reasons.slice(0, 2) : ["Available in the catalog."],
         algorithmVersion: ALGORITHM_VERSION,
       };
     })
@@ -114,7 +114,7 @@ function genericRecommendations(records, limit) {
     .map((record) => ({
       product: record,
       score: STOCK_BOOST[record.stock],
-      reasons: ["Available now in the demo catalog."],
+      reasons: ["Available now in the catalog."],
       algorithmVersion: ALGORITHM_VERSION,
     }))
     .sort((a, b) => (b.product.year || 0) - (a.product.year || 0) || a.product.title.localeCompare(b.product.title));
@@ -138,11 +138,11 @@ export async function recommendForUser(
     const profileSummary = subject.kind === "anonymous"
       ? [
           "No signed-in customer session is available.",
-          "Results use the in-stock demo catalog.",
+          "Results use the current in-stock catalog.",
         ]
       : [
           "No stored history is available.",
-          "Results use the in-stock demo catalog.",
+          "Results use the current in-stock catalog.",
         ];
     return {
       ...(subject.responseUserId ? { userId: subject.responseUserId } : {}),
@@ -171,7 +171,7 @@ export async function recommendForUser(
       }
       if (DEMO_PROFILE.favoriteGenres.includes(candidate.genre)) {
         score += SCORE.preferredGenre;
-        reasons.add(`Matches the demo profile's ${candidate.genre} preference.`);
+        reasons.add(`Matches this profile's ${candidate.genre} preference.`);
       }
       return {
         product: candidate,
@@ -189,7 +189,7 @@ export async function recommendForUser(
     profileSummary: [
       "Purchased: Kind of Blue",
       "Wishlist: Innervisions, Blue, and Homework",
-      "Preferred demo genres: Jazz, Soul, Electronic, and Folk",
+      "Preferred genres: Jazz, Soul, Electronic, and Folk",
     ],
     recommendations: diversify(scored, limit),
     algorithmVersion: ALGORITHM_VERSION,

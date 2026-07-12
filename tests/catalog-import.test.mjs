@@ -212,6 +212,40 @@ test("enrichment accepts one exact release, preserves store fields, and records 
   assert.ok(value.provenance.some((item) => item.field === "artwork"));
 });
 
+test("enrichment falls back to approved artwork from the exact release group", async () => {
+  const [validated] = await prepareCatalogImport([baseRow({ publicId: null })], { currentYear: 2026 });
+  const release = {
+    id: "11111111-1111-4111-8111-111111111111",
+    title: "Test Record",
+    score: 100,
+    date: "2025-02-01",
+    artistCredit: ["Test Artist"],
+    artistCreditPhrase: "Test Artist",
+    releaseGroupId: "22222222-2222-4222-8222-222222222222",
+    genres: [],
+  };
+  const enriched = await enrichCatalogRows([validated], {
+    enabled: true,
+    musicBrainz: {
+      findReleaseCandidates: async () => [release],
+      getRelease: async () => release,
+    },
+    coverArt: {
+      getReleaseArtwork: async () => null,
+      getReleaseGroupArtwork: async () => ({
+        url: `https://coverartarchive.org/release-group/${release.releaseGroupId}/front-1200`,
+        thumbnailUrl: `https://coverartarchive.org/release-group/${release.releaseGroupId}/front-500`,
+        detailUrl: `https://coverartarchive.org/release-group/${release.releaseGroupId}/front-1200`,
+        source: "cover-art-archive",
+        sourceUrl: `https://musicbrainz.org/release-group/${release.releaseGroupId}`,
+        retrievedAt: new Date("2026-07-12T00:00:00.000Z"),
+      }),
+    },
+  });
+  assert.equal(enriched[0].value.artwork.sourceUrl, `https://musicbrainz.org/release-group/${release.releaseGroupId}`);
+  assert.ok(enriched[0].warnings.some((warning) => warning.code === "ARTWORK_RELEASE_GROUP_FALLBACK"));
+});
+
 test("enrichment fills optional metadata from verified release detail without replacing store values", async () => {
   const [validated] = await prepareCatalogImport([{
     title: "Test Record",

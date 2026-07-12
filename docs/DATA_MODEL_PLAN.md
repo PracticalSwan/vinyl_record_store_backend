@@ -46,7 +46,7 @@ Schemas use strict unknown-field rejection, timestamps, bounded fields, enum val
 
 Authentication, interaction ingestion, preferences, wishlist/cart state, ratings, guest-merge receipts, recommendation-request logging, catalog import, offline evaluation outputs, and registered-customer deletion are active. Ratings create safe history events; account deletion transactionally removes the customer and owned state, interactions, logs, and merge receipts. Demo orders and administrator catalog mutations remain deferred.
 
-Catalog import is separate from the seed migration. Seed reconciliation does not manage MusicBrainz IDs, artwork, or provenance, so a seed re-run cannot erase enrichment. Import batches validate before planning, preserve source ownership, allocate numeric IDs atomically, and default to all-or-nothing writes.
+Catalog import is separate from seed migration. Seed reconciliation manages the committed reviewed MusicBrainz IDs, artwork, and provenance for seed-owned records while preserving immutable public IDs/slugs and soft-delete tombstones. Import batches validate before planning, preserve source ownership, allocate numeric IDs atomically, and default to all-or-nothing writes.
 
 ## Privacy Boundary
 

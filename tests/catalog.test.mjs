@@ -16,7 +16,8 @@ test("product detail returns the public API shape", async () => {
   assert.equal(product.title, "Kind of Blue");
   assert.equal(product.currency, "USD");
   assert.equal("reason" in product, false);
-  assert.equal(product.image, null);
+  assert.equal(product.image.source, "cover-art-archive");
+  assert.match(product.image.thumbnailUrl, /^https:\/\/coverartarchive\.org\//);
 });
 
 test("public products expose only a complete structured artwork mapping", () => {

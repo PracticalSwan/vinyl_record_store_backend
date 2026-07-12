@@ -25,7 +25,7 @@ Query parameters:
 
 `q`, `artist`, and `label` use case-insensitive literal substring matching. Repeated values use OR semantics within a facet and different facets use AND semantics. Repeated controlled facets accept at most 20 values and reject unsupported values. Sorts use the stable numeric product ID as their final tie-breaker.
 
-Response: `{ data: { items }, meta: { page, limit, total, totalPages, sort, facets } }`. Facets describe the full active catalog and include genre, era, condition, stock counts, and the catalog price range. A product may include `image: { thumbnailUrl, detailUrl, source, sourceUrl }` only when the backend has a complete approved Cover Art Archive mapping; `imageUrl` remains the compatibility URL and both are `null` when unresolved.
+Response: `{ data: { items }, meta: { page, limit, total, totalPages, sort, facets } }`. Facets describe the full active catalog and include genre, era, condition, stock counts, and the catalog price range. A product may include `image: { thumbnailUrl, detailUrl, source, sourceUrl }` only when the backend has a complete approved Cover Art Archive mapping; `imageUrl` remains the compatibility URL and both are `null` when unresolved. Every bundled catalog record currently has a reviewed mapping, while imported/admin-created records may still use the fallback until approved.
 
 ### `GET /api/products/:id`
 

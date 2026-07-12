@@ -7,7 +7,7 @@
 | BR-003 | API contract drifts. | High | Update both repos and validate builds together. | controlled |
 | BR-004 | Demo output is presented as real personalization. | High | Explicit demo-profile/cold-start modes. | controlled |
 | BR-005 | Fixed weights produce weak relevance. | Medium | Document weights and require offline baseline evaluation before quality claims. | open |
-| BR-006 | Catalog metadata is incomplete, mismatched, or biased. | Medium | Validate imports, preserve source ownership, require exact MusicBrainz matches, bind artwork to releases, record provenance, and retain placeholders. | controlled |
+| BR-006 | Catalog metadata is incomplete, mismatched, or biased. | Medium | Validate imports, preserve source ownership, prefer exact official album-vinyl MusicBrainz matches, visually review every bundled cover, document six explicit identity exceptions, bind artwork to a release/release group, record provenance, and retain placeholders. | controlled |
 | BR-007 | One artist dominates a list. | Medium | Cap at two results per artist. | controlled |
 | BR-008 | Implemented state APIs are mistaken for production commerce. | Medium | Document the local-UI migration boundary and absence of orders, payments, recovery, deployment hardening, and quality evidence. | controlled |
 | BR-009 | CORS origin is misconfigured. | Medium | Configure `FRONTEND_ORIGIN` and verify live when environment permits. | open |
