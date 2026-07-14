@@ -18,12 +18,14 @@ The backend is an implemented integration and authenticated customer-state servi
 - Preview-first CSV/JSON catalog ingestion supports atomic apply, source ownership, duplicate/conflict detection, optional MusicBrainz/Cover Art Archive enrichment, release-bound artwork, release-group fallback, local cache, and field provenance. The bundled catalog has one human-reviewed manifest entry and approved hotlink for every record.
 - The offline evaluator builds pseudonymized leakage-safe datasets, compares random/popularity/content-based rankings only above the evidence threshold, and otherwise writes aggregate counts and captured-field coverage without quality claims.
 - Administrator mode (BFP-07) exposes role-gated `/api/admin/*` routes (summary, product CRUD with `updatedAt` optimistic concurrency, soft-delete/restore, preview-token catalog import apply, artwork refresh) with best-effort audit logging. Reads work in seed and mongodb mode; writes are mongodb-only and return `PERSISTENCE_UNAVAILABLE` (503) in seed mode.
-- Automated catalog, import, artwork, persistence, migration, authentication, write-state, recommender-behavior, evaluation, metric, and administrator sanity tests.
+- Cover-art images are streamed through the backend: `GET /api/artwork?u=<approved coverartarchive url>` fetches, host-validates, size/time-caps, and disk-caches the image bytes so storefronts on networks that cannot reach `coverartarchive.org` still render artwork. The frontend renders this proxy URL inside `ProductImage` instead of the external host.
+- Automated catalog, import, artwork, persistence, migration, authentication, write-state, recommender-behavior, evaluation, metric, administrator sanity, and artwork-image-proxy tests.
 
 ## Folder Boundary
 
 - `src/app/api/` owns route handlers, including the `admin/` administrator surface.
 - `src/services/adminCatalog.js` and `src/services/artworkRefresh.js` own administrator catalog and artwork business logic; `src/lib/admin/previewTokens.js` owns the one-time import preview-token store; `src/validation/admin.js` owns administrator input validation.
+- `src/services/artworkImage.js` owns the artwork image proxy transport mapping; `src/lib/external/artworkImageProxy.js` and `src/lib/external/imageFileCache.js` own the host-validated, size/time-capped, disk-cached Cover Art Archive image fetch behind `GET /api/artwork`.
 - `src/services/` owns catalog, import, authentication, customer-state, and account-lifecycle business logic.
 - `src/repositories/` owns seed and MongoDB data access.
 - `src/models/` owns strict Mongoose schemas and indexes.
@@ -61,7 +63,7 @@ Read `../AGENT_MEMORY.md` at session start and append a dated entry at session e
 
 - `FRONTEND_ORIGIN` controls API CORS and defaults to `http://localhost:5173`.
 - `RECOMMENDER_ALGORITHM_VERSION` overrides the default `content-demo-v1` label.
-- `MUSICBRAINZ_USER_AGENT` identifies catalog enrichment requests. It must contain an application name, version, and contact.
+- `MUSICBRAINZ_USER_AGENT` identifies catalog enrichment requests. It must contain an application name, version, and contact. The artwork image proxy (`GET /api/artwork`) reuses it as the `User-Agent` for upstream Cover Art Archive image requests.
 - `CATALOG_DATA_SOURCE` defaults to `seed`; set it to `mongodb` only when Atlas configuration and migrated data are ready.
 - `MONGODB_URI` and `MONGODB_DB_NAME` configure the server-only Atlas connection through an ignored `.env.local`. Explicit MongoDB mode never silently falls back to seed data.
 - `AUTH_SECRET` signs eight-hour HttpOnly sessions. Exactly three showcase customers are seeded into MongoDB by `db:seed:users` (`src/data/demoUsers.js`); their usernames are reserved and their immutable public IDs are protected from account deletion. The single administrator account is environment-backed through `AUTH_DEMO_ADMIN_*`; there is no environment-backed customer or admin-promotion path. Registered customers persist in MongoDB and require MongoDB mode.

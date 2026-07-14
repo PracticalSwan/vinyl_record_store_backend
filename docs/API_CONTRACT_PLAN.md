@@ -35,6 +35,10 @@ Accepts a positive numeric product ID. Response: `{ data: { product } }`. Missin
 
 Uses the same filters, sorts, products, and metadata as `/api/products`, plus normalized `query` metadata. It is a compatibility alias over the same catalog service rather than a separate search implementation.
 
+### `GET /api/artwork`
+
+Streams an approved Cover Art Archive cover image through the backend so storefronts on networks that cannot reach `coverartarchive.org` still render artwork. Query: `u` (the full approved `https://coverartarchive.org/...` URL). The proxy revalidates the host (only `coverartarchive.org` / `www.coverartarchive.org` may be fetched; redirects are confined to the trusted Internet Archive family), forces https, caps the response (6 MB, 15 s), requires an `image/*` content type, and caches the bytes on disk under `.cache/artwork-images/`. Success returns the raw image with `Cache-Control: public, max-age=86400, s-maxage=604800, immutable` and `X-Content-Type-Options: nosniff`. Errors return the standard JSON envelope: `400 ARTWORK_URL_INVALID` / `ARTWORK_HOST_NOT_ALLOWED`, `404 ARTWORK_NOT_FOUND`, `502 ARTWORK_UPSTREAM_ERROR` / `ARTWORK_TOO_LARGE` / `ARTWORK_UPSTREAM_UNREACHABLE`, `504 ARTWORK_UPSTREAM_TIMEOUT`, `500 INTERNAL_ERROR`. The frontend renders this URL inside `ProductImage` instead of the external host.
+
 ### `GET /api/recommendations/product/:id`
 
 Optional `limit` defaults to 6 and is capped at 20.

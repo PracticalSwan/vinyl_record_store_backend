@@ -20,6 +20,7 @@ Two things worth knowing up front:
 | `GET` | `/api/products` | Paginated, filterable product list. |
 | `GET` | `/api/products/:id` | Product detail. |
 | `GET` | `/api/search?q=` | Text search with catalog filters. |
+| `GET` | `/api/artwork?u=` | Streams an approved Cover Art Archive image through the backend (host-validated, size/time-capped, disk-cached) so storefronts render artwork without depending on the external host. |
 | `GET` | `/api/recommendations/product/:id` | Similar records with explanations. |
 | `GET` | `/api/recommendations/me` | Session-owned customer `cold-start` or anonymous fallback list. |
 | `GET` | `/api/recommendations/user/:userId` | Restricted legacy showcase: `demo-user` or generic cold-start only. |
