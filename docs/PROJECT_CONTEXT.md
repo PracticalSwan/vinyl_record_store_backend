@@ -4,7 +4,7 @@ This is the backend source of truth for the Vinyl Record Store Recommender Syste
 
 ## Current State
 
-The backend is a Next.js 16.2.9 integration service. It serves the approved catalog from the default seed adapter or explicitly selected MongoDB adapter, imports controlled catalog data, exposes approved artwork mappings, produces explainable content-based recommendations, provides signed sessions and customer-state mutations, ingests interactions, records served recommendation lists, exposes a role-gated administrator catalog-management surface, and generates privacy-safe offline evaluation reports.
+The backend is a Next.js 16.2.9 integration service. It serves the approved catalog from the default seed adapter or explicitly selected MongoDB adapter, imports controlled catalog data, exposes approved artwork mappings plus proxy and local delivery paths, produces explainable content-based recommendations, provides signed sessions and customer-state mutations, ingests interactions, records served recommendation lists, exposes a role-gated administrator catalog-management surface, and generates privacy-safe offline evaluation reports.
 
 ## Implemented Scope
 
@@ -18,6 +18,7 @@ The backend is a Next.js 16.2.9 integration service. It serves the approved cata
 - Strict Mongoose models, repositories, conflict-safe seed migration, exactly three MongoDB showcase customers, one environment-backed administrator, and additive index verification.
 - Preview-first CSV/JSON catalog imports with validation, duplicate/conflict reports, atomic apply by default, source ownership, collision-free public IDs, optional controlled partial mode, and no implicit deletion.
 - Rate-limited, cached MusicBrainz and Cover Art Archive enrichment with exact-match review, same-release-group fallback, server-generated provenance, and placeholders on absence or failure. The bundled 116-record catalog is fully covered by a generated human-reviewed manifest (110 exact album-vinyl matches and 6 documented manual-review bindings), and both seed and Atlas modes expose the same hotlinks.
+- Proxy-first artwork delivery with per-hop Cover Art Archive/Internet Archive validation, plus exactly 116 committed content-addressed JPEG fallbacks. `GET /api/artwork/local/:publicId` maps canonical catalog IDs to immutable assets; the generated local manifest records source/final URLs, MusicBrainz identity, retrieval time, MIME, size, dimensions, and SHA-256.
 - BFP-02 Part B dataset construction, final-state relevance, temporal leave-last-positive-out split, leakage checks, shared full-catalog candidate policy, random/popularity/content-based comparison, and aggregate-only reports.
 - Consistent safe envelopes, exact-origin credentialed mutations, server-derived ownership, and transaction-backed multi-document operations.
 - BFP-07 administrator surface: role-gated `/api/admin/*` routes for summary, product CRUD with `updatedAt` optimistic concurrency, soft-delete/restore, one-time preview-token catalog import apply, artwork refresh, and best-effort audit logging. Reads work in seed and mongodb mode; writes are mongodb-only (`PERSISTENCE_UNAVAILABLE` in seed mode).
@@ -25,7 +26,7 @@ The backend is a Next.js 16.2.9 integration service. It serves the approved cata
 
 ## Data And Privacy Boundary
 
-`src/data/catalogRecords.js` combines approved store metadata with the reviewed artwork manifest for the seed/default catalog and migration. Explicit MongoDB mode never silently falls back. MongoDB stores registered/showcase users, lists, ratings, interactions, merge receipts, and recommendation logs. Public responses omit internal IDs, secrets, subjects, cookies, and raw events. Recommendation logs and interactions use eventual TTL deletion, and account deletion removes owned customer data.
+`src/data/catalogRecords.js` combines approved store metadata with the reviewed artwork manifest for the seed/default catalog and migration. `src/data/localArtworkManifest.js` is generated only from that reviewed mapping and binds public IDs to verified files under `public/artwork/`. Explicit MongoDB mode never silently falls back. MongoDB stores registered/showcase users, lists, ratings, interactions, merge receipts, and recommendation logs. Public responses omit internal IDs, secrets, subjects, cookies, and raw events. Recommendation logs and interactions use eventual TTL deletion, and account deletion removes owned customer data.
 
 The current report is `insufficient-evidence`: no ranking-quality metrics are emitted until at least 20 subjects have 5 final positive products each. Captured-field coverage and counts remain reportable below that boundary.
 

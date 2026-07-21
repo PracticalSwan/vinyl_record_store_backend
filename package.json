@@ -21,6 +21,8 @@
     "catalog:import": "node --env-file-if-exists=.env.local scripts/import-catalog.mjs",
     "catalog:artwork:propose": "node scripts/propose-artwork-curation.mjs --output=output/artwork-proposals.json --html=output/artwork-review.html",
     "catalog:artwork:build": "node scripts/build-artwork-manifest.mjs --input=output/artwork-proposals.json --output=src/data/artworkManifest.js",
+    "catalog:artwork:download": "node scripts/download-local-artwork.mjs",
+    "catalog:artwork:verify": "node scripts/download-local-artwork.mjs --check",
     "recommender:evaluate": "node --env-file-if-exists=.env.local scripts/evaluate-recommender.mjs",
     "auth:hash": "node scripts/create-password-hash.mjs",
     "lint": "eslint",

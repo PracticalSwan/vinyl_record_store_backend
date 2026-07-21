@@ -7,7 +7,7 @@ This document describes the implemented read and authenticated mutation service 
 1. A Next.js route handler receives the request.
 2. Catalog/auth/write validation bounds route parameters, query strings, JSON size, allowed body keys, arrays, timestamps, and controlled values.
 3. Authentication verifies scrypt credentials and a signed session cookie; protected routes reload the subject and derive ownership from that session. Recommendation identity is reduced to a safe descriptor before ranking or logging.
-4. Catalog, import, recommendation-serving/logging, evaluation, auth, state, or account services apply business rules and call the appropriate repository.
+4. Catalog, import, artwork delivery, recommendation-serving/logging, evaluation, auth, state, or account services apply business rules and call the appropriate repository or validated local asset boundary.
 5. Repositories normalize catalog documents, execute state mutations, preserve idempotency receipts, and use transactions for multi-document consistency.
 6. `src/lib/http.js` produces the common success or error envelope.
 7. `next.config.mjs` adds exact-origin credentialed CORS; mutation handlers also verify the request origin.
@@ -22,6 +22,7 @@ This document describes the implemented read and authenticated mutation service 
 - Authentication layer: `src/lib/auth/` for scrypt, signed cookies, sessions, roles, and recommendation-subject derivation; `src/lib/interactionCap.js` bounds interaction ingestion per identity.
 - Recommender layer: `src/lib/recommender/`.
 - Catalog ingestion layer: `src/lib/catalog/`, `src/lib/external/`, `src/services/catalogImport.js`, and the preview/apply command.
+- Artwork layer: the remote proxy in `src/services/artworkImage.js` and `src/lib/external/artworkImageProxy.js`; the committed fallback verifier/downloader in `src/lib/external/localArtworkAssets.js` and `scripts/download-local-artwork.mjs`; and the stable-ID redirect in `src/services/localArtwork.js`.
 - Error/response helpers: `src/lib/errors.js` and `src/lib/http.js`.
 - Default data source: `src/data/records.js` through `seedCatalogRepository.js`.
 - Optional data source: Atlas through `mongoCatalogRepository.js` and `src/lib/db/mongodb.js`.
@@ -37,7 +38,8 @@ This document describes the implemented read and authenticated mutation service 
 - Registered customer state requires MongoDB mode. Seeded identities can authenticate from environment configuration and store preferences/state when persistence is available.
 - Recommendation responses always receive request/list IDs. `GET /api/recommendations/me` uses a verified customer descriptor or anonymous fallback; administrators are rejected. MongoDB mode logs a tracking-enabled served list before response; seed mode and usage opt-out skip persistence.
 - Offline evaluation is a command path, not a request route. It pseudonymizes subjects before dataset construction and emits only aggregate reports after enforcing the evidence gate.
+- Bundled artwork is proxy-first but upstream-independent after failover: every `ProductImage` can retry through `/api/artwork/local/:publicId`, which maps a canonical ID to an immutable content-addressed JPEG. The release verifier enforces the exact 116-record set, SHA-256, JPEG dimensions, and orphan-free directory.
 
 ## Security
 
-Inputs are bounded before repository work, regex metacharacters are escaped for MongoDB substring matching, ownership is server-derived, login failures are generic with dummy-hash timing, interaction ingestion is per-identity capped, and sessions are signed/HttpOnly. Public responses omit seed-only reasons, internal ObjectIds, password fields, and raw events. Unexpected failures return safe errors; credentials stay in ignored local environment files.
+Inputs are bounded before repository work, regex metacharacters are escaped for MongoDB substring matching, ownership is server-derived, login failures are generic with dummy-hash timing, interaction ingestion is per-identity capped, and sessions are signed/HttpOnly. Artwork acquisition starts only from reviewed Cover Art Archive URLs, validates every redirect hop, and enforces time/byte/pixel/JPEG bounds before publication. Public responses omit seed-only reasons, internal ObjectIds, password fields, and raw events. Unexpected failures return safe errors; credentials stay in ignored local environment files.

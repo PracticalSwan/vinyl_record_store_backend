@@ -4,7 +4,7 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 
 ## Current Automated Evidence
 
-| Check | Evidence through 2026-07-06 |
+| Check | Evidence through 2026-07-21 |
 | --- | --- |
 | Literal search, repeated facets, sorting, pagination, and validation | Passing Node tests. |
 | Public product shape | Passing Node test. |
@@ -22,6 +22,7 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 | Write validation, ownership, interaction/merge idempotency, transactions, and account cleanup | Passing Node tests plus live Atlas browser flows. |
 | Exact recommendation request logging, opt-out, ordered reasons, and attribution context | Passing Node tests plus frontend desktop/mobile analytics flows. |
 | Catalog import validation, deduplication, ownership, transactions, external-client limits, and artwork provenance | Passing Node tests plus a live no-write Atlas preview. |
+| Exact 116-file local artwork parity, hashes, JPEG dimensions, orphan detection, redirect security, canonical-ID route mapping, immutable headers, and browser decoding | Passing verifier, Node tests, live HTTP enumeration, and frontend Playwright coverage on 2026-07-21. |
 | Dataset relevance, minimum evidence, temporal split, leakage checks, deterministic baselines, and aggregate-only output | Passing Node tests plus a live report generation. |
 | ESLint | Passed. |
 | Next.js production build | Passed with all catalog, recommendation, authentication, and customer-state routes. |
@@ -29,6 +30,7 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 Run:
 
 ```bash
+npm run catalog:artwork:verify
 npm test
 npm run lint
 npm run build

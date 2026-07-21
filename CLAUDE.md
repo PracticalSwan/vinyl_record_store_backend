@@ -18,14 +18,14 @@ The backend is an implemented integration and authenticated customer-state servi
 - Preview-first CSV/JSON catalog ingestion supports atomic apply, source ownership, duplicate/conflict detection, optional MusicBrainz/Cover Art Archive enrichment, release-bound artwork, release-group fallback, local cache, and field provenance. The bundled catalog has one human-reviewed manifest entry and approved hotlink for every record.
 - The offline evaluator builds pseudonymized leakage-safe datasets, compares random/popularity/content-based rankings only above the evidence threshold, and otherwise writes aggregate counts and captured-field coverage without quality claims.
 - Administrator mode (BFP-07) exposes role-gated `/api/admin/*` routes (summary, product CRUD with `updatedAt` optimistic concurrency, soft-delete/restore, preview-token catalog import apply, artwork refresh) with best-effort audit logging. Reads work in seed and mongodb mode; writes are mongodb-only and return `PERSISTENCE_UNAVAILABLE` (503) in seed mode.
-- Cover-art images are streamed through the backend: `GET /api/artwork?u=<approved coverartarchive url>` fetches, host-validates, size/time-caps, and disk-caches the image bytes so storefronts on networks that cannot reach `coverartarchive.org` still render artwork. The frontend renders this proxy URL inside `ProductImage` instead of the external host.
-- Automated catalog, import, artwork, persistence, migration, authentication, write-state, recommender-behavior, evaluation, metric, administrator sanity, and artwork-image-proxy tests.
+- Artwork uses two backend-owned delivery paths. `GET /api/artwork?u=<approved URL>` is the bounded, disk-cached primary proxy and validates every Cover Art Archive/Internet Archive redirect hop. `GET /api/artwork/local/:publicId` redirects canonical IDs to one of 116 committed, content-addressed JPEG fallbacks whose provenance, size, dimensions, and SHA-256 hashes are generated from the reviewed catalog manifest.
+- Automated catalog, import, artwork proxy/local-bundle, persistence, migration, authentication, write-state, recommender-behavior, evaluation, metric, and administrator sanity tests.
 
 ## Folder Boundary
 
 - `src/app/api/` owns route handlers, including the `admin/` administrator surface.
 - `src/services/adminCatalog.js` and `src/services/artworkRefresh.js` own administrator catalog and artwork business logic; `src/lib/admin/previewTokens.js` owns the one-time import preview-token store; `src/validation/admin.js` owns administrator input validation.
-- `src/services/artworkImage.js` owns the artwork image proxy transport mapping; `src/lib/external/artworkImageProxy.js` and `src/lib/external/imageFileCache.js` own the host-validated, size/time-capped, disk-cached Cover Art Archive image fetch behind `GET /api/artwork`.
+- `src/services/artworkImage.js` and `src/lib/external/artworkImageProxy.js` own the remote proxy. `src/services/localArtwork.js`, `src/lib/external/localArtworkAssets.js`, `src/data/localArtworkManifest.js`, and `public/artwork/` own the canonical-ID local fallback boundary.
 - `src/services/` owns catalog, import, authentication, customer-state, and account-lifecycle business logic.
 - `src/repositories/` owns seed and MongoDB data access.
 - `src/models/` owns strict Mongoose schemas and indexes.
@@ -33,7 +33,7 @@ The backend is an implemented integration and authenticated customer-state servi
 - `src/lib/auth/` owns password, signed-session, cookie, and authorization helpers; `src/lib/interactionCap.js` bounds interaction ingestion per identity.
 - `src/lib/catalog/` and `src/lib/external/` own import parsing/validation and rate-limited metadata clients.
 - `src/lib/recommender/` owns scoring, explanations, diversity, dataset construction, and evaluation helpers.
-- `src/data/records.js` owns store metadata; `src/data/artworkManifest.js` owns reviewed external identities; `src/data/catalogRecords.js` combines them for seed mode and migration.
+- `src/data/records.js` owns store metadata; `src/data/artworkManifest.js` owns reviewed external identities; `src/data/localArtworkManifest.js` owns generated local-file provenance; `src/data/catalogRecords.js` combines catalog metadata for seed mode and migration.
 - `src/lib/db/` owns connection, data-source selection, and migration support.
 - `../vinyl_record_store_frontend/` owns all customer-facing UI and client state.
 
@@ -76,6 +76,7 @@ Read `../AGENT_MEMORY.md` at session start and append a dated entry at session e
 For backend changes, run:
 
 ```bash
+npm run catalog:artwork:verify
 npm test
 npm run lint
 npm run build

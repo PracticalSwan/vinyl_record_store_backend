@@ -14,7 +14,7 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 - Keep guest state session-only. Merge it only into a brand-new registration; existing-account login and ordinary restore discard it, while a keyed failed registration merge resumes after refresh.
 - Collect anonymous interaction data by default with a visible opt-out, no direct personal information, and a 90-day retention target.
 - Protect an integrated `/admin` mode with the backend `admin` role.
-- Use MusicBrainz and Cover Art Archive as the primary metadata and artwork sources, with placeholders when artwork is unavailable.
+- Use MusicBrainz and Cover Art Archive as the primary metadata and artwork sources, with a verified bundled fallback for the reviewed catalog and placeholders for unresolved records.
 - Do not add deployment work, a machine-readable API schema, or a real payment system.
 
 ## Plan Status Summary
@@ -26,7 +26,7 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 | BFP-03 | Write API contracts and implementation | Completed 2026-07-04 | Customer/event routes are implemented; administrator writes landed in BFP-07, while backend order APIs remain deferred. |
 | BFP-04 | Simple authentication, registration, and authorization | Completed 2026-07-04 | Registered and seeded identities use signed server sessions and role checks. |
 | BFP-05 | Recommender algorithm selection | On hold (superseded decision) | PERS-00 / BDEC-016 resolved the method direction under new IDs; this historical placeholder is not reused. |
-| BFP-06 | Catalog ingestion and metadata quality | Completed; curated 2026-07-12 | Preview/apply, source/conflict rules, enrichment, caching, provenance, and a reviewed 116-record artwork manifest are verified. |
+| BFP-06 | Catalog ingestion and metadata quality | Completed; hardened 2026-07-21 | Preview/apply, source/conflict rules, enrichment, caching, provenance, reviewed mappings, redirect-safe proxying, and 116 verified local fallback JPEGs are complete. |
 | BFP-07 | Admin mode backend | Completed 2026-07-09 | Administrator API is implemented: role-gated summary, product CRUD with `updatedAt` optimistic concurrency, soft-delete/restore, preview-token import apply, artwork refresh, and best-effort audit logging. Catalog writes are mongodb-only (503 in seed mode). |
 
 ## Approved Cross-Repository Implementation Order
@@ -45,7 +45,7 @@ The first nine milestones are complete. Implement the remaining plans in this or
 | 8 | BFP-02 Part A: recommendation-request logging | Completed 2026-07-05 with exact served-list persistence. |
 | 9 | FFP-01: recommendation interaction analytics | Completed 2026-07-05 with privacy-controlled attributed events. |
 | 10 | BFP-06: catalog ingestion and metadata quality | Completed 2026-07-06 with validated preview/apply imports and approved metadata enrichment. |
-| 11 | FFP-06: artwork and image handling | Completed 2026-07-06 with backend-approved mappings and resilient frontend fallbacks. |
+| 11 | FFP-06: artwork and image handling | Completed 2026-07-06; hardened 2026-07-21 with proxy-to-local-to-placeholder failover and an exact 116-file local bundle. |
 | 12 | BFP-02 Part B: offline evaluation dataset and benchmark | Completed 2026-07-06; the pipeline correctly reports insufficient evidence without metrics. |
 | 13 | BFP-07, then FFP-07: integrated admin mode | Implement protected backend administration before exposing its frontend workspace. |
 | 14 | FFP-08: simulated checkout and order demonstration | Add the low-risk classroom flow last, after catalog, state, identity, and testing are stable. |
@@ -446,8 +446,8 @@ Validation includes:
 - Backend enrichment uses a meaningful User-Agent and respects MusicBrainz's one-request-per-second limit.
 - Cache lookup results locally so rerunning a preview does not repeatedly query the service.
 - Require an explicit release or release-group match before accepting artwork. Ambiguous matches remain unresolved for administrator review.
-- Store external URLs and source metadata, not image binaries in MongoDB.
-- Preserve placeholders when artwork is missing, rejected, or broken.
+- Store external URLs and source metadata, not image binaries in MongoDB. The fixed reviewed fallback bundle is committed under `public/artwork/`, outside MongoDB, and keyed by a generated provenance/hash manifest.
+- Prefer the bounded remote proxy, then the canonical-ID local endpoint, then the placeholder. Imported or administrator-created records without a reviewed local file still use the placeholder after remote failure.
 - The official API behavior and rate-limit guidance were reviewed during implementation; recheck them before future client changes.
 
 ### Implemented Files
@@ -474,7 +474,7 @@ Validation includes:
 - Store-specific values are never replaced by external metadata.
 - Ambiguous matches require an administrator decision.
 - Source, retrieval time, and MusicBrainz identifiers are traceable.
-- External API failure leaves the catalog usable and placeholder artwork intact.
+- External API failure leaves the catalog usable; all 116 bundled records can decode their committed local artwork, while unresolved future records retain the placeholder.
 
 ## BFP-07: Admin Mode Backend
 

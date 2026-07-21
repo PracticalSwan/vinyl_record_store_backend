@@ -16,6 +16,17 @@ function imageResponse({ status = 200, contentType = "image/jpeg", body = PNG_BY
   };
 }
 
+function redirectResponse(location, status = 307) {
+  return {
+    ok: false,
+    status,
+    url: "",
+    headers: new Map([["location", location]]),
+    body: null,
+    arrayBuffer: async () => Buffer.alloc(0),
+  };
+}
+
 function makeProxy({ fetchImpl, cache } = {}) {
   const calls = [];
   const wrapped = async (url, options) => {
@@ -96,6 +107,49 @@ test("artwork proxy accepts a redirect that lands on the trusted Internet Archiv
   const result = await proxy.fetchImage(CAA_URL);
   assert.equal(result.contentType, "image/jpeg");
   assert.deepEqual(result.body, PNG_BYTES);
+});
+
+test("artwork proxy accepts the download-node subdomains used by Internet Archive", async () => {
+  const { proxy } = makeProxy({
+    fetchImpl: async () => imageResponse({ url: "https://dn721506.ca.archive.org/0/items/example/cover-500.jpg" }),
+  });
+  const result = await proxy.fetchImage(CAA_URL);
+  assert.equal(result.contentType, "image/jpeg");
+  assert.deepEqual(result.body, PNG_BYTES);
+});
+
+test("artwork proxy validates every redirect before fetching the next host", async () => {
+  const visited = [];
+  const { proxy } = makeProxy({
+    fetchImpl: async (url) => {
+      visited.push(String(url));
+      if (visited.length === 1) return redirectResponse("https://archive.org/download/example/cover.jpg");
+      if (visited.length === 2) return redirectResponse("https://dn721506.ca.archive.org/0/items/example/cover.jpg", 302);
+      return imageResponse({ url: String(url) });
+    },
+  });
+  const result = await proxy.fetchImage(CAA_URL);
+  assert.equal(result.contentType, "image/jpeg");
+  assert.equal(visited.length, 3);
+
+  const { proxy: blocked, calls } = makeProxy({
+    fetchImpl: async () => redirectResponse("http://169.254.169.254/latest/meta-data"),
+  });
+  await assert.rejects(() => blocked.fetchImage(CAA_URL), (error) => {
+    assert.equal(error.code, "ARTWORK_HOST_NOT_ALLOWED");
+    return true;
+  });
+  assert.equal(calls.length, 1);
+});
+
+test("artwork proxy rejects lookalike hosts outside the Internet Archive domain", async () => {
+  const { proxy } = makeProxy({
+    fetchImpl: async () => imageResponse({ url: "https://archive.org.evil.example/cover.jpg" }),
+  });
+  await assert.rejects(() => proxy.fetchImage(CAA_URL), (error) => {
+    assert.equal(error.code, "ARTWORK_HOST_NOT_ALLOWED");
+    return true;
+  });
 });
 
 test("artwork proxy rejects an unparseable resolved redirect url", async () => {

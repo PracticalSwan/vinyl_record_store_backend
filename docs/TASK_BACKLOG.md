@@ -11,7 +11,7 @@ Statuses are `done` or `deferred`. Deferred items are not active work.
 | B-005 | Add explanations, exclusions, diversity, and version. | done | `content-demo-v1`. |
 | B-006 | Connect frontend origin with CORS. | done | `FRONTEND_ORIGIN`. |
 | B-007 | Add automated validation. | done | Catalog, persistence, migration, recommender, and metric tests plus lint and build. |
-| B-008 | Align backend documentation. | done | Updated during 2026-07-02 consolidation. |
+| B-008 | Align backend documentation. | done | Updated through the 2026-07-21 local-artwork availability pass. |
 | B-009 | Add MongoDB persistence. | done | BFP-01 models, repositories, explicit source selection, seed migration, parity checks, and live index verification are complete. |
 | B-010 | Add identity and write APIs. | done | BFP-04 and BFP-03 completed 2026-07-04 with auth, profile/preferences, interactions, wishlist, cart, ratings, merge, and account deletion. |
 | B-011 | Build the evaluation dataset and run an offline benchmark. | done | BFP-02 Part B is implemented; the current aggregate report is `insufficient-evidence`, so no quality metrics are published. |
@@ -28,3 +28,4 @@ Statuses are `done` or `deferred`. Deferred items are not active work.
 | B-022 | Add the popularity baseline and fallback ladder. | deferred | PERS-07 / BFP-14; aggregate-evidence popularity with feedback-loop safeguards. |
 | B-023 | Add hybrid recommendation orchestration. | deferred | PERS-08 / BFP-15; normalized component scores, diversity reranking, version `personalized-hybrid-v1`. |
 | B-024 | Integrate, harden, and close personalization documentation. | deferred | PERS-09 / BFP-16; end-to-end integration, regression protection, documentation closure. |
+| B-025 | Add deterministic local artwork availability. | done | Completed 2026-07-21 with 116 reviewed content-addressed JPEGs, a canonical-ID endpoint, strict acquisition/verifier tooling, proxy redirect hardening, full tests, browser screenshots, and independent review. |

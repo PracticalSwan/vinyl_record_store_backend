@@ -31,6 +31,7 @@ Read this file before every backend session.
 - The seed migration manages approved catalog metadata, reviewed MusicBrainz identities, artwork, and provenance. It must never rewrite immutable public IDs/slugs or the `deletedAt` tombstone, so existing URLs and operator soft-deletes survive re-runs.
 - Run catalog imports without `--apply` first. Keep batches atomic unless partial mode is explicitly justified, preserve source ownership, and treat supplied public-ID disagreement as a conflict.
 - Require MusicBrainz release or release-group identity before accepting artwork. Prefer exact official album-vinyl releases, use same-release-group Cover Art Archive fallback only after review, and keep exceptional non-vinyl identity anchors explicit in the generated manifest. External enrichment may fill missing genre/year/label but must never replace store price, stock, condition, or supplied metadata.
+- Treat the committed local artwork bundle as derived, verified catalog data. Download only from the reviewed manifest, validate every redirect hop and JPEG byte stream, publish content-addressed files before the generated manifest, and require exact 116-ID/hash/dimension/orphan verification before release. The stable local endpoint is a fallback, not a second artwork-curation source.
 - Pseudonymize evaluation subjects before dataset construction and keep generated reports aggregate-only. Below the minimum evidence boundary, report completeness and counts rather than metrics.
 - Keep the root PostCSS override at a patched 8.5.x release while stable Next.js still pins the vulnerable 8.4.31 copy; verify with `npm ls next postcss` and `npm audit`, and do not accept npm's breaking `next@9` force-fix suggestion.
 - Run `npm test`, `npm run lint`, and `npm run build` after backend behavior changes.
@@ -38,6 +39,6 @@ Read this file before every backend session.
 ## Safety
 
 - Do not commit credentials or real private interaction data.
-- Do not start payments, scraping, public admin tools, collaborative filtering, demo-order APIs, or additional identity features without explicit scope.
+- Do not start payments, broad scraping, public admin tools, collaborative filtering, demo-order APIs, or additional identity features without explicit scope. Manifest-driven retrieval of already reviewed Cover Art Archive files is the narrow approved exception.
 - Use plain text instead of emojis.
 - Cleanup only verified exact paths inside this repository.

@@ -1,20 +1,15 @@
 import { createImageFileCache } from "./imageFileCache.js";
+import { isCoverArtArchiveHost, isTrustedArtworkRedirectHost } from "./artworkHosts.js";
 
 const DEFAULT_USER_AGENT = "GroovehausVinyl/0.1 (https://github.com/PracticalSwan/vinyl_record_store_backend)";
 const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_SIZE_BYTES = 6 * 1024 * 1024;
+const MAX_REDIRECTS = 5;
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
 // Cover Art Archive serves the image bytes; some assets 302-redirect into the
 // Internet Archive. Both families are trusted and explicitly allowed as
 // redirect targets, while every other host is rejected to prevent SSRF.
-const ALLOWED_REQUEST_HOSTS = new Set(["coverartarchive.org", "www.coverartarchive.org"]);
-const ALLOWED_REDIRECT_HOSTS = new Set([
-  "coverartarchive.org",
-  "www.coverartarchive.org",
-  "archive.org",
-  "www.archive.org",
-]);
-
 export class ArtworkProxyError extends Error {
   constructor(message, { status = 0, code = "ARTWORK_UPSTREAM_ERROR" } = {}) {
     super(message);
@@ -31,18 +26,67 @@ function validatedTarget(value) {
   } catch {
     throw new ArtworkProxyError("Artwork URL is malformed.", { status: 400, code: "ARTWORK_URL_INVALID" });
   }
-  if (!ALLOWED_REQUEST_HOSTS.has(url.hostname.toLowerCase())) {
+  if (url.protocol !== "https:" || !isCoverArtArchiveHost(url.hostname)) {
     // Hard SSRF boundary: only Cover Art Archive URLs may ever be fetched,
     // which also rules out localhost, private, and link-local addresses.
     throw new ArtworkProxyError("Artwork host is not permitted.", { status: 400, code: "ARTWORK_HOST_NOT_ALLOWED" });
   }
-  url.protocol = "https:";
   return url;
 }
 
 function cleanContentType(value) {
   const type = String(value || "").split(";")[0].trim().toLowerCase();
   return type.startsWith("image/") ? type : null;
+}
+
+function validatedRedirectTarget(location, currentUrl) {
+  let url;
+  try {
+    url = new URL(location, currentUrl);
+  } catch {
+    throw new ArtworkProxyError("Artwork redirected to an invalid URL.", {
+      status: 502,
+      code: "ARTWORK_HOST_NOT_ALLOWED",
+    });
+  }
+  if (
+    url.protocol !== "https:"
+    || url.username
+    || url.password
+    || !isTrustedArtworkRedirectHost(url.hostname)
+  ) {
+    throw new ArtworkProxyError("Artwork redirected to a disallowed host.", {
+      status: 502,
+      code: "ARTWORK_HOST_NOT_ALLOWED",
+    });
+  }
+  return url;
+}
+
+async function fetchWithValidatedRedirects(fetchImpl, initialUrl, options) {
+  let currentUrl = initialUrl;
+  for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
+    const response = await fetchImpl(currentUrl, { ...options, redirect: "manual" });
+    if (!REDIRECT_STATUSES.has(response.status)) return response;
+    if (redirects === MAX_REDIRECTS) {
+      throw new ArtworkProxyError("Artwork exceeded the redirect limit.", {
+        status: 502,
+        code: "ARTWORK_UPSTREAM_ERROR",
+      });
+    }
+    const location = response.headers.get("location");
+    if (!location) {
+      throw new ArtworkProxyError("Artwork redirect did not include a destination.", {
+        status: 502,
+        code: "ARTWORK_UPSTREAM_ERROR",
+      });
+    }
+    currentUrl = validatedRedirectTarget(location, currentUrl);
+  }
+  throw new ArtworkProxyError("Artwork exceeded the redirect limit.", {
+    status: 502,
+    code: "ARTWORK_UPSTREAM_ERROR",
+  });
 }
 
 async function readBodyCapped(response, maxSizeBytes) {
@@ -97,12 +141,12 @@ export function createArtworkImageProxy({
 
       let response;
       try {
-        response = await fetchImpl(url, {
+        response = await fetchWithValidatedRedirects(fetchImpl, url, {
           headers: { Accept: "image/*", ...(userAgent ? { "User-Agent": userAgent } : {}) },
-          redirect: "follow",
           signal: AbortSignal.timeout(timeoutMs),
         });
       } catch (error) {
+        if (error instanceof ArtworkProxyError) throw error;
         if (error?.name === "AbortError" || error?.name === "TimeoutError") {
           throw new ArtworkProxyError("Artwork upstream did not respond in time.", {
             status: 504,
@@ -115,11 +159,8 @@ export function createArtworkImageProxy({
         });
       }
 
-      // Defense in depth: after following redirects, confirm the resolved host
-      // stayed within the trusted Internet Archive family. undici always sets
-      // response.url; when present we require it to parse and be allowed. An
-      // absent value is tolerated only because the initial request host was
-      // already pinned above.
+      // Every redirect is followed manually and validated above. Keep this
+      // final response.url check as defense in depth for custom fetch adapters.
       if (response.url) {
         let finalHost;
         try {
@@ -127,7 +168,7 @@ export function createArtworkImageProxy({
         } catch {
           finalHost = null;
         }
-        if (!finalHost || !ALLOWED_REDIRECT_HOSTS.has(finalHost)) {
+        if (!finalHost || !isTrustedArtworkRedirectHost(finalHost)) {
           throw new ArtworkProxyError("Artwork redirected to a disallowed host.", {
             status: 502,
             code: "ARTWORK_HOST_NOT_ALLOWED",

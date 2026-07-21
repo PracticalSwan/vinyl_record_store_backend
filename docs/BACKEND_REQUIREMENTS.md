@@ -1,6 +1,6 @@
 # Backend Requirements
 
-Requirement status reflects the integrated academic demo as of 2026-07-06.
+Requirement status reflects the integrated academic demo as of 2026-07-21.
 
 ## Requirement Status
 
@@ -15,11 +15,11 @@ Requirement status reflects the integrated academic demo as of 2026-07-06.
 | BR-007 | User-based recommendations. | Implemented identity boundary | Restricted synthetic showcase, session-owned customer cold-start, or anonymous fallback; preference/behavior ranking remains deferred. |
 | BR-008 | Recommendation explanations. | Implemented | Generated from matched metadata. |
 | BR-009 | Recommendation output logging. | Implemented | Exact MongoDB-mode served-list logs with request/list IDs, attribution, opt-out, and TTL. |
-| BR-010 | Admin product management. | Deferred | Outside current demo scope. |
+| BR-010 | Admin product management. | Implemented | Role-gated summary, product CRUD, soft-delete/restore, import apply, artwork refresh, optimistic concurrency, and audit summaries; writes require MongoDB mode. |
 | BR-011 | Optional MongoDB catalog persistence. | Implemented | Explicit data-source selection, strict models, repository parity, conflict-safe seed migration, and index verification. |
 | BR-012 | Authentication and authorization. | Implemented | Registration, seeded/registered login, signed HttpOnly sessions, logout, restoration, role checks, and account deletion. |
 | BR-013 | Preferences and ratings. | Implemented | Validated preference replacement and current rating/history mutation routes. |
-| BR-014 | Controlled catalog ingestion and artwork. | Implemented | Preview/apply CSV/JSON import, source/conflict safeguards, verified enrichment, provenance, exact-release/release-group fallback, and structured public artwork for all 116 bundled records. |
+| BR-014 | Controlled catalog ingestion and artwork. | Implemented | Preview/apply CSV/JSON import, source/conflict safeguards, verified enrichment/provenance, structured public artwork, a bounded remote proxy, and one hash-verified local JPEG fallback for all 116 bundled records. |
 | BR-015 | Offline recommender evaluation. | Implemented | Pseudonymized dataset, evidence gate, leakage-safe split, matched baselines, and aggregate-only reporting. |
 
 ## Non-Functional Requirements

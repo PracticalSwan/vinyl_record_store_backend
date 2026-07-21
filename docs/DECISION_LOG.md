@@ -165,3 +165,13 @@ Date: 2026-07-12
 Decision: Generate `src/data/artworkManifest.js` only from a complete visual-review report. Prefer exact official album-vinyl MusicBrainz releases; permit the six documented manual-review bindings where MusicBrainz lacks the cataloged vinyl edition or uses a materially different title. Use exact-release Cover Art Archive images first and stable same-release-group hotlinks only when the exact release has no approved front image. The seed and Atlas migration both manage the reviewed external IDs, artwork, and provenance while preserving immutable slugs and soft-delete tombstones.
 
 Rationale: A committed review boundary makes all 116 images reproducible in both catalog modes, prevents single/album and edition drift, keeps external storage low, and retains local fallbacks for network or coverage failures.
+
+## BDEC-020: Commit A Verified Local Fallback For Every Reviewed Cover
+
+Date: 2026-07-21
+
+Decision: Keep the reviewed Cover Art Archive URL as the preferred display source through the backend proxy, but commit one validated 500-pixel JPEG for each of the exact 116 bundled public IDs. Derive downloads only from `src/data/artworkManifest.js`; require HTTPS, approved source and redirect hosts, bounded redirects/time/bytes/pixels, JPEG MIME and byte completeness, content-addressed filenames, full provenance, manifest-last publication, and an orphan-free exact-set verifier. Expose stable canonical IDs through `GET /api/artwork/local/:publicId`, which redirects to the immutable asset.
+
+Rationale: The proxy fixed browser-to-Cover-Art-Archive reachability but still depended on a successful backend upstream request or a warm cache. A committed, hash-verified bundle makes the fixed classroom catalog deterministic offline while preserving reviewed source attribution and avoiding mutable public URLs. Content-addressed assets may be cached for one year; the stable ID redirect remains briefly revalidated so a future reviewed replacement does not strand clients on an obsolete filename.
+
+Status: Implemented and independently reviewed `SHIP_AS_IS` on 2026-07-21. Verification covered 116 files / 7,562,124 bytes, every hash/dimension/endpoint/header, malformed and unknown IDs, remote-to-local browser failover, desktop/mobile rendering, 154 backend tests, 87 frontend tests, and clean Atlas E2E teardown.

@@ -10,7 +10,7 @@ Two things worth knowing up front:
 
 - The catalog ships with 116 reviewed records and can optionally persist to MongoDB Atlas. Seed mode works out of the box with no database required.
 - Recommendations remain deterministic `content-demo-v1` behavior: the restricted legacy showcase is `demo-profile`, verified customers use a session-owned `cold-start` path, and visitors receive an `anonymous-fallback`. Preferences and behavior do not affect ranking yet, and no recommendation-quality claim is made.
-- Both catalog modes expose the same human-reviewed MusicBrainz identities and approved Cover Art Archive hotlinks. MongoDB mode also supports preview-first catalog imports and an aggregate-only offline evaluation command. The current report is an explicit `insufficient-evidence` result, not a quality score.
+- Both catalog modes expose the same human-reviewed MusicBrainz identities and approved Cover Art Archive hotlinks. The repository also contains one verified, content-addressed 500-pixel JPEG fallback for every bundled record. MongoDB mode supports preview-first catalog imports, and the offline evaluator currently reports `insufficient-evidence` rather than a quality score.
 
 ## API
 
@@ -20,7 +20,8 @@ Two things worth knowing up front:
 | `GET` | `/api/products` | Paginated, filterable product list. |
 | `GET` | `/api/products/:id` | Product detail. |
 | `GET` | `/api/search?q=` | Text search with catalog filters. |
-| `GET` | `/api/artwork?u=` | Streams an approved Cover Art Archive image through the backend (host-validated, size/time-capped, disk-cached) so storefronts render artwork without depending on the external host. |
+| `GET` | `/api/artwork?u=` | Primary artwork proxy: validates every redirect hop, bounds time/size, and disk-caches approved Cover Art Archive bytes. |
+| `GET` | `/api/artwork/local/:publicId` | Redirects a canonical bundled-record ID to its immutable, content-addressed local JPEG; malformed IDs return 400 and unmapped IDs return 404. |
 | `GET` | `/api/recommendations/product/:id` | Similar records with explanations. |
 | `GET` | `/api/recommendations/me` | Session-owned customer `cold-start` or anonymous fallback list. |
 | `GET` | `/api/recommendations/user/:userId` | Restricted legacy showcase: `demo-user` or generic cold-start only. |
@@ -55,6 +56,8 @@ Catalog imports default to a no-write preview: `npm run catalog:import -- --dry-
 
 Artwork curation is also preview-first. `npm run catalog:artwork:propose` produces an ignored JSON report and visual gallery. After human review resolves every close match, `npm run catalog:artwork:build` validates the six explicit manual-review exceptions and regenerates `src/data/artworkManifest.js`. The seed migration manages this reviewed manifest, preserves immutable slugs and soft-delete tombstones, and remains idempotent.
 
+Run `npm run catalog:artwork:download` to stage, validate, and publish local JPEG fallbacks from that reviewed source manifest. The command is idempotent and reuses valid files; `--refresh` forces retrieval and `--prune` removes only verified orphan JPEGs. Run `npm run catalog:artwork:verify` for the non-network release check. It requires exact catalog/source/local ID parity, all 116 hashes and dimensions, and no orphan artwork files.
+
 ## Showcase accounts
 
 Two roles exist: `customer` and `admin`. Exactly three showcase customer accounts are seeded into MongoDB and protected from account deletion by immutable public ID. The single administrator account is environment-backed and is never stored as a customer record.
@@ -68,6 +71,7 @@ Showcase customer logins require MongoDB mode. Seed the accounts with `npm run d
 
 ## Project structure
 
+- `public/artwork/` — 116 immutable content-addressed JPEG fallbacks; provenance lives in `src/data/localArtworkManifest.js`.
 - `src/app/api/` — Next.js route handlers.
 - `src/services/` — catalog, auth, customer-state, and account logic.
 - `src/lib/catalog/` and `src/lib/external/` — import validation and approved metadata clients.
@@ -80,4 +84,4 @@ Showcase customer logins require MongoDB mode. Seed the accounts with `npm run d
 
 ## License
 
-MIT, copyright Sithu Win San and Phone Khant Aung.
+Code and original documentation are MIT, copyright Sithu Win San and Phone Khant Aung. The third-party cover images are excluded from the MIT grant; see [`docs/THIRD_PARTY_ARTWORK.md`](docs/THIRD_PARTY_ARTWORK.md).

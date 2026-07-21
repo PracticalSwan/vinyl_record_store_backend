@@ -11,7 +11,7 @@ This file records current completion and deferred scope. It does not authorize c
 - Signed sessions, customer registration, one environment-backed administrator, three deletion-protected MongoDB showcase customers, protected state writes, ordinary-customer account deletion, and idempotent guest merge.
 - Bounded anonymous/authenticated interaction ingestion with server-derived ownership and 90-day eventual TTL.
 - BFP-02 Part A exact recommendation request/list logging with privacy opt-out, seed-mode suppression, safe subjects, reasons, exclusions, and TTL.
-- BFP-06 validated CSV/JSON preview/apply ingestion, source/conflict safeguards, MusicBrainz/Cover Art enrichment, structured artwork, caching, and provenance. The 2026-07-12 curation pass added a reviewed mapping and live hotlink for every bundled record.
+- BFP-06 validated CSV/JSON preview/apply ingestion, source/conflict safeguards, MusicBrainz/Cover Art enrichment, structured artwork, caching, and provenance. The 2026-07-12 curation pass added a reviewed mapping and live hotlink for every bundled record; the 2026-07-21 hardening pass added per-hop proxy validation and exactly 116 verified local JPEG fallbacks.
 - BFP-02 Part B pseudonymized dataset construction, evidence gating, leakage-safe split, matched baselines, aggregate coverage reporting, and reproducible report generation.
 - FFP-03/02/01 cross-repository contracts for state migration, onboarding, and attributed analytics.
 - Exact-origin credentialed CORS, bounded inputs, safe errors, per-identity event cap, and transaction-backed consistency.
