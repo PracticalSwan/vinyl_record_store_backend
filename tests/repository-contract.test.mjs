@@ -71,6 +71,7 @@ const fakeModel = {
         genres: group("genre"),
         conditions: group("condition"),
         stock: group("stock"),
+        formats: group("format"),
         prices: [{
           _id: null,
           min: Math.min(...documents.map((document) => document.price)),
@@ -90,6 +91,7 @@ const baseQuery = {
   artist: "",
   label: "",
   conditions: [],
+  formats: [],
   eras: [],
   minPrice: null,
   maxPrice: null,

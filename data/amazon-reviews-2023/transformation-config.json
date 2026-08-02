@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v1",
+  "targetProducts": 4000,
+  "maximumUsers": 20000,
+  "trainCoreMinimum": 3,
+  "vinylClassifierVersion": "details-and-category-v1",
+  "productSelection": "external-item-key-ascending",
+  "userSelection": "hmac-key-ascending",
+  "duplicateUserItemPolicy": "most-recent-source-row",
+  "splitPolicy": "per-user-leave-last-two",
+  "positiveRatingThreshold": 4,
+  "reviewTextIncluded": false,
+  "productImagesIncluded": false
+}

@@ -1,10 +1,23 @@
 # Backend Future Implementation Plan
 
-Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, and the backend contracts for FFP-01/02/03/05/06/07/08/09 are complete. BFP-05 remains a historical on-hold placeholder whose open method decision was frozen by PERS-00; personalization from BFP-10 onward remains future work pending a separate explicit task.
+Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, and DATA-00 through DATA-15 are complete. BFP-05 remains a historical on-hold placeholder whose open method decision was frozen by PERS-00; personalization from BFP-10 onward remains future work pending a separate explicit task and was not implemented with the dataset.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
 Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLAN.md`, `DATA_MODEL_PLAN.md`, and the matching frontend future plan. Recheck package versions and external service terms when implementation begins.
+
+## Current Dataset Gate (Completed 2026-08-02)
+
+`AMAZON_REVIEWS_DATA_INTEGRATION_PLAN.md` owns DATA-00 through DATA-15. MongoDB mode now has one active versioned 2,305-product Amazon Reviews 2023 vinyl subset plus 20,288 isolated historical ratings from 2,387 pseudonymous subjects; the 116-record legacy catalog and exactly three showcase customers remain preserved. This changes the data prerequisite for future work, not the recommender implementation status.
+
+Any remaining recommender milestone must now:
+
+- name the exact active dataset version and keep historical ratings separate from live Groovehaus logs;
+- preserve the committed temporal split and prevent train/validation/test leakage;
+- treat `dataset:evaluation:readiness` as input validation, not model quality;
+- keep nullable commercial fields and exclude unavailable products according to the public catalog contract;
+- preserve `content-demo-v1`, the three showcase users, and a non-destructive rollback path;
+- require a new explicit implementation request. This plan alone authorizes no PERS-03 through PERS-09 code.
 
 ## User Decisions Recorded On 2026-07-03
 

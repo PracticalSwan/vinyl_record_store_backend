@@ -24,6 +24,10 @@ test("preference validation enforces controlled values, overlap, budget, and com
     /cannot overlap/,
   );
   assert.throws(
+    () => parsePreferences({ favoriteGenres: ["Jazz"], dislikedGenres: ["jazz"] }),
+    /cannot overlap/,
+  );
+  assert.throws(
     () => parsePreferences({ favoriteGenres: [], budget: { min: 20, max: 10 } }),
     /cannot be greater/,
   );

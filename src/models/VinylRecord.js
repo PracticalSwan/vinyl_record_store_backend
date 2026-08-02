@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import {
   PRODUCT_CONDITIONS,
-  PRODUCT_GENRES,
   PRODUCT_STOCK_LEVELS,
 } from "./constants.js";
 import { publicIdField, schemaOptions } from "./schemaOptions.js";
@@ -41,6 +40,15 @@ const provenanceSchema = new mongoose.Schema(
   { _id: false, strict: "throw" },
 );
 
+const FIELD_ORIGIN_VALUES = ["source", "derived", "simulated", "legacy", "unknown"];
+const fieldOriginsSchema = new mongoose.Schema(
+  Object.fromEntries([
+    "title", "artist", "genre", "year", "price", "currency",
+    "stock", "condition", "format", "label", "artwork",
+  ].map((field) => [field, { type: String, enum: FIELD_ORIGIN_VALUES, default: "unknown" }])),
+  { _id: false, strict: "throw" },
+);
+
 export const vinylRecordSchema = new mongoose.Schema(
   {
     publicId: publicIdField,
@@ -54,15 +62,16 @@ export const vinylRecordSchema = new mongoose.Schema(
       match: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
     },
     title: { type: String, required: true, trim: true, maxlength: 200 },
-    artist: { type: String, required: true, trim: true, maxlength: 200 },
-    genre: { type: String, default: null, enum: PRODUCT_GENRES },
+    artist: { type: String, default: null, trim: true, maxlength: 200 },
+    genre: { type: String, default: null, trim: true, maxlength: 100 },
+    genres: { type: [{ type: String, trim: true, maxlength: 100 }], default: [] },
     year: { type: Number, default: null, min: 1900, max: 2100 },
-    price: { type: Number, required: true, min: 0, max: 1_000_000 },
-    currency: { type: String, required: true, enum: ["USD"], default: "USD" },
-    stock: { type: String, required: true, enum: PRODUCT_STOCK_LEVELS },
-    condition: { type: String, required: true, enum: PRODUCT_CONDITIONS },
+    price: { type: Number, default: null, min: 0, max: 1_000_000 },
+    currency: { type: String, default: null, enum: ["USD"] },
+    stock: { type: String, default: null, enum: PRODUCT_STOCK_LEVELS },
+    condition: { type: String, default: null, enum: PRODUCT_CONDITIONS },
     label: { type: String, default: null, trim: true, maxlength: 200 },
-    format: { type: String, required: true, trim: true, maxlength: 200 },
+    format: { type: String, default: null, trim: true, maxlength: 200 },
     pressing: { type: String, default: null, trim: true, maxlength: 200 },
     description: { type: String, default: null, trim: true, maxlength: 5_000 },
     imageUrl: { type: String, default: null, maxlength: 2_000 },
@@ -70,6 +79,11 @@ export const vinylRecordSchema = new mongoose.Schema(
     musicBrainzReleaseGroupId: { type: String, default: null, maxlength: 100, match: UUID_PATTERN },
     artwork: { type: artworkSchema, default: () => ({}) },
     source: { type: String, required: true, default: "demo-seed", maxlength: 100 },
+    datasetKey: { type: String, default: null, maxlength: 160 },
+    sourceVersion: { type: String, default: null, maxlength: 100 },
+    externalItemKey: { type: String, default: null, maxlength: 128 },
+    fieldOrigins: { type: fieldOriginsSchema, default: () => ({}) },
+    qualityFlags: { type: [{ type: String, maxlength: 100 }], default: [] },
     provenance: { type: [provenanceSchema], default: [] },
     deletedAt: { type: Date, default: null },
   },
@@ -81,6 +95,11 @@ export const vinylRecordSchema = new mongoose.Schema(
 
 vinylRecordSchema.index({ publicId: 1 }, { unique: true });
 vinylRecordSchema.index({ slug: 1 }, { unique: true });
+vinylRecordSchema.index(
+  { datasetKey: 1, externalItemKey: 1 },
+  { unique: true, partialFilterExpression: { datasetKey: { $type: "string" }, externalItemKey: { $type: "string" } } },
+);
+vinylRecordSchema.index({ datasetKey: 1, deletedAt: 1, genre: 1, title: 1 });
 vinylRecordSchema.index({ deletedAt: 1, genre: 1, year: -1, title: 1 });
 vinylRecordSchema.index({ deletedAt: 1, artist: 1, year: -1, title: 1 });
 vinylRecordSchema.index({ deletedAt: 1, stock: 1, year: -1, title: 1 });

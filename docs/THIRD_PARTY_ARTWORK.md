@@ -2,6 +2,8 @@
 
 The 116 JPEG files under `public/artwork/` are local availability fallbacks for the reviewed Groovehaus catalog. They were retrieved from the Cover Art Archive using the exact MusicBrainz release or release-group mappings already recorded in `src/data/artworkManifest.js`.
 
+They apply only to the 116 legacy records. The Amazon Reviews 2023 dataset integration does not download, commit, proxy, or reuse Amazon product images; source-derived dataset products use the generic vinyl placeholder.
+
 `src/data/localArtworkManifest.js` records each catalog public ID, source URL, resolved Internet Archive URL, MusicBrainz source page and identifiers, retrieval time, media type, byte count, pixel dimensions, SHA-256 digest, and content-addressed filename. Run `npm run catalog:artwork:verify` to require exact 116-record set equality and validate every committed file without contacting the network.
 
 ## Rights And Reuse

@@ -22,6 +22,7 @@ This document describes the implemented read and authenticated mutation service 
 - Authentication layer: `src/lib/auth/` for scrypt, signed cookies, sessions, roles, and recommendation-subject derivation; `src/lib/interactionCap.js` bounds interaction ingestion per identity.
 - Recommender layer: `src/lib/recommender/`.
 - Catalog ingestion layer: `src/lib/catalog/`, `src/lib/external/`, `src/services/catalogImport.js`, and the preview/apply command.
+- External dataset layer: `src/lib/dataset/`, `DatasetImport`, `HistoricalAmazonRating`, `datasetImportRepository`, and the prepare/import/activate/rollback/readiness/verify commands.
 - Artwork layer: the remote proxy in `src/services/artworkImage.js` and `src/lib/external/artworkImageProxy.js`; the committed fallback verifier/downloader in `src/lib/external/localArtworkAssets.js` and `scripts/download-local-artwork.mjs`; and the stable-ID redirect in `src/services/localArtwork.js`.
 - Error/response helpers: `src/lib/errors.js` and `src/lib/http.js`.
 - Default data source: `src/data/records.js` through `seedCatalogRepository.js`.
@@ -31,14 +32,14 @@ This document describes the implemented read and authenticated mutation service 
 ## Runtime Properties
 
 - Read and mutation routes are dynamic Next.js route handlers.
-- Seed mode filters the small demo catalog in memory; explicit MongoDB mode executes equivalent repository queries and aggregation-based catalog facets.
+- Seed mode filters the small demo catalog in memory; explicit MongoDB mode resolves one active dataset key and executes equivalent repository queries with dynamic aggregation-based facets. Without an active key, MongoDB mode selects preserved legacy records.
 - Search is a case-insensitive literal substring. Repeated values are ORed within genre, condition, and era facets and ANDed across facets. Sort tie-breakers use stable public IDs.
 - The approved seed remains the default. Explicit MongoDB mode requires valid Atlas configuration and never silently falls back.
 - The default allowed frontend origin is `http://localhost:5173`; mutations require that exact origin and use credentialed requests.
 - Registered customer state requires MongoDB mode. Seeded identities can authenticate from environment configuration and store preferences/state when persistence is available.
 - Recommendation responses always receive request/list IDs. `GET /api/recommendations/me` uses a verified customer descriptor or anonymous fallback; administrators are rejected. MongoDB mode logs a tracking-enabled served list before response; seed mode and usage opt-out skip persistence.
-- Offline evaluation is a command path, not a request route. It pseudonymizes subjects before dataset construction and emits only aggregate reports after enforcing the evidence gate.
-- Bundled artwork is proxy-first but upstream-independent after failover: every `ProductImage` can retry through `/api/artwork/local/:publicId`, which maps a canonical ID to an immutable content-addressed JPEG. The release verifier enforces the exact 116-record set, SHA-256, JPEG dimensions, and orphan-free directory.
+- Offline evaluation is a command path, not a request route. Live evidence remains separate from the versioned historical Amazon collection. The historical adapter consumes only the active dataset, validates temporal splits and eligibility, and emits aggregate readiness rather than model metrics.
+- Legacy bundled artwork is proxy-first but upstream-independent after failover: a reviewed legacy `ProductImage` can retry through `/api/artwork/local/:publicId`, which maps a canonical ID to an immutable content-addressed JPEG. The release verifier enforces the exact 116-record set, SHA-256, JPEG dimensions, and orphan-free directory. Dataset products skip that identity-bound endpoint and use the generic placeholder.
 
 ## Security
 

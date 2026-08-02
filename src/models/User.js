@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 import {
   PRODUCT_CONDITIONS,
-  PRODUCT_FORMATS,
-  PRODUCT_GENRES,
   USER_ROLES,
 } from "./constants.js";
 import { schemaOptions } from "./schemaOptions.js";
@@ -17,15 +15,15 @@ const budgetSchema = new mongoose.Schema(
 
 const preferencesSchema = new mongoose.Schema(
   {
-    favoriteGenres: { type: [{ type: String, enum: PRODUCT_GENRES }], default: [] },
-    dislikedGenres: { type: [{ type: String, enum: PRODUCT_GENRES }], default: [] },
+    favoriteGenres: { type: [{ type: String, trim: true, maxlength: 100 }], default: [] },
+    dislikedGenres: { type: [{ type: String, trim: true, maxlength: 100 }], default: [] },
     favoriteArtists: {
       type: [{ type: String, trim: true, minlength: 1, maxlength: 200 }],
       default: [],
     },
     budget: { type: budgetSchema, default: () => ({}) },
     conditions: { type: [{ type: String, enum: PRODUCT_CONDITIONS }], default: [] },
-    formats: { type: [{ type: String, enum: PRODUCT_FORMATS }], default: [] },
+    formats: { type: [{ type: String, trim: true, maxlength: 100 }], default: [] },
     completedAt: { type: Date, default: null },
     schemaVersion: { type: Number, default: 1, min: 1, validate: Number.isInteger },
   },

@@ -19,6 +19,10 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 
+# Local Amazon Reviews 2023 source and staged data
+data/amazon-reviews-2023/raw/
+data/amazon-reviews-2023/staging/
+
 # Logs
 logs/
 *.log

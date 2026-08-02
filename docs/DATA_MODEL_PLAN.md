@@ -1,8 +1,8 @@
 # Backend Data Model
 
-This document distinguishes the default in-memory catalog seed, implemented persistence models, and active customer-state boundaries.
+This document distinguishes the default in-memory catalog seed, the active versioned MongoDB dataset, implemented persistence models, and customer-state boundaries.
 
-The seed remains the default catalog data source. Explicit `CATALOG_DATA_SOURCE=mongodb` selection uses the MongoDB catalog repository after the guarded seed migration has populated Atlas.
+The seed remains the no-database default. Explicit `CATALOG_DATA_SOURCE=mongodb` selection follows the single active `DatasetImport`; if none is active, the MongoDB repository uses the preserved 116-record legacy catalog. The current active dataset is `amazon-reviews-2023-cds-vinyl-5core-v1` with 2,305 products.
 
 ## Current Demo Product
 
@@ -18,7 +18,7 @@ The active seed in `src/data/records.js` contains:
 | `condition`, `format`, `pressing`, `description` | string | Display metadata. |
 | `reason` | string | Legacy seed fixture only; removed from public product responses. |
 
-Public products add `currency: "USD"`, the compatibility `imageUrl`, and a nullable structured `image` envelope. Imported MongoDB products may leave genre, year, label, pressing, and description unset; clients render explicit fallbacks.
+Legacy public products add `currency: "USD"`, the compatibility `imageUrl`, and a nullable structured `image` envelope. Dataset-owned products may also leave artist, price, currency, stock, condition, format, genre, year, label, pressing, and description unset. Clients render explicit fallbacks and block purchase when price or stock is unknown.
 
 ## Current Synthetic Profile
 
@@ -29,7 +29,7 @@ The recommender contains one code-defined `demo-user` profile with purchased IDs
 | Collection | Current model boundary |
 | --- | --- |
 | `users` | Stable public identity, normalized unique username, role, versioned preferences, active state, and non-selected password fields. |
-| `vinylRecords` | Stable numeric public ID and slug, required store fields, nullable descriptive metadata, MusicBrainz identifiers, release-bound artwork/provenance, stock, source ownership, and soft deletion. |
+| `vinylRecords` | Stable numeric public ID and slug, nullable source-aware store fields, dynamic genres/formats, MusicBrainz identifiers where reviewed, field origins, quality flags, provenance, source/version ownership, stock, and soft deletion. |
 | `interactions` | Unique event identity, optional user or anonymous subject, product/recommendation context, event times, and 90-day expiry. |
 | `wishlists`, `carts`, `ratings` | One list per user, unique cart/list product IDs, and one integer rating per user/product. |
 | `guestMerges` | Unique user/merge receipt, stable input hash, and original merge result for retry-safe guest-state migration. |
@@ -37,6 +37,8 @@ The recommender contains one code-defined `demo-user` profile with purchased IDs
 | `recommendationLogs` | Unique request/list identity, safe subject, ordered products/scores/ranks/reasons, exclusions, mode, version, surface, and 90-day expiry. |
 | `auditLogs` | Safe administrator change summaries without credentials or session values. |
 | `counters` | Atomic numeric ID allocation. |
+| `datasetImports` | Unique dataset key, pinned source/version, source and staging file hashes, configuration digest, pseudonym-key fingerprint, counts, lifecycle state, and the single active pointer. |
+| `historicalAmazonRatings` | Versioned HMAC-pseudonymous subject key, canonical product ID, hashed external item key, rating, source time, train/validation/test split, source row, and quality flags. |
 
 Schemas use strict unknown-field rejection, timestamps, bounded fields, enum validation, unique constraints, compound query indexes, and TTL indexes where retention applies. Public API products expose numeric `id`, never MongoDB `_id`.
 
@@ -48,9 +50,11 @@ Authentication, interaction ingestion, preferences, wishlist/cart state, ratings
 
 Catalog import is separate from seed migration. Seed reconciliation manages the committed reviewed MusicBrainz IDs, artwork, and provenance for seed-owned records while preserving immutable public IDs/slugs and soft-delete tombstones. `src/data/localArtworkManifest.js` is non-database derived data that binds those reviewed public IDs to content-addressed JPEGs and their hashes/dimensions; imported or administrator-created records use the generic placeholder unless a future reviewed local bundle includes them. Import batches validate before planning, preserve source ownership, allocate numeric IDs atomically, and default to all-or-nothing writes.
 
+The external dataset pipeline is separate from both flows. It verifies pinned raw-source hashes and committed transformation configuration, streams ignored staging files, performs idempotent batched upserts, and records completion before activation. Activation and rollback only change the version pointer in a transaction; they never delete the dataset or the legacy catalog. Dataset-managed records are read-only in the Admin GUI and use the generic placeholder because Amazon images were intentionally excluded.
+
 ## Privacy Boundary
 
-Do not add real emails, orders, ratings, interaction histories, or identifiers to the demo seed. Registered usernames and activity are privacy-sensitive; raw private interaction logs, password material, cookies, and internal identifiers must never be returned by public routes.
+Do not add real emails, orders, ratings, interaction histories, or identifiers to the demo seed. Registered usernames and activity are privacy-sensitive; raw private interaction logs, password material, cookies, internal identifiers, source reviewer IDs, historical pseudonyms, and historical rating rows must never be returned by public routes. Historical subjects are not `User` documents and never merge with the three showcase customers.
 
 ## Planned Models (Personalization Roadmap)
 

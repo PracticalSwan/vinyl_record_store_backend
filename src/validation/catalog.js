@@ -52,6 +52,22 @@ export function repeatedControlledValues(searchParams, name, allowedValues) {
   return [...new Set(normalized)];
 }
 
+export function repeatedLiteralValues(searchParams, name, maxLength = 100) {
+  const values = searchParams
+    .getAll(name)
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+  if (values.length > MAX_FILTER_VALUES) {
+    throw invalid(`${name} may contain at most ${MAX_FILTER_VALUES} values.`);
+  }
+  if (values.some((value) => value.length > maxLength)) {
+    throw invalid(`${name} contains an overlong value.`);
+  }
+  const deduplicated = new Map();
+  for (const value of values) deduplicated.set(value.toLowerCase(), value);
+  return [...deduplicated.values()];
+}
+
 export function productId(value) {
   return positiveInteger(value, null, { name: "Product ID", max: 1_000_000 });
 }

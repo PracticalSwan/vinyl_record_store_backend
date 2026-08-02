@@ -19,13 +19,13 @@ Returns `{ status, service, catalogMode, database, algorithmVersion }`. Seed mod
 Query parameters:
 
 - `page` (default 1, maximum 10,000), `limit` (default 24, maximum 100).
-- `q`, `artist`, and `label` (maximum 100 characters each), repeated `genre`, repeated `condition`, and repeated `era`.
+- `q`, `artist`, and `label` (maximum 100 characters each), repeated `genre`, repeated `format`, repeated `condition`, and repeated `era`.
 - `minPrice`, `maxPrice`, `inStock=true|false`.
 - `sort=newest|price-asc|price-desc|artist-asc` (default `newest`).
 
-`q`, `artist`, and `label` use case-insensitive literal substring matching. Repeated values use OR semantics within a facet and different facets use AND semantics. Repeated controlled facets accept at most 20 values and reject unsupported values. Sorts use the stable numeric product ID as their final tie-breaker.
+`q`, `artist`, and `label` use case-insensitive literal substring matching. Repeated values use OR semantics within a facet and different facets use AND semantics. Dynamic genre/format literals and controlled condition/era facets accept at most 20 values; controlled facets reject unsupported values. Sorts use the stable numeric product ID as their final tie-breaker.
 
-Response: `{ data: { items }, meta: { page, limit, total, totalPages, sort, facets } }`. Facets describe the full active catalog and include genre, era, condition, stock counts, and the catalog price range. A product may include `image: { thumbnailUrl, detailUrl, source, sourceUrl }` only when the backend has a complete approved Cover Art Archive mapping; `imageUrl` remains the compatibility URL and both are `null` when unresolved. Every bundled catalog record currently has a reviewed mapping, while imported/admin-created records may still use the fallback until approved.
+Response: `{ data: { items }, meta: { page, limit, total, totalPages, sort, facets } }`. Facets describe the full active catalog and include genre, format, era, condition, stock counts, and the catalog price range. Product responses include safe `source`, `datasetKey`, `sourceVersion`, `fieldOrigins`, and `qualityFlags` metadata. Dataset-owned fields may be `null`; clients must not infer store price, currency, stock, condition, format, or artist. A product may include `image: { thumbnailUrl, detailUrl, source, sourceUrl }` only when the backend has a complete approved Cover Art Archive mapping; `imageUrl` remains the compatibility URL and both are `null` when unresolved. Every legacy bundled record has a reviewed mapping; dataset/imported/admin-created records use the generic fallback until separately approved.
 
 ### `GET /api/products/:id`
 
@@ -101,13 +101,15 @@ Ownership comes only from the verified session; client-supplied user IDs are rej
 
 `npm run recommender:evaluate` reads retained interactions and recommendation logs, pseudonymizes subjects with a per-run salt, enforces the minimum-evidence boundary, and writes aggregate-only output under `reports/recommender/`. It is not a public API route.
 
+The Amazon Reviews 2023 dataset is also CLI-only: `dataset:profile`, `dataset:prepare`, `dataset:import`, `dataset:import:apply`, `dataset:activate:apply`, `dataset:rollback`, `dataset:rollback:apply`, `dataset:verify`, and `dataset:evaluation:readiness`. These commands verify pinned hashes/configuration, transform ignored local sources, perform versioned idempotent writes, and transactionally change the active pointer. They do not expose raw or historical rows over HTTP.
+
 ## Administrator Routes (BFP-07)
 
 Every `/api/admin/*` route calls `requireRole("admin")` after session verification; writes also call `assertMutationOrigin`. Reads work in seed and mongodb mode; writes are mongodb-only and return `PERSISTENCE_UNAVAILABLE` (503) in seed mode. Product create allocates a numeric public id (`max(counter, max-existing)+1`); edit and delete use compare-and-set on Mongoose-managed `updatedAt` and return `CONFLICT` (409) on stale state. Administrator actions append best-effort audit records.
 
 | Method | Route | Auth | Purpose |
 | --- | --- | --- | --- |
-| `GET` | `/api/admin/summary` | Admin | Active/low/out-of-stock counts, unresolved-artwork count, soft-deleted count, and recent safe audit actions. |
+| `GET` | `/api/admin/summary` | Admin | Active/low/out-of-stock counts, unresolved-artwork count, soft-deleted count, recent safe audit actions, and nullable active dataset status/counts. |
 | `GET` | `/api/admin/products` | Admin | Paginated product list (`page`, `limit`, `includeDeleted`). |
 | `POST` | `/api/admin/products` | Admin | Create a product (mongodb-only). |
 | `GET` | `/api/admin/products/:id` | Admin | Admin product view (includes `updatedAt`, `deletedAt`, `source`, `provenance`, MB ids). |
@@ -118,6 +120,8 @@ Every `/api/admin/*` route calls `requireRole("admin")` after session verificati
 | `PATCH` | `/api/admin/products/:id/artwork` | Admin | Save verified artwork for a chosen `releaseId` (body includes `updatedAt`). |
 | `POST` | `/api/admin/catalog/import/preview` | Admin | Validate/enrich a CSV/JSON payload and return a summary, action sample, and a one-time preview token. |
 | `POST` | `/api/admin/catalog/import/apply` | Admin | Consume the one-time preview token and apply the import transactionally. |
+
+Dataset-managed products are read-only in the Admin API: update/delete/restore/artwork mutation attempts return `409 CONFLICT` with the CLI-managed recovery path. The Admin CSV/JSON routes remain the ordinary catalog-import surface and do not ingest the Amazon research files.
 
 ## Deferred Routes
 

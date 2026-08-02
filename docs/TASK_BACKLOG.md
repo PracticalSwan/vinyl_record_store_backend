@@ -5,13 +5,13 @@ Statuses are `done` or `deferred`. Deferred items are not active work.
 | ID | Task | Status | Notes |
 | --- | --- | --- | --- |
 | B-001 | Establish backend repository and instructions. | done | Agent, lesson, license, and GitHub-facing files exist. |
-| B-002 | Confirm Next.js JavaScript base. | done | Next.js 16.2.9 App Router. |
+| B-002 | Confirm Next.js JavaScript base. | done | Next.js 16.2.12 App Router. |
 | B-003 | Implement catalog list/detail/search. | done | Repository-backed literal search, repeated facets, deterministic sorts, pagination, and facet metadata. |
 | B-004 | Implement content-based recommendations. | done | Product, demo-profile, and cold-start modes. |
 | B-005 | Add explanations, exclusions, diversity, and version. | done | `content-demo-v1`. |
 | B-006 | Connect frontend origin with CORS. | done | `FRONTEND_ORIGIN`. |
 | B-007 | Add automated validation. | done | Catalog, persistence, migration, recommender, and metric tests plus lint and build. |
-| B-008 | Align backend documentation. | done | Updated through the 2026-07-21 local-artwork availability pass. |
+| B-008 | Align backend documentation. | done | Updated through the 2026-08-02 DATA-00 through DATA-15 closure. |
 | B-009 | Add MongoDB persistence. | done | BFP-01 models, repositories, explicit source selection, seed migration, parity checks, and live index verification are complete. |
 | B-010 | Add identity and write APIs. | done | BFP-04 and BFP-03 completed 2026-07-04 with auth, profile/preferences, interactions, wishlist, cart, ratings, merge, and account deletion. |
 | B-011 | Build the evaluation dataset and run an offline benchmark. | done | BFP-02 Part B is implemented; the current aggregate report is `insufficient-evidence`, so no quality metrics are published. |
@@ -29,3 +29,4 @@ Statuses are `done` or `deferred`. Deferred items are not active work.
 | B-023 | Add hybrid recommendation orchestration. | deferred | PERS-08 / BFP-15; normalized component scores, diversity reranking, version `personalized-hybrid-v1`. |
 | B-024 | Integrate, harden, and close personalization documentation. | deferred | PERS-09 / BFP-16; end-to-end integration, regression protection, documentation closure. |
 | B-025 | Add deterministic local artwork availability. | done | Completed 2026-07-21 with 116 reviewed content-addressed JPEGs, a canonical-ID endpoint, strict acquisition/verifier tooling, proxy redirect hardening, full tests, browser screenshots, and independent review. |
+| B-026 | Integrate the current Amazon Reviews 2023 dataset. | done | DATA-00 through DATA-15 completed 2026-08-02: 2,305 active products, 20,288 isolated ratings, 2,387 pseudonymous subjects, reproducible import/activation/rollback, exact three showcase users, and readiness-only evaluation. |

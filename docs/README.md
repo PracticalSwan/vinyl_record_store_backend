@@ -1,11 +1,12 @@
 # Backend Documentation
 
-These files document the implemented catalog/recommendation API, optional MongoDB catalog persistence, signed authentication, and customer-state mutation boundary.
+These files document the implemented catalog/recommendation API, active versioned MongoDB dataset, signed authentication, and customer-state mutation boundary.
 
 - `PROJECT_CONTEXT.md`: canonical backend status and boundaries.
 - `BACKEND_REQUIREMENTS.md`: requirements and implementation status.
 - `API_CONTRACT_PLAN.md`: current routes, validation, and response shapes.
 - `DATA_MODEL_PLAN.md`: seed shape, implemented Mongoose models, indexes, privacy, and active/deferred write boundaries.
+- `AMAZON_REVIEWS_DATA_INTEGRATION_PLAN.md`: authoritative DATA-00 through DATA-15 implementation record, provenance contract, exact counts, activation/rollback runbook, and recommender-work gate.
 - `RECOMMENDER_SYSTEM_PLAN.md`: implemented scoring, explanations, diversity, restricted showcase, session-owned cold-start, and anonymous-fallback rules.
 - `ARCHITECTURE_PLAN.md`: current modules and request flow.
 - `EVALUATION_PLAN.md`: automated behavior checks, implemented offline protocol, and the active evidence boundary.

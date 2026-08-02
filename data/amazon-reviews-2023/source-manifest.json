@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v1",
+  "dataset": "Amazon Reviews 2023",
+  "category": "CDs_and_Vinyl",
+  "sourceRevision": "2b6d039ed471f2ba5fd2acb718bf33b0a7e5598e",
+  "retrievedAt": "2026-08-02T00:00:00.000Z",
+  "termsStatus": "research-use-source-with-no-dataset-license-granted",
+  "citation": "Hou, Y., Li, J., He, Z., Yan, A., Chen, X., & McAuley, J. (2024). Bridging Language and Items for Retrieval and Recommendation. arXiv:2403.03952.",
+  "files": {
+    "metadata": {
+      "relativePath": "raw/meta_CDs_and_Vinyl.jsonl",
+      "url": "https://huggingface.co/datasets/McAuley-Lab/Amazon-Reviews-2023/resolve/2b6d039ed471f2ba5fd2acb718bf33b0a7e5598e/raw/meta_categories/meta_CDs_and_Vinyl.jsonl",
+      "bytes": 948861684,
+      "sha256": "c52275a5bce63bf293f987bff5ff1f2b268982797545f3df2b7662ab638e8aec"
+    },
+    "ratings": {
+      "relativePath": "raw/CDs_and_Vinyl.5core.csv.gz",
+      "url": "https://mcauleylab.ucsd.edu/public_datasets/data/amazon_2023/benchmark/5core/rating_only/CDs_and_Vinyl.csv.gz",
+      "bytes": 21466396,
+      "sha256": "53811902ffb01eb22da31a35e0775f3b8351baebe7e1ab38b85b6c4aee689c20"
+    }
+  },
+  "privacy": {
+    "reviewTextIngested": false,
+    "reviewerIdsCommitted": false,
+    "downloadedImagesCommitted": false
+  }
+}

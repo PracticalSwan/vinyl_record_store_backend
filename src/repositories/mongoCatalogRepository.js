@@ -6,11 +6,14 @@ import {
   PRODUCT_STOCK_LEVELS,
 } from "../models/constants.js";
 import { Counter } from "../models/Counter.js";
+import { DatasetImport } from "../models/DatasetImport.js";
 import { VinylRecord } from "../models/VinylRecord.js";
 import { slugifyProduct, toAdminProduct, toPublicProduct } from "./catalogMapping.js";
 
 const ERAS = ["1950s", "1960s", "1970s", "1980s", "1990s", "2000s+"];
-const MAX_RECOMMENDATION_CANDIDATES = 1_000;
+// DATA-11 compatibility ceiling: enough for the validated 2,305-product
+// Amazon subset without pretending to solve future large-catalog retrieval.
+const MAX_RECOMMENDATION_CANDIDATES = 5_000;
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const contains = (value) => new RegExp(escapeRegex(value), "i");
 
@@ -20,8 +23,8 @@ function eraRange(era) {
   return { year: { $gte: decade, $lt: decade + 10 } };
 }
 
-export function buildMongoCatalogFilter(query) {
-  const filter = { deletedAt: null };
+export function buildMongoCatalogFilter(query, activeDataset = { datasetKey: null }) {
+  const filter = { deletedAt: null, ...activeDataset };
   const clauses = [];
   if (query.q) {
     const pattern = contains(query.q);
@@ -35,12 +38,13 @@ export function buildMongoCatalogFilter(query) {
   if (query.artist) filter.artist = contains(query.artist);
   if (query.label) filter.label = contains(query.label);
   if (query.conditions.length) filter.condition = { $in: query.conditions };
+  if (query.formats?.length) filter.format = { $in: query.formats };
   if (query.minPrice !== null || query.maxPrice !== null) {
     filter.price = {};
     if (query.minPrice !== null) filter.price.$gte = query.minPrice;
     if (query.maxPrice !== null) filter.price.$lte = query.maxPrice;
   }
-  if (query.inStock === "true") filter.stock = { $ne: "out" };
+  if (query.inStock === "true") filter.stock = { $in: ["in", "low"] };
   if (query.inStock === "false") filter.stock = "out";
   return filter;
 }
@@ -57,14 +61,23 @@ const counts = (values, source) => {
   return values.map((value) => ({ value, count: map.get(value) || 0 }));
 };
 
-async function readFacets(model) {
+const dynamicCounts = (preferred, source) => {
+  const discovered = source
+    .filter(({ _id }) => typeof _id === "string" && _id.trim())
+    .map(({ _id }) => _id);
+  const values = [...new Set([...preferred, ...discovered])];
+  return counts(values, source);
+};
+
+async function readFacets(model, activeDataset) {
   const [facets = {}] = await model.aggregate([
-    { $match: { deletedAt: null } },
+    { $match: { deletedAt: null, ...activeDataset } },
     {
       $facet: {
         genres: [{ $group: { _id: "$genre", count: { $sum: 1 } } }],
         conditions: [{ $group: { _id: "$condition", count: { $sum: 1 } } }],
         stock: [{ $group: { _id: "$stock", count: { $sum: 1 } } }],
+        formats: [{ $group: { _id: "$format", count: { $sum: 1 } } }],
         prices: [{ $group: { _id: null, min: { $min: "$price" }, max: { $max: "$price" } } }],
         years: [{ $group: { _id: "$year", count: { $sum: 1 } } }],
       },
@@ -77,9 +90,10 @@ async function readFacets(model) {
     if (target) target.count += count;
   }
   return {
-    genres: counts(PRODUCT_GENRES, facets.genres || []),
+    genres: dynamicCounts(PRODUCT_GENRES, facets.genres || []),
     eras: eraCounts,
-    conditions: counts(PRODUCT_CONDITIONS, facets.conditions || []),
+    conditions: dynamicCounts(PRODUCT_CONDITIONS, facets.conditions || []),
+    formats: dynamicCounts([], facets.formats || []),
     price: {
       min: facets.prices?.[0]?.min ?? null,
       max: facets.prices?.[0]?.max ?? null,
@@ -91,6 +105,7 @@ async function readFacets(model) {
 export function createMongoCatalogRepository(
   model = VinylRecord,
   connect = connectMongoDB,
+  datasetImportModel = model === VinylRecord ? DatasetImport : null,
 ) {
   const runMongo = async (operation) => {
     try {
@@ -102,15 +117,28 @@ export function createMongoCatalogRepository(
     }
   };
 
+  const activeDatasetFilter = async () => {
+    if (!datasetImportModel) return { datasetKey: null };
+    const active = await datasetImportModel
+      .findOne({ active: true, status: "active" }, { datasetKey: 1 })
+      .lean()
+      .exec();
+    return { datasetKey: active?.datasetKey ?? null };
+  };
+
   return {
     source: "mongodb",
 
-    findByPublicId: (publicId) => runMongo(async () => toPublicProduct(
-      await model.findOne({ publicId, deletedAt: null }).lean().exec(),
-    )),
+    findByPublicId: (publicId) => runMongo(async () => {
+      const activeDataset = await activeDatasetFilter();
+      return toPublicProduct(
+        await model.findOne({ publicId, deletedAt: null, ...activeDataset }).lean().exec(),
+      );
+    }),
 
     findProducts: (query) => runMongo(async () => {
-      const filter = buildMongoCatalogFilter(query);
+      const activeDataset = await activeDatasetFilter();
+      const filter = buildMongoCatalogFilter(query, activeDataset);
       const [items, total, facets] = await Promise.all([
         model.find(filter)
           .sort(mongoSort(query.sort))
@@ -119,13 +147,13 @@ export function createMongoCatalogRepository(
           .lean()
           .exec(),
         model.countDocuments(filter).exec(),
-        readFacets(model),
+        readFacets(model, activeDataset),
       ]);
       return { items: items.map(toPublicProduct), total, facets };
     }),
 
     listRecommendationCandidates: () => runMongo(async () => (
-      await model.find({ deletedAt: null })
+      await model.find({ deletedAt: null, ...await activeDatasetFilter() })
         .sort({ publicId: 1 })
         .limit(MAX_RECOMMENDATION_CANDIDATES)
         .lean()
@@ -162,13 +190,15 @@ export function createMongoCatalogRepository(
     listAllRawForImport: () => runMongo(async () => await model.find({}).lean()),
 
     adminSummary: () => runMongo(async () => {
+      const activeDataset = await activeDatasetFilter();
       const [active, lowStock, outOfStock, softDeleted, withArtwork] = await Promise.all([
-        model.countDocuments({ deletedAt: null }),
-        model.countDocuments({ deletedAt: null, stock: "low" }),
-        model.countDocuments({ deletedAt: null, stock: "out" }),
+        model.countDocuments({ deletedAt: null, ...activeDataset }),
+        model.countDocuments({ deletedAt: null, stock: "low", ...activeDataset }),
+        model.countDocuments({ deletedAt: null, stock: "out", ...activeDataset }),
         model.countDocuments({ deletedAt: { $ne: null } }),
         model.countDocuments({
           deletedAt: null,
+          ...activeDataset,
           "artwork.thumbnailUrl": { $in: [null, ""] },
         }),
       ]);

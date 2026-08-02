@@ -17,10 +17,11 @@ This file records current completion and deferred scope. It does not authorize c
 - Exact-origin credentialed CORS, bounded inputs, safe errors, per-identity event cap, and transaction-backed consistency.
 - Backend tests, lint, production build, Atlas connectivity, and all declared index groups verified.
 - BFP-07 administrator catalog APIs and the matching FFP-07 administrator workspace; FFP-08 client-only simulated checkout.
+- DATA-00 through DATA-15 external-dataset integration: pinned Amazon Reviews 2023 source, reproducible 2,305-product vinyl subset, 20,288 isolated historical ratings, active-version catalog selection, safe nullable-field UI contract, non-destructive legacy rollback, exact-three-user preservation, and readiness-only evaluation adapter.
 
 ## Deferred And Not Started
 
-- Sufficient interaction evidence for a ranking-quality conclusion; the implemented evaluator currently reports `insufficient-evidence` without metrics.
+- A ranking-quality conclusion: live evidence remains `insufficient-evidence`, while historical Amazon evidence is data-ready but has not been used to run an approved recommender experiment.
 - Backend order APIs, real payments, scraping, and deployment automation.
 - Preference, feedback, behavioral, popularity, and hybrid personalization (PERS-03 through PERS-09 / BFP-10 through BFP-16). BFP-05 remains on hold as a historical placeholder whose open method decision was resolved by PERS-00. No quality claim is made; collaborative filtering and matrix factorization are excluded.
 

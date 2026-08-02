@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v1",
+  "generatedAt": "2026-08-02T14:36:11.009Z",
+  "source": {
+    "metadataRows": 701959,
+    "ratingRows": 1552764,
+    "users": 123876,
+    "products": 89370,
+    "ratingDistribution": {
+      "1": 46379,
+      "2": 46595,
+      "3": 107369,
+      "4": 264151,
+      "5": 1088270
+    },
+    "timestampMinimum": "1997-11-12T01:37:58.000Z",
+    "timestampMaximum": "2023-09-08T22:06:04.465Z",
+    "maximumRatingsPerUser": 1912,
+    "maximumRatingsPerProduct": 1089,
+    "verifiedPurchase": "unavailable-in-rating-only-source",
+    "metadataCoverage": {
+      "title": 89366,
+      "store": 89367,
+      "price": 81143,
+      "images": 89343,
+      "categories": 89370,
+      "details": 89370
+    }
+  },
+  "filtering": {
+    "ratedProductsWithMetadata": 89370,
+    "vinylCandidates": 3022,
+    "duplicateVinylMetadataRows": 0,
+    "selectedRatingRowsBeforeCore": 32850,
+    "duplicateSelectedUserItems": 0,
+    "stagedProductsAfterCore": 2305
+  },
+  "staged": {
+    "products": 2305,
+    "pseudonymousUsers": 2387,
+    "ratings": 20288,
+    "train": 16364,
+    "validation": 2011,
+    "test": 1913
+  },
+  "acceptance": {
+    "sourceHashesValid": true,
+    "sourceRowsValid": true,
+    "trainOnlyCoreMinimum": 3,
+    "reviewTextExcluded": true,
+    "sourceReviewerIdsExcludedFromStaging": true,
+    "productImagesExcluded": true,
+    "singleDatasetVersion": true
+  },
+  "normalization": {
+    "format": "broad Vinyl only; no inferred LP, EP, diameter, or box-set claim",
+    "storePrice": "null; Amazon reference price is profiled but not used as Groovehaus selling price",
+    "stock": "null",
+    "condition": "null",
+    "images": "excluded"
+  },
+  "stagingFiles": {
+    "products": {
+      "bytes": 2691121,
+      "sha256": "3af37c8140a2389e3898d9d1a2ae7626371cbf0dfa75fad00ed177fdfb6399c5"
+    },
+    "ratings": {
+      "bytes": 8980502,
+      "sha256": "34228e1538f6d7e62cde037ae06e042f8d500df0377ba51a7f5e8fbd687d416f"
+    }
+  }
+}

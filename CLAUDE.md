@@ -8,15 +8,16 @@ This is a subtree instruction file. Read the global instructions and the project
 
 The backend is an implemented integration and authenticated customer-state service, not a planning-only Next.js starter.
 
-- Next.js 16.2.9, React 19.2.4, Tailwind 4, and JavaScript modules.
+- Next.js 16.2.12, React 19.2.4, Tailwind 4, and JavaScript modules.
 - Routes for health, product listing/detail, search, product similarity, user recommendations, authentication, profile/preferences, interactions, wishlist, cart, ratings, guest merge, and account deletion.
-- The reviewed local seed remains the default catalog. Explicit `CATALOG_DATA_SOURCE=mongodb` selection reads the same 116-record catalog from Atlas through the MongoDB repository.
+- The reviewed 116-record local seed remains the no-database default and MongoDB legacy rollback. Explicit `CATALOG_DATA_SOURCE=mongodb` currently follows the active `amazon-reviews-2023-cds-vinyl-5core-v1` pointer and serves 2,305 source-derived products.
 - Mongoose models, persistence repositories, signed sessions, authenticated customer writes, an idempotent seed migration, and live index verification are implemented.
 - Deterministic content-based recommendations with explanations, stock preference, exclusions, diversity limits, and an algorithm version.
 - PERS-00 through PERS-02 are implemented: identity-safe subject descriptors restrict the legacy arbitrary-user route, and `GET /api/recommendations/me` derives a customer only from the verified session, rejects administrators, and otherwise returns an anonymous fallback. Ranking remains `content-demo-v1`; preferences and behavior do not affect it yet.
 - MongoDB-mode recommendation request logging records exact ordered lists, reasons, surfaces, modes, versions, exclusions, and 90-day expiry; seed mode and usage opt-out suppress it.
 - Preview-first CSV/JSON catalog ingestion supports atomic apply, source ownership, duplicate/conflict detection, optional MusicBrainz/Cover Art Archive enrichment, release-bound artwork, release-group fallback, local cache, and field provenance. The bundled catalog has one human-reviewed manifest entry and approved hotlink for every record.
 - The offline evaluator builds pseudonymized leakage-safe datasets, compares random/popularity/content-based rankings only above the evidence threshold, and otherwise writes aggregate counts and captured-field coverage without quality claims.
+- DATA-00 through DATA-15 add a pinned streaming Amazon Reviews pipeline, 20,288 isolated historical ratings from 2,387 HMAC-pseudonymous subjects, transactional activation/non-destructive rollback, and aggregate-only readiness checks. Historical `ready` is not a model result; PERS-03 through PERS-09 remain deferred.
 - Administrator mode (BFP-07) exposes role-gated `/api/admin/*` routes (summary, product CRUD with `updatedAt` optimistic concurrency, soft-delete/restore, preview-token catalog import apply, artwork refresh) with best-effort audit logging. Reads work in seed and mongodb mode; writes are mongodb-only and return `PERSISTENCE_UNAVAILABLE` (503) in seed mode.
 - Artwork uses two backend-owned delivery paths. `GET /api/artwork?u=<approved URL>` is the bounded, disk-cached primary proxy and validates every Cover Art Archive/Internet Archive redirect hop. `GET /api/artwork/local/:publicId` redirects canonical IDs to one of 116 committed, content-addressed JPEG fallbacks whose provenance, size, dimensions, and SHA-256 hashes are generated from the reviewed catalog manifest.
 - Automated catalog, import, artwork proxy/local-bundle, persistence, migration, authentication, write-state, recommender-behavior, evaluation, metric, and administrator sanity tests.
@@ -32,6 +33,7 @@ The backend is an implemented integration and authenticated customer-state servi
 - `src/validation/` owns catalog, authentication, and mutation validation.
 - `src/lib/auth/` owns password, signed-session, cookie, and authorization helpers; `src/lib/interactionCap.js` bounds interaction ingestion per identity.
 - `src/lib/catalog/` and `src/lib/external/` own import parsing/validation and rate-limited metadata clients.
+- `src/lib/dataset/`, `DatasetImport`, `HistoricalAmazonRating`, and `data/amazon-reviews-2023/` own the external research-data boundary, transformation, version pointer, and historical readiness adapter.
 - `src/lib/recommender/` owns scoring, explanations, diversity, dataset construction, and evaluation helpers.
 - `src/data/records.js` owns store metadata; `src/data/artworkManifest.js` owns reviewed external identities; `src/data/localArtworkManifest.js` owns generated local-file provenance; `src/data/catalogRecords.js` combines catalog metadata for seed mode and migration.
 - `src/lib/db/` owns connection, data-source selection, and migration support.

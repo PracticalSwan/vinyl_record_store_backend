@@ -6,9 +6,11 @@ These decisions define the consolidated backend baseline.
 
 Date: 2026-07-02
 
-Decision: Keep the current Next.js 16.2.9 App Router and JavaScript modules.
+Decision: Keep the current Next.js 16.2.12 App Router and JavaScript modules.
 
 Rationale: The read API is small, validated, testable, and builds cleanly. A TypeScript migration would expand scope without changing the requested integration outcome.
+
+Status update, 2026-08-02: advanced within the existing Next.js 16.2 line to 16.2.12 and aligned `eslint-config-next`; dependency overrides pin patched PostCSS 8.5.18 and Sharp 0.35.0. Tests, lint, the production build, and the complete npm audit all pass.
 
 ## BDEC-002: Use An Approved Demo Seed Before MongoDB
 
@@ -175,3 +177,33 @@ Decision: Keep the reviewed Cover Art Archive URL as the preferred display sourc
 Rationale: The proxy fixed browser-to-Cover-Art-Archive reachability but still depended on a successful backend upstream request or a warm cache. A committed, hash-verified bundle makes the fixed classroom catalog deterministic offline while preserving reviewed source attribution and avoiding mutable public URLs. Content-addressed assets may be cached for one year; the stable ID redirect remains briefly revalidated so a future reviewed replacement does not strand clients on an obsolete filename.
 
 Status: Implemented and independently reviewed `SHIP_AS_IS` on 2026-07-21. Verification covered 116 files / 7,562,124 bytes, every hash/dimension/endpoint/header, malformed and unknown IDs, remote-to-local browser failover, desktop/mobile rendering, 154 backend tests, 87 frontend tests, and clean Atlas E2E teardown.
+
+## BDEC-021: Pin The External Research Source And Commit No Raw Data
+
+Date: 2026-08-02
+
+Decision: Bind Amazon Reviews 2023 `CDs_and_Vinyl` inputs to revision `2b6d039ed471f2ba5fd2acb718bf33b0a7e5598e`, exact byte counts, SHA-256 hashes, deterministic transformation configuration, and an aggregate quality summary. Keep raw files and staging ignored. Exclude review text, source reviewer IDs, profiles, and downloaded Amazon images. Record that the publisher grants no dataset license and make no permissive reuse claim.
+
+Rationale: Reproducibility requires immutable input identity, while privacy and unclear redistribution rights require a strict local research-data boundary.
+
+Status: Implemented in DATA-01 through DATA-03 and verified before import.
+
+## BDEC-022: Activate Dataset Versions Without Deleting Legacy Data
+
+Date: 2026-08-02
+
+Decision: Store dataset-owned records additively, permit exactly one active `DatasetImport`, and make catalog reads filter by that pointer. When no dataset is active, use the preserved 116-record legacy catalog. Import completion and activation are separate; activation/rollback use a transaction and never delete either catalog version or customer state. Dataset-managed Admin rows are read-only and direct operators to rebuild/reactivate through the CLI.
+
+Rationale: A reversible pointer gives the classroom deployment a fast recovery path, preserves stable legacy assets, and prevents one-off browser edits from breaking dataset reproducibility.
+
+Status: `amazon-reviews-2023-cds-vinyl-5core-v1` is active with 2,305 products; 116 legacy products remain preserved.
+
+## BDEC-023: Isolate Historical Evidence From Customer Identity And Live Signals
+
+Date: 2026-08-02
+
+Decision: Represent source reviewers only as keyed HMAC-SHA-256 values in `historicalAmazonRatings`, never as `User` records. Keep source-derived timestamps and explicit train/validation/test splits, no TTL, and aggregate-only readiness reporting. Nullable store fields remain unknown rather than simulated. Historical readiness does not modify `content-demo-v1`, the live evidence gate, or the exact three showcase customers.
+
+Rationale: Historical research evidence has different provenance, retention, consent, and evaluation semantics from live Groovehaus activity. Isolation prevents identity conflation and leakage while leaving a separately approvable future evaluation path.
+
+Status: Implemented in DATA-05 through DATA-13; PERS-03 through PERS-09 remain deferred.

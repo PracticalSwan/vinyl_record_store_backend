@@ -3,8 +3,6 @@ import { assertOnlyKeys } from "../lib/request.js";
 import {
   INTERACTION_TYPES,
   PRODUCT_CONDITIONS,
-  PRODUCT_FORMATS,
-  PRODUCT_GENRES,
   RETENTION_MS,
 } from "../models/constants.js";
 import { productId } from "./catalog.js";
@@ -58,6 +56,18 @@ function uniqueControlled(values, allowed, name, max = 5) {
   return normalized;
 }
 
+function uniqueLiterals(values, name, max = 5, maxLength = 100) {
+  if (!Array.isArray(values) || values.length > max) {
+    throw invalid(`${name} must be an array with at most ${max} values.`);
+  }
+  const normalized = values.map((value) => String(value).replace(/\s+/g, " ").trim());
+  if (
+    normalized.some((value) => !value || value.length > maxLength)
+    || new Set(normalized.map((value) => value.toLowerCase())).size !== normalized.length
+  ) throw invalid(`${name} contains blank, duplicate, or overlong values.`);
+  return normalized;
+}
+
 function optionalMoney(value, name) {
   if (value === null || value === undefined || value === "") return null;
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1_000_000) {
@@ -77,9 +87,10 @@ export function parsePreferences(body) {
     "completed",
     "schemaVersion",
   ]);
-  const favoriteGenres = uniqueControlled(body.favoriteGenres || [], PRODUCT_GENRES, "favoriteGenres");
-  const dislikedGenres = uniqueControlled(body.dislikedGenres || [], PRODUCT_GENRES, "dislikedGenres");
-  if (favoriteGenres.some((genre) => dislikedGenres.includes(genre))) {
+  const favoriteGenres = uniqueLiterals(body.favoriteGenres || [], "favoriteGenres");
+  const dislikedGenres = uniqueLiterals(body.dislikedGenres || [], "dislikedGenres");
+  const dislikedGenreKeys = new Set(dislikedGenres.map((genre) => genre.toLowerCase()));
+  if (favoriteGenres.some((genre) => dislikedGenreKeys.has(genre.toLowerCase()))) {
     throw invalid("Favorite and disliked genres cannot overlap.");
   }
 
@@ -122,7 +133,7 @@ export function parsePreferences(body) {
     favoriteArtists,
     budget,
     conditions: uniqueControlled(body.conditions || [], PRODUCT_CONDITIONS, "conditions", 5),
-    formats: uniqueControlled(body.formats || [], PRODUCT_FORMATS, "formats", 5),
+    formats: uniqueLiterals(body.formats || [], "formats"),
     completedAt: body.completed ? new Date() : null,
     schemaVersion: 1,
   };

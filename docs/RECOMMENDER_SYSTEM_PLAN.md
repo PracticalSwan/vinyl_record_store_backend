@@ -4,7 +4,7 @@ This document specifies the current deterministic demo algorithm.
 
 ## Implemented Method
 
-The current recommender is deterministic content-based ranking over the approved demo catalog.
+The current recommender is deterministic content-based ranking over the active catalog. DATA-00 through DATA-15 expanded the data boundary but did not change the algorithm.
 
 ### Pairwise Weights
 
@@ -21,7 +21,7 @@ Out-of-stock candidates are excluded. Product recommendations exclude the source
 
 ## Product Recommendations
 
-`recommendForProduct` compares the repository's bounded candidate set (maximum 1,000) with one source record, sorts by score and title, applies the artist cap, and returns ranks, reasons, and the algorithm version.
+`recommendForProduct` compares the repository's bounded candidate set (up to 5,000 in MongoDB mode) with one source record, sorts by score and title, applies the artist cap, and returns ranks, reasons, and the algorithm version. Nullable artist/label/stock fields contribute no invented match or availability score; unknown artists use a safe diversity key.
 
 ## User Recommendations
 
@@ -41,8 +41,8 @@ Every recommendation response receives server-generated `requestId` and `listId`
 
 ## Deferred Methods
 
-Collaborative filtering, matrix factorization, hybrid ranking, learned weights, and production popularity ranking remain deferred. Interaction ingestion, request logging, frontend capture, and BFP-02 Part B evaluation are active. Popularity exists only as a fair offline baseline; the current dataset is below the evidence threshold, so no quality metrics are reported.
+Collaborative filtering, matrix factorization, hybrid ranking, learned weights, and production popularity ranking remain deferred. Interaction ingestion, request logging, frontend capture, and BFP-02 Part B evaluation are active. Popularity exists only as a fair offline baseline. The live dataset remains below its evidence threshold; the separate Amazon historical adapter is data-ready but runs no model and reports no quality metrics.
 
 ## Personalization Roadmap
 
-PERS-00 through PERS-02 are complete: architecture decisions are frozen, the legacy route is identity-safe, and the session-owned endpoint is live behind default-on rollback flags. PERS-03 onward remains planned: recomputed profiles, preference-aware ranking, explicit feedback, behavioral signals, popularity, and hybrid orchestration. `content-demo-v1` remains the regression behavior; collaborative filtering and matrix factorization are excluded. The evaluator remains `insufficient-evidence`, so no quality claim is made.
+PERS-00 through PERS-02 are complete: architecture decisions are frozen, the legacy route is identity-safe, and the session-owned endpoint is live behind default-on rollback flags. PERS-03 through PERS-09 remain planned and were explicitly not implemented with the dataset work. Their prerequisites must now reference the active dataset version and keep historical evidence isolated from live customer signals. `content-demo-v1` remains the regression behavior; collaborative filtering and matrix factorization are excluded. No quality claim is made.

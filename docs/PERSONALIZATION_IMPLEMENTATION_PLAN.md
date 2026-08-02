@@ -1,12 +1,27 @@
 # Personalization Implementation Plan (Backend)
 
-This roadmap converts the existing deterministic demo recommender into a genuine personalized recommender system for the Vinyl Record Store (CSX4207). PERS-00 through PERS-02 were implemented and verified on 2026-07-10. PERS-03 through PERS-09 remain planning-only and authorize no implementation by themselves.
+This roadmap converts the existing deterministic demo recommender into a genuine personalized recommender system for the Vinyl Record Store (CSX4207). PERS-00 through PERS-02 were implemented and verified on 2026-07-10. DATA-00 through DATA-15 were implemented separately on 2026-08-02. PERS-03 through PERS-09 remain planning-only, were explicitly excluded from the dataset implementation, and authorize no implementation by themselves.
 
 This plan is scheduled AFTER the entire existing documented roadmap: BFP-07 (admin backend), FFP-07 (admin frontend), FFP-08 (simulated checkout), and any backend support already planned for the simulated checkout. It does not reorder, replace, remove, or silently redefine any existing BFP/FFP plan. BFP-05 (recommender algorithm selection) remains its own on-hold placeholder; PERS-00 records the method decision that resolves BFP-05's open question without reusing the BFP-05 ID.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
 Source of truth for current state: live backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLAN.md`, `DATA_MODEL_PLAN.md`, `RECOMMENDER_SYSTEM_PLAN.md`, `EVALUATION_PLAN.md`, and the matching frontend personalization plan. Re-verify every file path, constant, and enum against the source before implementing any milestone.
+
+## DATA-15 Adaptation Gate (2026-08-02)
+
+The active MongoDB catalog is now `amazon-reviews-2023-cds-vinyl-5core-v1`: 2,305 source-derived vinyl products and 20,288 historical ratings from 2,387 HMAC-pseudonymous subjects. The 116-record legacy catalog, `content-demo-v1`, and exactly three showcase customers remain intact. `dataset:evaluation:readiness` reports 1,708 eligible historical subjects, but no ranking model or quality experiment was run.
+
+The remaining PERS milestones are revised as follows:
+
+- PERS-03 must expose only allow-listed dataset/version and availability flags. Historical pseudonyms and rating rows never enter the customer profile or API.
+- PERS-04 must handle nullable artist/genre/format/price/stock without inventing preferences or commercial facts. It must name whether ranking uses the active version.
+- PERS-05 and PERS-06 remain live-account features. They must not write into or reinterpret `historicalAmazonRatings`.
+- PERS-07 may evaluate a historical popularity baseline only inside the separately approved offline protocol; the production fallback still requires an explicit implementation decision.
+- PERS-08 must compare components on the same active candidate set and split, preserve leakage controls, and keep historical versus live evidence visible.
+- PERS-09 must verify dataset activation/rollback, exact-three-user preservation, nullable-field UI behavior, and independent live/historical reporting before any rollout.
+
+Historical-data `ready` status does not satisfy the live evidence threshold and does not authorize Precision@k, Recall@k, MAP@k, NDCG@k, or a personalization claim. Future implementation requires a new explicit user request after this gate is revalidated.
 
 ## Hard Scope Boundaries
 
@@ -29,9 +44,9 @@ Explicitly excluded from this plan and from every milestone:
 
 The project may use deterministic synthetic fixtures and clearly labelled classroom demo profiles for development and testing. Synthetic data must never be presented as real evaluation evidence.
 
-The existing offline evaluator, interaction logging, recommendation logging, algorithm versioning, and privacy boundaries are preserved so evaluation can be performed later. "Evaluation with sufficient evidence" is not part of this roadmap.
+The existing live evaluator, interaction logging, recommendation logging, algorithm versioning, privacy boundaries, and isolated historical readiness adapter are preserved so a separately approved evaluation can be performed later. "Evaluation with sufficient evidence" is not part of this roadmap.
 
-## Current State (Re-Verified Against Source On 2026-07-10)
+## Current State (Re-Verified Against Source On 2026-08-02)
 
 These facts were verified by reading the source, not by trusting doc status tables. Implementation agents must re-verify before editing.
 

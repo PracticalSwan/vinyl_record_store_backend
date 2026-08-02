@@ -1,6 +1,6 @@
 import { getCatalogRepository } from "../lib/db/dataSource.js";
 import { invalid, notFound } from "../lib/errors.js";
-import { PRODUCT_CONDITIONS, PRODUCT_GENRES } from "../models/constants.js";
+import { PRODUCT_CONDITIONS } from "../models/constants.js";
 import { toPublicProduct } from "../repositories/catalogMapping.js";
 import {
   boundedLiteral,
@@ -8,6 +8,7 @@ import {
   positiveInteger,
   productId,
   repeatedControlledValues,
+  repeatedLiteralValues,
 } from "../validation/catalog.js";
 
 const text = (value) => String(value || "").trim().toLowerCase();
@@ -45,7 +46,7 @@ export function parseCatalogQuery(searchParams) {
     minPrice,
     maxPrice,
     q,
-    genres: repeatedControlledValues(searchParams, "genre", PRODUCT_GENRES),
+    genres: repeatedLiteralValues(searchParams, "genre"),
     artist: boundedLiteral(searchParams.get("artist"), {
       name: "artist",
       maxLength: MAX_QUERY_LENGTH,
@@ -55,6 +56,7 @@ export function parseCatalogQuery(searchParams) {
       maxLength: MAX_QUERY_LENGTH,
     }).toLowerCase(),
     conditions: repeatedControlledValues(searchParams, "condition", PRODUCT_CONDITIONS),
+    formats: repeatedLiteralValues(searchParams, "format"),
     eras: repeatedControlledValues(searchParams, "era", VALID_ERAS),
     inStock,
     sort,

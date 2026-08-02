@@ -29,6 +29,20 @@ const approvedUrl = (value, hosts) => {
 export function toPublicProduct(record) {
   const value = valueOf(record);
   if (!value) return null;
+  const legacy = !value.datasetKey && (!value.source || value.source === "demo-seed");
+  const legacyOrigins = legacy ? {
+    title: "legacy",
+    artist: "legacy",
+    genre: "legacy",
+    year: "legacy",
+    price: "legacy",
+    currency: "legacy",
+    stock: "legacy",
+    condition: "legacy",
+    format: "legacy",
+    label: "legacy",
+    artwork: "legacy",
+  } : {};
 
   const legacyUrl = value.imageUrl ?? value.artwork?.url ?? null;
   const thumbnailUrl = approvedUrl(
@@ -63,7 +77,7 @@ export function toPublicProduct(record) {
     format: value.format,
     pressing: value.pressing,
     description: value.description,
-    currency: value.currency || "USD",
+    currency: value.currency ?? (Number.isFinite(value.price) ? "USD" : null),
     imageUrl: legacyUrl,
     image: hasStructuredImage ? {
       thumbnailUrl,
@@ -71,6 +85,13 @@ export function toPublicProduct(record) {
       source: value.artwork.source,
       sourceUrl,
     } : null,
+    source: value.source ?? (legacy ? "demo-seed" : null),
+    datasetKey: value.datasetKey ?? null,
+    sourceVersion: value.sourceVersion ?? null,
+    fieldOrigins: value.fieldOrigins && typeof value.fieldOrigins === "object"
+      ? { ...value.fieldOrigins }
+      : legacyOrigins,
+    qualityFlags: Array.isArray(value.qualityFlags) ? [...value.qualityFlags] : [],
   };
 }
 
@@ -94,7 +115,6 @@ export function toAdminProduct(record) {
       sourceUrl: artwork.sourceUrl ?? null,
       retrievedAt: toIso(artwork.retrievedAt),
     },
-    source: value.source ?? null,
     provenance: toProvenance(value.provenance),
     updatedAt: toIso(value.updatedAt),
     deletedAt: toIso(value.deletedAt),
@@ -136,6 +156,23 @@ export function toPersistenceProduct(record) {
     musicBrainzReleaseGroupId: record.musicBrainzReleaseGroupId ?? null,
     artwork: record.artwork ? { ...record.artwork } : {},
     source: "demo-seed",
+    datasetKey: null,
+    sourceVersion: null,
+    externalItemKey: null,
+    fieldOrigins: {
+      title: "legacy",
+      artist: "legacy",
+      genre: "legacy",
+      year: "legacy",
+      price: "legacy",
+      currency: "legacy",
+      stock: "legacy",
+      condition: "legacy",
+      format: "legacy",
+      label: "legacy",
+      artwork: "legacy",
+    },
+    qualityFlags: [],
     provenance: Array.isArray(record.provenance) ? record.provenance : [],
     deletedAt: null,
   };

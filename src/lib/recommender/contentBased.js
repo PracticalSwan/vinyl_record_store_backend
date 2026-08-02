@@ -25,7 +25,7 @@ function compareProducts(source, candidate) {
   let score = 0;
   const reasons = [];
 
-  if (source.artist === candidate.artist) {
+  if (source.artist && candidate.artist && source.artist === candidate.artist) {
     score += SCORE.sameArtist;
     reasons.push(`Same artist as ${source.title}.`);
   }
@@ -37,7 +37,7 @@ function compareProducts(source, candidate) {
     score += SCORE.sameDecade;
     reasons.push(`Released in the same decade as ${source.title}.`);
   }
-  if (source.label && source.label === candidate.label) {
+  if (source.label && candidate.label && source.label === candidate.label) {
     score += SCORE.sameLabel;
     reasons.push(`Released by ${source.label}.`);
   }
@@ -51,10 +51,11 @@ function diversify(scored, limit) {
   const selected = [];
 
   for (const item of scored) {
-    const count = artistCounts.get(item.product.artist) || 0;
+    const artistKey = item.product.artist || `unknown:${item.product.id}`;
+    const count = artistCounts.get(artistKey) || 0;
     if (count >= 2) continue;
     selected.push(item);
-    artistCounts.set(item.product.artist, count + 1);
+    artistCounts.set(artistKey, count + 1);
     if (selected.length === limit) break;
   }
 
@@ -93,7 +94,7 @@ export async function recommendForProduct(
       return {
         product: candidate,
         score: match.score,
-        reasons: match.reasons.length ? match.reasons.slice(0, 2) : ["Available in the catalog."],
+        reasons: match.reasons.length ? match.reasons.slice(0, 2) : ["Listed in the current catalog."],
         algorithmVersion: ALGORITHM_VERSION,
       };
     })
@@ -113,8 +114,8 @@ function genericRecommendations(records, limit) {
     .filter((record) => record.stock !== "out")
     .map((record) => ({
       product: record,
-      score: STOCK_BOOST[record.stock],
-      reasons: ["Available now in the catalog."],
+      score: STOCK_BOOST[record.stock] ?? 0,
+      reasons: ["Listed in the current catalog."],
       algorithmVersion: ALGORITHM_VERSION,
     }))
     .sort((a, b) => (b.product.year || 0) - (a.product.year || 0) || a.product.title.localeCompare(b.product.title));
@@ -155,9 +156,20 @@ export async function recommendForUser(
   }
 
   const sourceIds = [...DEMO_PROFILE.purchasedIds, ...DEMO_PROFILE.wishlistIds];
-  const sources = await Promise.all(
-    sourceIds.map((id) => getProductRecord(id, { repository })),
-  );
+  const sources = records.filter((record) => sourceIds.includes(record.id));
+  if (sources.length !== sourceIds.length) {
+    return {
+      userId: subject.responseUserId || "demo-user",
+      excludedProductIds: [],
+      mode: "cold-start",
+      profileSummary: [
+        "The legacy showcase profile belongs to the reviewed 116-record catalog.",
+        "Results use the active dataset catalog without remapping those source records.",
+      ],
+      recommendations: genericRecommendations(records, limit),
+      algorithmVersion: ALGORITHM_VERSION,
+    };
+  }
   const excluded = new Set(sourceIds);
   const scored = records
     .filter((candidate) => !excluded.has(candidate.id) && candidate.stock !== "out")

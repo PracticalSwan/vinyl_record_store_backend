@@ -27,10 +27,11 @@ function matches(record, query) {
   if (query.artist && !text(record.artist).includes(query.artist)) return false;
   if (query.label && !text(record.label).includes(query.label)) return false;
   if (query.conditions.length && !query.conditions.includes(record.condition)) return false;
+  if (query.formats?.length && !query.formats.includes(record.format)) return false;
   if (!matchesEra(record.year, query.eras)) return false;
   if (query.minPrice !== null && record.price < query.minPrice) return false;
   if (query.maxPrice !== null && record.price > query.maxPrice) return false;
-  if (query.inStock === "true" && record.stock === "out") return false;
+  if (query.inStock === "true" && !["in", "low"].includes(record.stock)) return false;
   if (query.inStock === "false" && record.stock !== "out") return false;
   return true;
 }
@@ -38,7 +39,7 @@ function matches(record, query) {
 function compareProducts(a, b, sort) {
   if (sort === "price-asc") return a.price - b.price || a.id - b.id;
   if (sort === "price-desc") return b.price - a.price || a.id - b.id;
-  if (sort === "artist-asc") return a.artist.localeCompare(b.artist) || a.id - b.id;
+  if (sort === "artist-asc") return (a.artist || "").localeCompare(b.artist || "") || a.id - b.id;
   return b.year - a.year || a.id - b.id;
 }
 
@@ -55,6 +56,7 @@ function buildFacets(source) {
     genres: countValues(source, PRODUCT_GENRES, (record) => record.genre),
     eras: countValues(source, ["1950s", "1960s", "1970s", "1980s", "1990s", "2000s+"], (record) => eraOf(record.year)),
     conditions: countValues(source, PRODUCT_CONDITIONS, (record) => record.condition),
+    formats: countValues(source, [...new Set(source.map((record) => record.format).filter(Boolean))], (record) => record.format),
     price: {
       min: prices.length ? Math.min(...prices) : null,
       max: prices.length ? Math.max(...prices) : null,

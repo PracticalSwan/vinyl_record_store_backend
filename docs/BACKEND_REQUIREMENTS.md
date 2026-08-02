@@ -1,6 +1,6 @@
 # Backend Requirements
 
-Requirement status reflects the integrated academic demo as of 2026-07-21.
+Requirement status reflects the integrated academic demo as of 2026-08-02.
 
 ## Requirement Status
 
@@ -21,6 +21,7 @@ Requirement status reflects the integrated academic demo as of 2026-07-21.
 | BR-013 | Preferences and ratings. | Implemented | Validated preference replacement and current rating/history mutation routes. |
 | BR-014 | Controlled catalog ingestion and artwork. | Implemented | Preview/apply CSV/JSON import, source/conflict safeguards, verified enrichment/provenance, structured public artwork, a bounded remote proxy, and one hash-verified local JPEG fallback for all 116 bundled records. |
 | BR-015 | Offline recommender evaluation. | Implemented | Pseudonymized dataset, evidence gate, leakage-safe split, matched baselines, and aggregate-only reporting. |
+| BR-016 | Versioned external research dataset. | Implemented | DATA-00 through DATA-15: pinned provenance/hashes, ignored raw boundary, streaming deterministic subset, nullable field origins, 2,305 active products, 20,288 isolated ratings, activation/rollback, exact-three-user verification, and readiness-only reporting. |
 
 ## Non-Functional Requirements
 
@@ -32,4 +33,4 @@ Requirement status reflects the integrated academic demo as of 2026-07-21.
 
 ## Success Boundary
 
-The frontend consumes stable repository-backed reads, signed sessions, protected customer-state mutations, recommendation attribution, interaction ingestion, and backend-approved artwork. Guest state is session-only and authenticated state is account-backed. The evaluator is operational, but its current report is `insufficient-evidence`; the project does not claim order commerce or measured recommendation quality.
+The frontend consumes stable repository-backed reads, dynamic facets, nullable source-aware products, signed sessions, protected customer-state mutations, recommendation attribution, interaction ingestion, and backend-approved artwork. Guest state is session-only and authenticated state is account-backed. Historical Amazon evidence is versioned and isolated from live customer data. Its adapter is `ready`, while the deployed live evaluator remains `insufficient-evidence`; neither status is a quality score. The project does not claim order commerce or measured recommendation quality.

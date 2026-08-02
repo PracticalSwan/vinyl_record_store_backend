@@ -6,6 +6,7 @@ import {
 } from "../lib/admin/previewTokens.js";
 import { mongoCatalogRepository } from "../repositories/mongoCatalogRepository.js";
 import { eventRepository } from "../repositories/eventRepository.js";
+import { datasetImportRepository } from "../repositories/datasetImportRepository.js";
 import { parseCatalogImport } from "../lib/catalog/parseImport.js";
 import {
   planCatalogImport,
@@ -62,6 +63,7 @@ export async function getAdminSummary({
   environment = process.env,
   repository = getCatalogRepository(environment),
   auditRepository = eventRepository,
+  datasetRepository = datasetImportRepository,
 } = {}) {
   const summary = await repository.adminSummary();
   let recentActions = [];
@@ -71,7 +73,15 @@ export async function getAdminSummary({
     // Seed-catalog mode has no audit store; the dashboard still renders counts.
     recentActions = [];
   }
-  return { summary, recentActions };
+  let dataset = null;
+  if (getCatalogDataSource(environment) === "mongodb") {
+    try {
+      dataset = await datasetRepository.activeStatus();
+    } catch {
+      dataset = null;
+    }
+  }
+  return { summary, recentActions, dataset };
 }
 
 export async function listAdminProducts(query, {
@@ -117,6 +127,10 @@ export async function updateAdminProduct(admin, publicId, { updatedAt, patch }, 
   requestId,
 } = {}) {
   requireMongo(environment);
+  const current = mongoRepository.findProductForAdmin
+    ? await mongoRepository.findProductForAdmin(publicId)
+    : null;
+  if (current?.datasetKey) throw conflict("Dataset-managed products are read-only. Rebuild and reactivate the dataset instead.");
   const result = await mongoRepository.updateProduct(publicId, patch, updatedAt);
   if (result.status === "not_found") throw notFound("That product was not found.");
   if (result.status === "conflict") {
@@ -145,6 +159,10 @@ export async function deleteAdminProduct(admin, publicId, updatedAt, {
   requestId,
 } = {}) {
   requireMongo(environment);
+  const current = mongoRepository.findProductForAdmin
+    ? await mongoRepository.findProductForAdmin(publicId)
+    : null;
+  if (current?.datasetKey) throw conflict("Dataset-managed products cannot be soft-deleted. Use dataset rollback instead.");
   const result = await mongoRepository.softDeleteProduct(publicId, updatedAt);
   if (result.status === "not_found") throw notFound("That product was not found.");
   if (result.status === "conflict") {
@@ -171,6 +189,10 @@ export async function restoreAdminProduct(admin, publicId, {
   requestId,
 } = {}) {
   requireMongo(environment);
+  const current = mongoRepository.findProductForAdmin
+    ? await mongoRepository.findProductForAdmin(publicId)
+    : null;
+  if (current?.datasetKey) throw conflict("Dataset-managed products cannot be restored manually.");
   const result = await mongoRepository.restoreProduct(publicId);
   if (result.status === "not_found") throw notFound("That product was not found or is not soft-deleted.");
   await recordAudit({
@@ -245,6 +267,7 @@ export async function previewArtwork(admin, publicId, {
 } = {}) {
   const product = await repository.findProductForAdmin(publicId);
   if (!product) throw notFound("That product was not found.");
+  if (product.datasetKey) throw conflict("Dataset-managed products use the placeholder artwork policy and cannot be enriched in the browser.");
   const resolution = await resolveArtworkForProduct(
     { title: product.title, artist: product.artist, year: product.year, musicBrainzReleaseId: product.musicBrainzReleaseId, musicBrainzReleaseGroupId: product.musicBrainzReleaseGroupId },
     { musicBrainz, coverArt },
@@ -268,6 +291,7 @@ export async function applyArtwork(admin, publicId, { releaseId, updatedAt }, {
   requireMongo(environment);
   const current = await mongoRepository.findProductForAdmin(publicId);
   if (!current) throw notFound("That product was not found.");
+  if (current.datasetKey) throw conflict("Dataset-managed products use the placeholder artwork policy and cannot be enriched in the browser.");
   const resolution = await resolveArtworkForProduct(
     { title: current.title, artist: current.artist, year: current.year, musicBrainzReleaseId: current.musicBrainzReleaseId, musicBrainzReleaseGroupId: current.musicBrainzReleaseGroupId },
     { musicBrainz, coverArt, releaseId },

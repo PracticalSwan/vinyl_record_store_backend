@@ -97,6 +97,22 @@ test("admin summary against the seed catalog returns honest counts", async () =>
   assert.deepEqual(recentActions, []);
 });
 
+test("admin summary exposes aggregate active-dataset status without reviewer identities", async () => {
+  const dataset = {
+    datasetKey: "amazon-reviews-2023-cds-vinyl-5core-v1",
+    sourceVersion: "2023-cds-vinyl-5core-v1",
+    counts: { products: 2305, users: 2387, ratings: 20288 },
+  };
+  const result = await getAdminSummary({
+    environment: mongoEnvironment,
+    repository: { adminSummary: async () => ({ activeProducts: 2305 }) },
+    auditRepository: { listRecentAuditActions: async () => [] },
+    datasetRepository: { activeStatus: async () => dataset },
+  });
+  assert.deepEqual(result.dataset, dataset);
+  assert.equal(JSON.stringify(result).includes("userKey"), false);
+});
+
 test("admin product list paginates and get returns a product or not-found", async () => {
   const page = await listAdminProducts({ page: 1, limit: 5, includeDeleted: false }, { environment: seedEnvironment });
   assert.equal(page.items.length, 5);
@@ -168,6 +184,22 @@ test("update returns the product on ok and surfaces conflicts and missing record
     () => updateAdminProduct(adminAccount(), 1, { updatedAt: "2026-01-01T00:00:00.000Z", patch: { price: 50 } }, { environment: mongoEnvironment, mongoRepository: missingRepo, auditRepository }),
     (error) => error.code === "NOT_FOUND",
   );
+});
+
+test("dataset-managed products reject browser mutations", async () => {
+  let updateCalled = false;
+  const mongoRepository = {
+    findProductForAdmin: async () => ({ id: 100_001, datasetKey: "amazon-reviews-2023-cds-vinyl-5core-v1" }),
+    updateProduct: async () => { updateCalled = true; return { status: "ok", product: {} }; },
+  };
+  await assert.rejects(
+    () => updateAdminProduct(adminAccount(), 100_001, {
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      patch: { price: 10 },
+    }, { environment: mongoEnvironment, mongoRepository }),
+    (error) => error.code === "CONFLICT" && /read-only/.test(error.message),
+  );
+  assert.equal(updateCalled, false);
 });
 
 test("soft delete and restore go through the repository and audit", async () => {
