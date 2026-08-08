@@ -5,20 +5,25 @@ import { pathToFileURL } from "node:url";
 import { connectMongoDB, disconnectMongoDB } from "../src/lib/db/mongodb.js";
 import {
   AMAZON_DATASET_KEY,
-  AMAZON_PREVIOUS_DATASET_KEY,
   AMAZON_PRODUCT_COLLECTION,
   AMAZON_SOURCE,
-  AMAZON_SOURCE_VERSION,
   canonicalSourceIdentityKey,
   readJsonlRows,
+  sha256File,
   verifySourceFile,
 } from "../src/lib/dataset/amazonReviews2023.js";
+import {
+  AMAZON_IDENTITY_BASE_DATASET_KEY,
+  assertAmazonReleaseArtifactOwnership,
+  getAmazonDatasetRelease,
+} from "../src/lib/dataset/amazonDatasetReleases.js";
 import { DatasetImport } from "../src/models/DatasetImport.js";
 import { DatasetProduct } from "../src/models/DatasetProduct.js";
 import { HistoricalAmazonRating } from "../src/models/HistoricalAmazonRating.js";
 import { User } from "../src/models/User.js";
 import { VinylRecord } from "../src/models/VinylRecord.js";
 import { sameDigestSet as sameDigestCollection, validRecordDigest } from "../src/lib/dataset/integrity.js";
+import { verifyDatasetArtworkPublication } from "../src/lib/dataset/datasetArtworkPublication.js";
 
 const SHOWCASE_PUBLIC_IDS = ["demo-jazz", "demo-rock", "demo-soul"];
 const LEGACY_PRODUCT_COUNT = 116;
@@ -26,8 +31,12 @@ const datasetKey = process.argv.find((value) => value.startsWith("--dataset-key=
   ?.slice("--dataset-key=".length) || AMAZON_DATASET_KEY;
 const expectActive = process.argv.find((value) => value.startsWith("--expect-active="))
   ?.slice("--expect-active=".length) || datasetKey;
+const release = getAmazonDatasetRelease(datasetKey);
 const dataRoot = path.join(process.cwd(), "data", "amazon-reviews-2023");
 const stagingRoot = path.join(dataRoot, "staging", datasetKey);
+const evidenceRelease = release.sealedEvidenceRequired
+  ? release
+  : getAmazonDatasetRelease("amazon-reviews-2023-cds-vinyl-5core-v2");
 
 function sameSet(actual, expected) {
   return actual.length === expected.size && actual.every((value) => expected.has(value));
@@ -42,11 +51,15 @@ function sameFileEvidence(actual, expected) {
 }
 
 const report = JSON.parse(await readFile(path.join(stagingRoot, "report.json"), "utf8"));
-const sourceManifest = JSON.parse(await readFile(path.join(dataRoot, "source-manifest.json"), "utf8"));
+const sourceManifestPath = path.join(dataRoot, evidenceRelease.sourceManifestFilename);
+const sourceManifest = JSON.parse(await readFile(sourceManifestPath, "utf8"));
 requireCheck(report.datasetKey === datasetKey, "The staging report belongs to a different dataset key.");
+if (release.sealedEvidenceRequired) {
+  requireCheck(sourceManifest.datasetKey === datasetKey, "The source manifest belongs to a different dataset key.");
+}
 await Promise.all([
-  verifySourceFile(path.join(dataRoot, sourceManifest.files.metadata.relativePath), report.sourceFiles.metadata),
-  verifySourceFile(path.join(dataRoot, sourceManifest.files.ratings.relativePath), report.sourceFiles.ratings),
+  verifySourceFile(path.join(dataRoot, sourceManifest.files.metadata.relativePath), sourceManifest.files.metadata),
+  verifySourceFile(path.join(dataRoot, sourceManifest.files.ratings.relativePath), sourceManifest.files.ratings),
   verifySourceFile(path.join(stagingRoot, "products.jsonl"), report.stagingFiles.products),
   verifySourceFile(path.join(stagingRoot, "ratings.jsonl"), report.stagingFiles.ratings),
 ]);
@@ -54,19 +67,47 @@ await Promise.all([
 let identityRegistry = null;
 let artworkEnrichment = null;
 let localArtworkManifest = [];
-if (datasetKey === AMAZON_DATASET_KEY) {
+let localArtworkCompatibility = null;
+let canonicalConfig = null;
+if (release.sealedEvidenceRequired) {
   identityRegistry = JSON.parse(await readFile(path.join(dataRoot, "product-identity-registry.json"), "utf8"));
-  artworkEnrichment = JSON.parse(await readFile(path.join(dataRoot, "artwork-enrichment-v2.json"), "utf8"));
+  artworkEnrichment = JSON.parse(await readFile(
+    path.join(dataRoot, release.artworkEnrichmentFilename),
+    "utf8",
+  ));
   const localModulePath = path.join(process.cwd(), "src", "data", "datasetLocalArtworkManifest.js");
   const localModule = await import(`${pathToFileURL(localModulePath).href}?v=${Date.now()}`);
   localArtworkManifest = localModule.datasetLocalArtworkManifest;
-  const canonicalConfig = JSON.parse(await readFile(path.join(dataRoot, "transformation-config.json"), "utf8"));
+  canonicalConfig = JSON.parse(await readFile(
+    path.join(dataRoot, release.transformationConfigFilename),
+    "utf8",
+  ));
+  requireCheck(canonicalConfig.datasetKey === datasetKey, "The transformation config belongs to a different dataset key.");
+  requireCheck(artworkEnrichment.datasetKey === datasetKey, "The artwork enrichment belongs to a different dataset key.");
+  assertAmazonReleaseArtifactOwnership(release, {
+    sourceManifest,
+    transformationConfig: canonicalConfig,
+    artworkEnrichment,
+    report,
+  });
+  const artifactHashes = {
+    sourceManifest: await sha256File(sourceManifestPath),
+    transformationConfig: await sha256File(path.join(dataRoot, release.transformationConfigFilename)),
+    artworkEnrichment: await sha256File(path.join(dataRoot, release.artworkEnrichmentFilename)),
+    ...(release.localArtworkEvidenceFilename ? {
+      localArtworkEvidence: await sha256File(path.join(dataRoot, release.localArtworkEvidenceFilename)),
+    } : {}),
+  };
+  requireCheck(
+    Object.entries(release.artifactSha256).every(([name, expected]) => artifactHashes[name] === expected),
+    `The ${release.role} release artifact files differ from their pinned immutable evidence.`,
+  );
   const configDigest = createHash("sha256").update(JSON.stringify({
     config: canonicalConfig,
     identityRegistryDigest: identityRegistry.entriesDigest,
     artworkEntriesDigest: artworkEnrichment.entriesDigest,
   })).digest("hex");
-  requireCheck(configDigest === report.configDigest, "The v2 transformation configuration digest is stale.");
+  requireCheck(configDigest === report.configDigest, `The ${release.role} transformation configuration digest is stale.`);
   requireCheck(
     identityRegistry.entriesDigest === createHash("sha256").update(JSON.stringify(identityRegistry.entries)).digest("hex"),
     "The identity registry digest is invalid.",
@@ -88,6 +129,19 @@ if (datasetKey === AMAZON_DATASET_KEY) {
     "The committed artwork manifest contains operator-only source match text.",
   );
   requireCheck(artworkEnrichment.counts.accepted > 0 && artworkEnrichment.counts.error === 0, "Artwork enrichment did not finish cleanly with accepted coverage.");
+  if (release.localArtworkEvidenceFilename) {
+    const localArtworkEvidencePath = path.join(dataRoot, release.localArtworkEvidenceFilename);
+    localArtworkCompatibility = JSON.parse(await readFile(localArtworkEvidencePath, "utf8"));
+    requireCheck(
+      await sha256File(localArtworkEvidencePath) === release.artifactSha256.localArtworkEvidence,
+      "V2 local artwork evidence differs from the pinned published baseline.",
+    );
+    requireCheck(localArtworkCompatibility.datasetKey === datasetKey, "Local artwork evidence belongs to a different release.");
+    requireCheck(
+      localArtworkCompatibility.artworkEntriesDigest === artworkEnrichment.entriesDigest,
+      "Historical local artwork evidence does not match the artwork decisions.",
+    );
+  }
 }
 
 const expectedProducts = new Map();
@@ -100,9 +154,9 @@ for await (const product of readJsonlRows(path.join(stagingRoot, "products.jsonl
   requireCheck(!productSlugs.has(product.slug), "A staged product slug is duplicated.");
   requireCheck(!productExternalKeys.has(product.externalItemKey), "A staged product external key is duplicated.");
   requireCheck(Array.isArray(product.qualityFlags) && product.fieldOrigins && typeof product.fieldOrigins === "object", "A staged product lacks provenance structures.");
-  if (datasetKey === AMAZON_DATASET_KEY) {
+  if (release.sealedEvidenceRequired) {
     requireCheck(validRecordDigest(product), "A staged product record digest is invalid.");
-    requireCheck(/^[0-9a-f]{64}$/.test(product.externalItemKey), "A v2 product external identity is not opaque.");
+    requireCheck(/^[0-9a-f]{64}$/.test(product.externalItemKey), "A dataset product external identity is not opaque.");
     requireCheck(product.price === null && product.currency === null && product.stock === null && product.condition === null, "A research product contains invented commerce data.");
     productDigests.add(product.recordDigest);
   }
@@ -137,7 +191,7 @@ for await (const rating of readJsonlRows(path.join(stagingRoot, "ratings.jsonl")
   historicalUsers.add(rating.userKey);
   splitCounts[rating.split] += 1;
   ratingCount += 1;
-  if (datasetKey === AMAZON_DATASET_KEY) {
+  if (release.sealedEvidenceRequired) {
     requireCheck(validRecordDigest(rating), "A staged rating record digest is invalid.");
     ratingDigests.add(rating.recordDigest);
   }
@@ -168,8 +222,26 @@ requireCheck(JSON.stringify(splitCounts) === JSON.stringify(report.staged.splits
 if (artworkEnrichment) {
   const acceptedIds = new Set(artworkEnrichment.entries.filter((entry) => entry.status === "accepted").map((entry) => entry.publicId));
   const localIds = new Set(localArtworkManifest.map((entry) => entry.publicId));
-  requireCheck(artworkEnrichment.entries.length === expectedProducts.size, "Artwork decisions do not cover every v2 product.");
+  requireCheck(artworkEnrichment.entries.length === expectedProducts.size, "Artwork decisions do not cover every dataset product.");
   requireCheck(sameSet([...localIds], acceptedIds), "Local fallback artwork does not exactly cover accepted matches.");
+  const accepted = artworkEnrichment.entries.filter((entry) => entry.status === "accepted");
+  const localArtworkResult = await verifyDatasetArtworkPublication({
+    entries: localArtworkManifest,
+    accepted,
+    sourceManifestSha256: artworkEnrichment.entriesDigest,
+    assetDirectory: path.join(process.cwd(), "public", "artwork", "dataset"),
+    requireSourceManifestDigest: release.role === "current",
+  });
+  if (localArtworkCompatibility) {
+    const stableFields = localArtworkCompatibility.stableEntryFields;
+    const stableEntries = localArtworkManifest.map((entry) => Object.fromEntries(
+      stableFields.map((field) => [field, entry[field]]),
+    ));
+    const stableEntriesDigest = createHash("sha256").update(JSON.stringify(stableEntries)).digest("hex");
+    requireCheck(stableEntriesDigest === localArtworkCompatibility.stableEntriesDigest, "V2 local artwork stable evidence differs from the published baseline.");
+    requireCheck(localArtworkResult.count === localArtworkCompatibility.entryCount, "V2 local artwork count differs from the published baseline.");
+    requireCheck(localArtworkResult.totalBytes === localArtworkCompatibility.totalBytes, "V2 local artwork bytes differ from the published baseline.");
+  }
 }
 
 try {
@@ -204,10 +276,10 @@ try {
       { $match: targetFilter },
       { $group: { _id: "$split", count: { $sum: 1 } } },
     ]).exec(),
-    datasetKey === AMAZON_DATASET_KEY ? DatasetProduct.distinct("recordDigest", targetFilter).exec() : Promise.resolve([]),
-    datasetKey === AMAZON_DATASET_KEY ? HistoricalAmazonRating.distinct("recordDigest", targetFilter).exec() : Promise.resolve([]),
+    release.sealedEvidenceRequired ? DatasetProduct.distinct("recordDigest", targetFilter).exec() : Promise.resolve([]),
+    release.sealedEvidenceRequired ? HistoricalAmazonRating.distinct("recordDigest", targetFilter).exec() : Promise.resolve([]),
     VinylRecord.countDocuments({ source: "demo-seed", datasetKey: null }).exec(),
-    VinylRecord.countDocuments({ datasetKey: AMAZON_PREVIOUS_DATASET_KEY }).exec(),
+    VinylRecord.countDocuments({ datasetKey: AMAZON_IDENTITY_BASE_DATASET_KEY }).exec(),
     User.find({}, { _id: 0, publicId: 1, role: 1, active: 1 }).sort({ publicId: 1 }).lean().exec(),
     HistoricalAmazonRating.collection.indexes(),
     HistoricalAmazonRating.collection.countDocuments({
@@ -229,7 +301,7 @@ try {
       { $count: "duplicates" },
     ]).exec(),
     VinylRecord.find(
-      { datasetKey: AMAZON_PREVIOUS_DATASET_KEY },
+      { datasetKey: AMAZON_IDENTITY_BASE_DATASET_KEY },
       { _id: 0, publicId: 1, provenance: 1 },
     ).lean().exec(),
   ]);
@@ -244,7 +316,7 @@ try {
     const sourceId = product.provenance?.find((entry) => entry.field === "catalog-record")?.sourceId;
     return [canonicalSourceIdentityKey(sourceId), product.publicId];
   }));
-  const stableIdsPreservedFromV1 = datasetKey !== AMAZON_DATASET_KEY || (
+  const stableIdsPreservedFromV1 = !release.sealedEvidenceRequired || (
     previousV1IdentityMap.size === identityRegistry.entryCount
     && identityRegistry.entries.every((entry) => (
       previousV1IdentityMap.get(entry.sourceIdentityKey) === entry.publicId
@@ -255,10 +327,10 @@ try {
     targetImportComplete: Boolean(importDocument?.sealedAt) && ["completed", "active", "superseded"].includes(importDocument?.status),
     exactlyOneExpectedActiveImport: activeImports.length === 1 && activeImports[0].datasetKey === expectActive && activeImports[0].status === "active",
     importConfigMatches: importDocument?.configDigest === report.configDigest,
-    importOwnershipMatches: datasetKey !== AMAZON_DATASET_KEY || (
+    importOwnershipMatches: !release.sealedEvidenceRequired || (
       importDocument?.source === AMAZON_SOURCE
-      && importDocument?.sourceVersion === AMAZON_SOURCE_VERSION
-      && importDocument?.productCollection === AMAZON_PRODUCT_COLLECTION
+      && importDocument?.sourceVersion === release.sourceVersion
+      && importDocument?.productCollection === release.productCollection
       && importDocument?.identityRegistryDigest === report.identityRegistry.entriesDigest
       && importDocument?.artworkEntriesDigest === report.artwork.entriesDigest
       && importDocument?.pseudonymKeyFingerprint === report.pseudonymKeyFingerprint
@@ -274,7 +346,7 @@ try {
     ratingsMatch: storedRatingCount === report.staged.ratings,
     subjectsMatch: storedUsers.length === report.staged.users,
     splitsMatch: JSON.stringify(actualSplits) === JSON.stringify(report.staged.splits),
-    immutableDigestsMatch: datasetKey !== AMAZON_DATASET_KEY
+    immutableDigestsMatch: !release.sealedEvidenceRequired
       || (sameDigestCollection(storedProductDigests, productDigests) && sameDigestCollection(storedRatingDigests, ratingDigests)),
     legacyCatalogPreserved: legacyProductCount === LEGACY_PRODUCT_COUNT,
     previousV1Preserved: v1ProductCount === report.staged.products,
@@ -286,9 +358,9 @@ try {
     noDuplicateHistoricalPairs: (duplicateHistoricalPairs[0]?.duplicates || 0) === 0,
     historicalRatingsHaveNoTtl: historicalIndexes.every((index) => index.expireAfterSeconds === undefined),
   };
-  if (datasetKey === AMAZON_PREVIOUS_DATASET_KEY) {
-    // V1 predates the sealed-import field. It remains a valid rollback target
-    // and is never rewritten by the v2 lifecycle.
+  if (datasetKey === AMAZON_IDENTITY_BASE_DATASET_KEY) {
+    // V1 predates the sealed-import field. It remains the identity/legacy
+    // base and is never rewritten by the v2/v3 lifecycle.
     checks.targetImportComplete = ["completed", "active", "superseded"].includes(importDocument?.status);
   }
   const result = {

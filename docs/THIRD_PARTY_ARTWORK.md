@@ -2,9 +2,9 @@
 
 The 116 JPEG files directly under `public/artwork/` are local availability fallbacks for the reviewed Groovehaus catalog. They were retrieved from the Cover Art Archive using the exact MusicBrainz release or release-group mappings already recorded in `src/data/artworkManifest.js`.
 
-The v2 Amazon Reviews 2023 integration does not proxy, download, or reuse Amazon product images. It performs rate-limited MusicBrainz release searches under a strict, unique-release-group acceptance policy. Products with an accepted Cover Art Archive front image use the approved remote proxy and a verified local fallback under `public/artwork/dataset/` (208 files in the verified v2 release); ambiguous and unresolved products use the generic vinyl placeholder and never borrow a legacy image.
+The Amazon Reviews 2023 integration does not proxy, download, or reuse Amazon product images. It performs rate-limited MusicBrainz release searches under a strict, unique-release-group acceptance policy. MusicBrainz release-search omits release-group first-release-date, so the enrichment script hydrates original-release year from the authoritative release-group detail after a strict unique match. The Cover Art Archive metadata client retries bounded transient failures (network errors, 429, 5xx) with exponential backoff and honors Retry-After. Products with an accepted Cover Art Archive front image use the approved remote proxy and a verified local fallback under `public/artwork/dataset/` (208 files in the verified release); ambiguous and unresolved products use the generic vinyl placeholder and never borrow a legacy image.
 
-`src/data/localArtworkManifest.js` records the legacy bindings. `src/data/datasetLocalArtworkManifest.js` records the accepted v2 bindings. Each entry includes the public ID, source URL, resolved Internet Archive URL, MusicBrainz source page and identifiers, retrieval time, media type, byte count, pixel dimensions, SHA-256 digest, and content-addressed filename. The two verification commands validate the exact expected sets without contacting the network:
+`src/data/localArtworkManifest.js` records the legacy bindings. `src/data/datasetLocalArtworkManifest.js` records the accepted current-v3 bindings; `data/amazon-reviews-2023/local-artwork-evidence-v2.json` independently pins the stable v2 rollback set. Each entry includes the public ID, source URL, resolved Internet Archive URL, MusicBrainz source page and identifiers, retrieval time, media type, byte count, pixel dimensions, SHA-256 digest, and content-addressed filename. The verification commands validate the exact expected sets without contacting the artwork network:
 
 ```powershell
 npm.cmd run catalog:artwork:verify
@@ -29,9 +29,9 @@ npm.cmd run catalog:artwork:download
 npm.cmd run catalog:artwork:verify
 ```
 
-The downloader accepts only reviewed HTTPS Cover Art Archive inputs and validated Cover Art Archive or Internet Archive redirect hosts. It limits redirects, elapsed time, bytes, and decoded pixel count; requires complete JPEG bytes; stages the full result; publishes content-addressed files before the manifest; and leaves unrelated files untouched unless `--prune` is explicitly selected.
+The downloader accepts only reviewed HTTPS Cover Art Archive inputs and validated Cover Art Archive or Internet Archive redirect hosts. It limits redirects, elapsed time, bytes, and decoded pixel count; requires complete JPEG bytes; stages the full result; verifies the complete candidate set before manifest publication; and removes stale dataset artwork only after the new manifest is safely written. Cleanup is bounded to the exact `public/artwork/dataset/` directory and rejects reparse points.
 
-For the v2 research catalog, first rerun the rate-limited enrichment only when the committed source/config decision changes, then publish and verify the accepted set:
+For the v3 research catalog, rerun the rate-limited enrichment only when intentionally reproducing the committed decision with the required cache/network configuration. An identical run leaves sealed v3 evidence unchanged; a changed result fails closed instead of overwriting it. If the pinned artifact is missing, restore it from Git rather than generating new timestamped bytes under the sealed key. Then publish and verify the accepted set:
 
 ```powershell
 npm.cmd run dataset:artwork:enrich

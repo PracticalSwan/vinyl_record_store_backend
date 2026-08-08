@@ -4,6 +4,21 @@ import { createJsonFileCache } from "./jsonFileCache.js";
 const API_ROOT = "https://coverartarchive.org";
 const REQUEST_TIMEOUT_MS = 10_000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+const MAX_ATTEMPTS = 4;
+
+const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+export function parseRetryAfterMilliseconds(value, now = Date.now()) {
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.min(seconds * 1_000, 30_000);
+  }
+  const date = Date.parse(value);
+  if (Number.isNaN(date)) return null;
+  return Math.min(Math.max(date - now, 0), 30_000);
+}
 
 const httpsUrl = (value) => {
   if (!value) return null;
@@ -30,6 +45,7 @@ const sourceUrl = (value, entity, entityId) => {
 
 export function createCoverArtArchiveClient({
   fetchImpl = globalThis.fetch,
+  sleep = pause,
   cache = createJsonFileCache(),
   userAgent = process.env.MUSICBRAINZ_USER_AGENT,
 } = {}) {
@@ -57,21 +73,39 @@ export function createCoverArtArchiveClient({
       let payload = Array.isArray(cached?.images) ? cached : null;
       if (!payload) {
         let response;
-        try {
-          response = await fetchImpl(url, {
-            headers: {
-              Accept: "application/json",
-              ...(userAgent ? { "User-Agent": userAgent } : {}),
-            },
-            redirect: "follow",
-            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-          });
-        } catch (error) {
-          throw new ExternalCatalogError(`Cover Art Archive request failed: ${error.name || "network error"}.`, {
+        let networkError = null;
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+          try {
+            response = await fetchImpl(url, {
+              headers: {
+                Accept: "application/json",
+                ...(userAgent ? { "User-Agent": userAgent } : {}),
+              },
+              redirect: "follow",
+              signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+            });
+          } catch (error) {
+            networkError = error;
+            if (attempt < MAX_ATTEMPTS - 1) {
+              await sleep(1_000 * (2 ** attempt));
+              continue;
+            }
+            break;
+          }
+          networkError = null;
+          if (response.status === 404) return null;
+          if (RETRYABLE_STATUSES.has(response.status) && attempt < MAX_ATTEMPTS - 1) {
+            const retryAfter = parseRetryAfterMilliseconds(response.headers?.get?.("retry-after"));
+            await sleep(retryAfter ?? 1_000 * (2 ** attempt));
+            continue;
+          }
+          break;
+        }
+        if (networkError) {
+          throw new ExternalCatalogError(`Cover Art Archive request failed: ${networkError.name || "network error"}.`, {
             service: "cover-art-archive",
           });
         }
-        if (response.status === 404) return null;
         if (!response.ok) {
           throw new ExternalCatalogError(`Cover Art Archive returned HTTP ${response.status}.`, {
             status: response.status,

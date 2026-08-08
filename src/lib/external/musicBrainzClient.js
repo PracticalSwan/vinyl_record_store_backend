@@ -134,6 +134,27 @@ export function createMusicBrainzClient({
       const release = await request(`release/${id}`, { inc: "artist-credits+release-groups+labels+genres+media" });
       return release ? releaseSummary(release) : null;
     },
+    async getReleaseGroup(id) {
+      if (!UUID_PATTERN.test(String(id))) throw new Error("MusicBrainz release-group ID is invalid.");
+      const group = await request(`release-group/${id}`, { inc: "artist-credits+genres" });
+      if (!group) return null;
+      const credits = group["artist-credit"] || [];
+      return {
+        id: group.id,
+        title: group.title,
+        primaryType: group["primary-type"] || null,
+        secondaryTypes: Array.isArray(group["secondary-types"])
+          ? [...group["secondary-types"]]
+          : [],
+        firstReleaseDate: group["first-release-date"] || null,
+        artistCredit: credits.map((credit) => credit.name).filter(Boolean),
+        artistCreditPhrase: credits.map((credit) => `${credit.name || ""}${credit.joinphrase || ""}`).join(""),
+        genres: (group.genres || [])
+          .filter((item) => item?.name)
+          .sort((left, right) => Number(right.count || 0) - Number(left.count || 0))
+          .map((item) => item.name),
+      };
+    },
   };
 }
 

@@ -2,7 +2,7 @@
 
 This document distinguishes the default in-memory catalog seed, the active versioned MongoDB dataset, implemented persistence models, and customer-state boundaries.
 
-The seed remains the no-database default. Explicit `CATALOG_DATA_SOURCE=mongodb` selection follows the single active `DatasetImport`; if none is active, the MongoDB repository uses the preserved 116-record legacy catalog. The current active dataset is immutable `amazon-reviews-2023-cds-vinyl-5core-v2` with 2,305 products; v1 remains stored as a rollback target.
+The seed remains the no-database default. Explicit `CATALOG_DATA_SOURCE=mongodb` selection follows the single active `DatasetImport`; if none is active, the MongoDB repository uses the preserved 116-record legacy catalog. The current active dataset is immutable `amazon-reviews-2023-cds-vinyl-5core-v3` with 2,305 products; v2 is the immediate rollback release, and v1 remains the identity/legacy base.
 
 ## Current Demo Product
 
@@ -38,7 +38,7 @@ The recommender contains one code-defined `demo-user` profile with purchased IDs
 | `auditLogs` | Safe administrator change summaries without credentials or session values. |
 | `counters` | Atomic numeric ID allocation. |
 | `datasetImports` | Unique dataset key, pinned source/version, source and staging file hashes, configuration digest, pseudonym-key fingerprint, counts, lifecycle state, and the single active pointer. |
-| `datasetProducts` | Immutable v2 research-catalog rows with stable public identity, exact record digests, nullable commerce fields, source/field provenance, quality flags, and accepted artwork metadata where available. |
+| `datasetProducts` | Immutable research-catalog rows with stable public identity, exact record digests, nullable commerce fields, source/field provenance, quality flags, and accepted artwork metadata where available. |
 | `historicalAmazonRatings` | Versioned HMAC-pseudonymous subject key, canonical product ID, hashed external item key, rating, source time, train/validation/test split, source row, and quality flags. |
 
 Schemas use strict unknown-field rejection, timestamps, bounded fields, enum validation, unique constraints, compound query indexes, and TTL indexes where retention applies. Public API products expose numeric `id`, never MongoDB `_id`.
@@ -49,9 +49,9 @@ Schemas use strict unknown-field rejection, timestamps, bounded fields, enum val
 
 Authentication, interaction ingestion, preferences, wishlist/cart state, ratings, guest-merge receipts, recommendation-request logging, catalog import, administrator catalog mutations, offline evaluation outputs, and registered-customer deletion are active. Ratings create safe history events; account deletion transactionally removes the customer and owned state, interactions, logs, and merge receipts. Backend order APIs remain deferred.
 
-Catalog import is separate from seed migration. Seed reconciliation manages the committed reviewed MusicBrainz IDs, artwork, and provenance for seed-owned records while preserving immutable public IDs/slugs and soft-delete tombstones. `src/data/localArtworkManifest.js` binds those legacy public IDs to verified files. `src/data/datasetLocalArtworkManifest.js` separately binds only accepted v2 enrichment decisions; ambiguous and unresolved dataset rows, ordinary imports, and administrator-created records use the generic placeholder unless a reviewed local bundle includes them. Import batches validate before planning, preserve source ownership, allocate numeric IDs atomically, and default to all-or-nothing writes.
+Catalog import is separate from seed migration. Seed reconciliation manages the committed reviewed MusicBrainz IDs, artwork, and provenance for seed-owned records while preserving immutable public IDs/slugs and soft-delete tombstones. `src/data/localArtworkManifest.js` binds those legacy public IDs to verified files. `src/data/datasetLocalArtworkManifest.js` separately binds only accepted dataset enrichment decisions; ambiguous and unresolved dataset rows, ordinary imports, and administrator-created records use the generic placeholder unless a reviewed local bundle includes them. Import batches validate before planning, preserve source ownership, allocate numeric IDs atomically, and default to all-or-nothing writes.
 
-The external dataset pipeline is separate from both flows. It verifies pinned raw-source and staging hashes, a committed stable identity registry, exact per-record digests, and the reviewed artwork-decision manifest. V2 writes immutable rows to `datasetProducts`, seals the inactive import only after exact-set verification, and activates only through a transaction. Activation and rollback never delete v1, v2, the legacy catalog, or customer state. Dataset-managed records are read-only in the Admin GUI. Amazon images remain excluded; accepted Cover Art Archive bindings use their verified local fallback and all other rows use the generic placeholder.
+The external dataset pipeline is separate from both flows. It verifies pinned raw-source and staging hashes, a committed stable identity registry, exact per-record digests, and the reviewed artwork-decision manifest. Each version writes immutable rows to `datasetProducts`, seals the inactive import only after exact-set verification, and activates only through a transaction. Activation and rollback never delete v1, v2, v3, the legacy catalog, or customer state. Dataset-managed records are read-only in the Admin GUI. Amazon images remain excluded; accepted Cover Art Archive bindings use their verified local fallback and all other rows use the generic placeholder.
 
 ## Privacy Boundary
 

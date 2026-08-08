@@ -1,7 +1,14 @@
 {
   "schemaVersion": 2,
-  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v2",
+  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v3",
   "sourceRevision": "2b6d039ed471f2ba5fd2acb718bf33b0a7e5598e",
+  "filtering": {
+    "ratedProductsWithMetadata": 89370,
+    "vinylCandidates": 3022,
+    "duplicateVinylMetadataRows": 0,
+    "ratingRowsForSelectedProducts": 32850,
+    "duplicateSelectedUserItems": 0
+  },
   "staged": {
     "products": 2305,
     "users": 2387,
@@ -11,13 +18,6 @@
       "validation": 2011,
       "test": 1913
     }
-  },
-  "filtering": {
-    "ratedProductsWithMetadata": 89370,
-    "vinylCandidates": 3022,
-    "duplicateVinylMetadataRows": 0,
-    "ratingRowsForSelectedProducts": 32850,
-    "duplicateSelectedUserItems": 0
   },
   "quality": {
     "canonicalGenreDistribution": {
@@ -45,13 +45,21 @@
       "rejectedOrMissing": 3
     },
     "yearCoverage": {
-      "originalAndEdition": 0,
-      "originalOnly": 0,
-      "editionOnly": 2026,
-      "unresolved": 279
+      "originalAndEdition": 205,
+      "originalOnly": 3,
+      "editionOnly": 1821,
+      "unresolved": 276
     },
     "originalReleaseYearByDecade": {
-      "Unresolved": 2305
+      "1950s": 6,
+      "1960s": 28,
+      "1970s": 56,
+      "1980s": 53,
+      "1990s": 24,
+      "2000s": 16,
+      "2010s": 24,
+      "2020s": 1,
+      "Unresolved": 2097
     },
     "formatDistribution": {
       "Vinyl": 2305
@@ -59,7 +67,7 @@
     "fieldCoverage": {
       "artist": 2282,
       "canonicalGenre": 2081,
-      "originalReleaseYear": 0,
+      "originalReleaseYear": 208,
       "editionReleaseYear": 2026,
       "label": 2217,
       "description": 0,
@@ -82,6 +90,7 @@
       "format-normalized-to-broad-vinyl": 2305,
       "genre-canonical-taxonomy:high-confidence": 2081,
       "genre-unresolved": 224,
+      "original-year-enriched-from-musicbrainz": 208,
       "price-missing": 574,
       "release-year-unresolved": 279,
       "source-categories-partially-unmapped": 331,
@@ -105,7 +114,7 @@
   },
   "artwork": {
     "baseOnly": false,
-    "entriesDigest": "1b47512e93688e24c24f53b8cb29e9520ff3660f185540575a00d3f6b4b16292",
+    "entriesDigest": "733eb522644d8552787121a6b8e0008c98fbca4ff2de48e900ffab660f57ae89",
     "counts": {
       "accepted": 208,
       "ambiguous": 6,

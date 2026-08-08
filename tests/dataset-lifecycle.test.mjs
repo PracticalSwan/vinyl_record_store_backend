@@ -139,3 +139,80 @@ test("checkpoint publication replaces complete JSON without leaving a temporary 
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test("exact re-import with identical evidence does not throw on ownership check", () => {
+  const base = {
+    configDigest: "a".repeat(64),
+    productCollection: "datasetProducts",
+    sourceVersion: "v3",
+    identityRegistryDigest: "b".repeat(64),
+    artworkEntriesDigest: "c".repeat(64),
+    sourceFiles: {
+      metadata: { bytes: 10, sha256: "d".repeat(64) },
+      ratings: { bytes: 20, sha256: "e".repeat(64) },
+    },
+    stagingFiles: {
+      products: { bytes: 30, sha256: "f".repeat(64) },
+      ratings: { bytes: 40, sha256: "g".repeat(64) },
+    },
+  };
+  // Exact re-import: same config, same evidence, same collection.
+  assert.doesNotThrow(() => assertDatasetImportOwnership(base, base));
+  assert.doesNotThrow(() => assertDatasetImportEvidenceOwnership(base, base));
+});
+
+test("activation of an unsealed completed import is rejected", () => {
+  const unsealed = { status: "completed", active: false, sealedAt: null };
+  assert.equal(isSealedDatasetImport(unsealed), false);
+  assert.throws(() => assertActivatableDatasetImport(unsealed), /sealed completed/);
+});
+
+test("activation of a sealed completed import succeeds", () => {
+  const sealed = { status: "completed", active: false, sealedAt: new Date() };
+  assert.equal(isSealedDatasetImport(sealed), true);
+  assert.doesNotThrow(() => assertActivatableDatasetImport(sealed));
+});
+
+test("rollback target must be inactive, completed or superseded, and sealed", () => {
+  const validTarget = { status: "superseded", active: false, sealedAt: new Date() };
+  assert.doesNotThrow(() => assertRollbackTarget(validTarget));
+  // Active target rejected.
+  assert.throws(() => assertRollbackTarget({ ...validTarget, active: true }), /Rollback target/);
+  // Unsealed rejected unless legacy.
+  assert.throws(
+    () => assertRollbackTarget({ status: "superseded", active: false, sealedAt: null }),
+    /Rollback target/,
+  );
+  // Failed status rejected.
+  assert.throws(() => assertRollbackTarget({ status: "failed", active: false, sealedAt: new Date() }), /Rollback target/);
+  // Legacy unsealed allowed with flag.
+  assert.doesNotThrow(() => assertRollbackTarget(
+    { status: "superseded", active: false, sealedAt: null },
+    { allowLegacyUnsealed: true },
+  ));
+});
+
+test("failed-import cleanup rejects active, sealed, and non-failed documents", () => {
+  const failed = { status: "failed", active: false, sealedAt: null };
+  assert.doesNotThrow(() => assertFailedImportCleanable(failed));
+  // Active failed rejected.
+  assert.throws(() => assertFailedImportCleanable({ ...failed, active: true }), /unsealed inactive/);
+  // Sealed completed rejected.
+  assert.throws(() => assertFailedImportCleanable(
+    { status: "completed", active: false, sealedAt: new Date() },
+  ), /unsealed inactive/);
+  // Importing but sealed rejected.
+  assert.throws(() => assertFailedImportCleanable(
+    { status: "importing", active: false, sealedAt: new Date() },
+  ), /unsealed inactive/);
+});
+
+test("resume accepts only importing or failed inactive unsealed states", () => {
+  assert.equal(canResumeInactiveImport({ status: "importing", active: false, sealedAt: null }), true);
+  assert.equal(canResumeInactiveImport({ status: "failed", active: false, sealedAt: null }), true);
+  assert.equal(canResumeInactiveImport({ status: "completed", active: false, sealedAt: null }), false);
+  assert.equal(canResumeInactiveImport({ status: "active", active: false, sealedAt: null }), false);
+  assert.equal(canResumeInactiveImport({ status: "failed", active: true, sealedAt: null }), false);
+  assert.equal(canResumeInactiveImport({ status: "failed", active: false, sealedAt: new Date() }), false);
+  assert.equal(canResumeInactiveImport(null), false);
+});

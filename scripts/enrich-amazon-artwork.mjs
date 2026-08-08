@@ -1,7 +1,22 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { AMAZON_DATASET_KEY, readJsonlRows } from "../src/lib/dataset/amazonReviews2023.js";
+import {
+  AMAZON_DATASET_KEY,
+  readJsonlRows,
+  sha256File,
+} from "../src/lib/dataset/amazonReviews2023.js";
+import {
+  getCurrentAmazonDatasetRelease,
+  isCompatibleAmazonArtworkProgress,
+} from "../src/lib/dataset/amazonDatasetReleases.js";
+import {
+  assertSealedArtworkReproduction,
+  hydrateOriginalReleaseYear,
+  needsOriginalYearHydration,
+  originalReleaseYearFromDate,
+  toCommittedArtworkEnrichmentEntry,
+} from "../src/lib/dataset/amazonArtworkEnrichment.js";
 import { writeJsonAtomically } from "../src/lib/dataset/integrity.js";
 import { comparisonKey } from "../src/lib/catalog/normalize.js";
 import { createCoverArtArchiveClient } from "../src/lib/external/coverArtArchiveClient.js";
@@ -11,11 +26,28 @@ const POLICY_VERSION = "musicbrainz-high-confidence-v1";
 const SCORE_MINIMUM = 95;
 const CONCURRENCY = 6;
 const dataRoot = path.join(process.cwd(), "data", "amazon-reviews-2023");
+const currentRelease = getCurrentAmazonDatasetRelease();
 const stagingRoot = path.join(dataRoot, "staging", AMAZON_DATASET_KEY);
 const productsPath = path.join(stagingRoot, "products.jsonl");
 const progressPath = path.join(stagingRoot, "artwork-enrichment-progress.json");
-const destination = path.join(dataRoot, "artwork-enrichment-v2.json");
+const destination = path.join(dataRoot, currentRelease.artworkEnrichmentFilename);
 const restart = process.argv.includes("--restart");
+
+let existingReport;
+try {
+  existingReport = JSON.parse(await readFile(destination, "utf8"));
+} catch (error) {
+  if (error.code === "ENOENT") {
+    throw new Error(`The sealed ${currentRelease.datasetKey} artwork enrichment is missing; restore the committed artifact instead of regenerating it under the same key.`);
+  }
+  throw error;
+}
+if (
+  existingReport.datasetKey !== AMAZON_DATASET_KEY
+  || await sha256File(destination) !== currentRelease.artifactSha256.artworkEnrichment
+) {
+  throw new Error("The sealed current-release artwork enrichment differs from its pinned immutable evidence.");
+}
 
 function normalizedTitle(value) {
   return comparisonKey(String(value || ""))
@@ -39,11 +71,6 @@ function tokenSimilarity(left, right) {
   if (!leftTokens.size || !rightTokens.size) return 0;
   const overlap = [...leftTokens].filter((token) => rightTokens.has(token)).length;
   return overlap / Math.min(leftTokens.size, rightTokens.size);
-}
-
-function yearOf(value) {
-  const match = String(value || "").match(/^(19\d{2}|20\d{2})/);
-  return match ? Number(match[1]) : null;
 }
 
 function candidateAccepts(product, candidate, method) {
@@ -124,14 +151,14 @@ async function findDecision(product, musicBrainz) {
     || left.id.localeCompare(right.id)
   ));
   const selected = candidates[0];
-  return {
+  const decision = {
     publicId: product.publicId,
     status: "matched",
     confidence: "high",
     input: { title: product.title, artist: product.artist },
     artist: selected.artistCreditPhrase || product.artist,
-    originalReleaseYear: yearOf(selected.releaseGroupFirstReleaseDate),
-    editionReleaseYear: yearOf(selected.date) || product.editionReleaseYear,
+    originalReleaseYear: null,
+    editionReleaseYear: originalReleaseYearFromDate(selected.date) || product.editionReleaseYear,
     musicBrainzReleaseId: selected.id,
     musicBrainzReleaseGroupId: selected.releaseGroupId,
     matchMethod: selected.matchMethod,
@@ -146,6 +173,9 @@ async function findDecision(product, musicBrainz) {
     decisionCodes: ["STRICT_UNIQUE_RELEASE_GROUP_MATCH"],
     candidateReleaseGroups: 1,
   };
+  return hydrateOriginalReleaseYear(decision, musicBrainz, {
+    knownFirstReleaseDate: selected.releaseGroupFirstReleaseDate,
+  });
 }
 
 async function runWorkers(items, worker, concurrency = CONCURRENCY) {
@@ -162,7 +192,7 @@ async function runWorkers(items, worker, concurrency = CONCURRENCY) {
 }
 
 const products = [];
-for await (const product of readJsonlRows(productsPath, "base v2 staged product")) products.push(product);
+for await (const product of readJsonlRows(productsPath, "current v3 staged product")) products.push(product);
 products.sort((left, right) => left.publicId - right.publicId);
 const inputDigest = createHash("sha256")
   .update(JSON.stringify(products.map((product) => ({
@@ -177,7 +207,11 @@ let decisions = new Map();
 if (!restart) {
   try {
     const progress = JSON.parse(await readFile(progressPath, "utf8"));
-    if (progress.policyVersion === POLICY_VERSION && progress.inputDigest === inputDigest) {
+    if (isCompatibleAmazonArtworkProgress(progress, {
+      datasetKey: AMAZON_DATASET_KEY,
+      policyVersion: POLICY_VERSION,
+      inputDigest,
+    })) {
       decisions = new Map(progress.entries
         .filter((entry) => entry.status !== "error")
         .map((entry) => [entry.publicId, entry]));
@@ -189,9 +223,12 @@ if (!restart) {
 
 const musicBrainz = createMusicBrainzClient();
 for (const [index, product] of products.entries()) {
-  if (decisions.has(product.publicId)) continue;
+  const existing = decisions.get(product.publicId);
+  if (existing && !needsOriginalYearHydration(existing)) continue;
   try {
-    decisions.set(product.publicId, await findDecision(product, musicBrainz));
+    decisions.set(product.publicId, existing
+      ? await hydrateOriginalReleaseYear(existing, musicBrainz)
+      : await findDecision(product, musicBrainz));
   } catch (error) {
     decisions.set(product.publicId, {
       publicId: product.publicId,
@@ -216,6 +253,14 @@ for (const [index, product] of products.entries()) {
   if ((index + 1) % 25 === 0 || index === products.length - 1) {
     process.stderr.write(`[MusicBrainz ${index + 1}/${products.length}] ${product.publicId}\n`);
   }
+}
+
+const retryableHydrations = [...decisions.values()]
+  .filter((entry) => entry.originalYearHydrationStatus === "retryable-error");
+if (retryableHydrations.length) {
+  throw new Error(
+    `${retryableHydrations.length} MusicBrainz original-year lookups remain retryable; rerun enrichment to resume.`,
+  );
 }
 
 const coverArt = createCoverArtArchiveClient();
@@ -268,32 +313,25 @@ const entries = products.map((product) => {
   // The committed enrichment registry is a technical mapping, not a second
   // copy of source catalog text. Keep operator-only match inputs and the
   // MusicBrainz artist phrase in ignored staging progress.
-  const { input: _operatorInput, artist: _artist, ...committed } = decision;
-  return committed;
+  return toCommittedArtworkEnrichmentEntry(decision);
 });
 const entriesDigest = createHash("sha256").update(JSON.stringify(entries)).digest("hex");
 const counts = Object.fromEntries(["accepted", "ambiguous", "unresolved", "error"].map((status) => [
   status,
   entries.filter((entry) => entry.status === status).length,
 ]));
-const report = {
-  schemaVersion: 1,
+if (counts.error > 0) {
+  throw new Error(`${counts.error} upstream artwork decisions remain retryable; the immutable enrichment artifact was not published.`);
+}
+assertSealedArtworkReproduction(existingReport, {
   datasetKey: AMAZON_DATASET_KEY,
-  generatedAt: new Date().toISOString(),
-  policy: {
-    version: POLICY_VERSION,
-    scoreMinimum: SCORE_MINIMUM,
-    requiresOfficialRelease: true,
-    requiresVinylSearchEvidence: true,
-    requiresExactNormalizedTitle: true,
-    requiresStrongArtistAgreement: true,
-    requiresUniqueReleaseGroup: true,
-    ambiguousAndUnresolvedUsePlaceholder: true,
-  },
   inputDigest,
   entriesDigest,
+});
+console.log(JSON.stringify({
+  destination,
+  entries: entries.length,
+  entriesDigest,
   counts,
-  entries,
-};
-await writeJsonAtomically(destination, report);
-console.log(JSON.stringify({ destination, entries: entries.length, entriesDigest, counts }, null, 2));
+  publication: "unchanged",
+}, null, 2));

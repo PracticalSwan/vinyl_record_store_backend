@@ -3,11 +3,14 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import readline from "node:readline";
 import { createGunzip } from "node:zlib";
+import {
+  AMAZON_CURRENT_DATASET_KEY,
+  getCurrentAmazonDatasetRelease,
+} from "./amazonDatasetReleases.js";
 
-export const AMAZON_DATASET_KEY = "amazon-reviews-2023-cds-vinyl-5core-v2";
-export const AMAZON_PREVIOUS_DATASET_KEY = "amazon-reviews-2023-cds-vinyl-5core-v1";
+export const AMAZON_DATASET_KEY = AMAZON_CURRENT_DATASET_KEY;
 export const AMAZON_SOURCE = "amazon-reviews-2023";
-export const AMAZON_SOURCE_VERSION = "2023-cds-vinyl-5core-v2";
+export const AMAZON_SOURCE_VERSION = getCurrentAmazonDatasetRelease().sourceVersion;
 export const AMAZON_PRODUCT_COLLECTION = "datasetProducts";
 export const AMAZON_IDENTITY_NAMESPACE = "amazon-reviews-2023:CDs_and_Vinyl:vinyl";
 const MAX_JSONL_LINE_BYTES = 2_000_000;

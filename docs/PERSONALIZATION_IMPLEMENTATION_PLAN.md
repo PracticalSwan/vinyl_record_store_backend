@@ -10,7 +10,7 @@ Source of truth for current state: live backend source, `PROJECT_CONTEXT.md`, `A
 
 ## DATA-15 Adaptation Gate (2026-08-08)
 
-The active MongoDB catalog is immutable `amazon-reviews-2023-cds-vinyl-5core-v2`: 2,305 source-derived vinyl products and 20,288 historical ratings from 2,387 HMAC-pseudonymous subjects. V1, the 116-record legacy catalog, `content-demo-v1`, and exactly three showcase customers remain intact. The final artwork decision set is 208 accepted, 6 ambiguous, 2,091 unresolved, and 0 errors, with 208 accepted local fallbacks. `dataset:evaluation:readiness` reports 1,708 eligible historical subjects, but no ranking model or quality experiment was run.
+The active MongoDB catalog is immutable `amazon-reviews-2023-cds-vinyl-5core-v3`: 2,305 source-derived vinyl products and 20,288 historical ratings from 2,387 HMAC-pseudonymous subjects. V1, v2, the 116-record legacy catalog, `content-demo-v1`, and exactly three showcase customers remain intact. The final artwork decision set is 208 accepted, 6 ambiguous, 2,091 unresolved, and 0 errors, with 208 accepted local fallbacks. V3 adds authoritative MusicBrainz release-group first-release-date enrichment for the 208 accepted products (208 of 2,305 products now have a non-null original-release year, versus zero in v2). `dataset:evaluation:readiness` reports 1,708 eligible historical subjects, but no ranking model or quality experiment was run.
 
 The remaining PERS milestones are revised as follows:
 

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v2",
+  "artworkEntriesDigest": "1b47512e93688e24c24f53b8cb29e9520ff3660f185540575a00d3f6b4b16292",
+  "publishedManifestSha256": "42fcce54475348c41be4c5879f05c4ec8ae95c93be6aff8796d05dcb637bb8d1",
+  "stableEntriesDigest": "6deb33db4653988240feb590763319eebc7a08b732501e8c23041d430f52c66b",
+  "entryCount": 208,
+  "totalBytes": 14086838,
+  "baselineCommit": "0fd60cd9301c720d8cd945e67c5b83a2f89ec962",
+  "stableEntryFields": [
+    "publicId",
+    "filename",
+    "sourceUrl",
+    "sourcePageUrl",
+    "musicBrainzReleaseId",
+    "musicBrainzReleaseGroupId",
+    "contentType",
+    "byteLength",
+    "width",
+    "height",
+    "sha256"
+  ]
+}

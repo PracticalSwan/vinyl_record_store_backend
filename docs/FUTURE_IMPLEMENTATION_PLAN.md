@@ -8,7 +8,7 @@ Source of truth: current backend source, `PROJECT_CONTEXT.md`, `API_CONTRACT_PLA
 
 ## Current Dataset Gate (Completed and Rehearsed 2026-08-08)
 
-`AMAZON_REVIEWS_DATA_INTEGRATION_PLAN.md` owns DATA-00 through DATA-15. MongoDB mode has one active versioned 2,305-product Amazon Reviews 2023 vinyl subset plus 20,288 isolated historical ratings from 2,387 pseudonymous subjects; the 116-record legacy catalog, 208 accepted-v2 local fallbacks, and exactly three showcase customers remain preserved. Inactive import, activation, rollback, reactivation, cleanup, and index evidence passed. This changes the data prerequisite for future work, not the recommender implementation status.
+`AMAZON_REVIEWS_DATA_INTEGRATION_PLAN.md` owns DATA-00 through DATA-15. MongoDB mode currently activates v3 with 2,305 Amazon Reviews 2023 vinyl products and 20,288 isolated historical ratings from 2,387 pseudonymous subjects. V2 is the immediate rollback release, v1 is the identity-registry base, and the 116-record legacy catalog, stable 208-file dataset fallback set, and exactly three showcase customers remain preserved. This changes the data prerequisite for future work, not the recommender implementation status.
 
 Any remaining recommender milestone must now:
 

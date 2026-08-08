@@ -8,8 +8,14 @@ import {
   AMAZON_SOURCE,
   AMAZON_SOURCE_VERSION,
   readJsonlRows,
+  sha256File,
   verifySourceFile,
 } from "../src/lib/dataset/amazonReviews2023.js";
+import {
+  assertAmazonReleaseArtifactDigest,
+  assertAmazonReleaseArtifactOwnership,
+  getCurrentAmazonDatasetRelease,
+} from "../src/lib/dataset/amazonDatasetReleases.js";
 import { DatasetImport } from "../src/models/DatasetImport.js";
 import { DatasetProduct } from "../src/models/DatasetProduct.js";
 import { HistoricalAmazonRating } from "../src/models/HistoricalAmazonRating.js";
@@ -40,11 +46,33 @@ function batchOption(name, fallback) {
 const productBatchSize = batchOption("product-batch", 500);
 const ratingBatchSize = batchOption("rating-batch", 1_000);
 const dataRoot = path.join(process.cwd(), "data", "amazon-reviews-2023");
+const currentRelease = getCurrentAmazonDatasetRelease();
 const stagingRoot = path.join(dataRoot, "staging", AMAZON_DATASET_KEY);
 const report = JSON.parse(await readFile(path.join(stagingRoot, "report.json"), "utf8"));
-const config = JSON.parse(await readFile(path.join(dataRoot, "transformation-config.json"), "utf8"));
+const sourceManifestPath = path.join(dataRoot, currentRelease.sourceManifestFilename);
+const transformationConfigPath = path.join(dataRoot, currentRelease.transformationConfigFilename);
+const artworkEnrichmentPath = path.join(dataRoot, currentRelease.artworkEnrichmentFilename);
+assertAmazonReleaseArtifactDigest(currentRelease, "sourceManifest", await sha256File(sourceManifestPath));
+assertAmazonReleaseArtifactDigest(
+  currentRelease,
+  "transformationConfig",
+  await sha256File(transformationConfigPath),
+);
+assertAmazonReleaseArtifactDigest(
+  currentRelease,
+  "artworkEnrichment",
+  await sha256File(artworkEnrichmentPath),
+);
+const sourceManifest = JSON.parse(await readFile(sourceManifestPath, "utf8"));
+const config = JSON.parse(await readFile(transformationConfigPath, "utf8"));
 const identityRegistry = JSON.parse(await readFile(path.join(dataRoot, "product-identity-registry.json"), "utf8"));
-const artworkEnrichment = JSON.parse(await readFile(path.join(dataRoot, "artwork-enrichment-v2.json"), "utf8"));
+const artworkEnrichment = JSON.parse(await readFile(artworkEnrichmentPath, "utf8"));
+assertAmazonReleaseArtifactOwnership(currentRelease, {
+  sourceManifest,
+  transformationConfig: config,
+  artworkEnrichment,
+  report,
+});
 const canonicalConfigDigest = createHash("sha256").update(JSON.stringify({
   config,
   identityRegistryDigest: identityRegistry.entriesDigest,
@@ -58,7 +86,7 @@ if (
   || report.identityRegistry?.entriesDigest !== identityRegistry.entriesDigest
   || report.artwork?.entriesDigest !== artworkEnrichment.entriesDigest
 ) {
-  throw new Error("Staging does not match the committed v2 configuration, identity registry, and artwork manifest.");
+  throw new Error("Staging does not match the committed current-release configuration, identity registry, and artwork manifest.");
 }
 
 const productsPath = path.join(stagingRoot, "products.jsonl");

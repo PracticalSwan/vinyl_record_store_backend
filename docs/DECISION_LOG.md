@@ -227,3 +227,13 @@ Decision: Treat the corrected v2 dataset as publishable only after normal enrich
 Rationale: A final active pointer and green unit tests do not prove the transition path or customer-state boundary. The bounded rehearsal records the operational evidence required for the classroom database without introducing event sourcing, state migration, or recommendation work.
 
 Status: Verified. V2 is active with 2,305 products, 20,288 ratings, 2,387 historical subjects, 208 accepted local artwork files, exactly three showcase customers, and all dataset/index/privacy checks passing. The live rollback snapshot preserved v2 evidence, legacy IDs, showcase state, and customer collections; cleanup ended with zero `e2e_` residue.
+
+## BDEC-026: Hydrate Original-Release Year From Release-Group Detail (V3)
+
+Date: 2026-08-08
+
+Decision: The MusicBrainz release search endpoint omits release-group.first-release-date, so the v2 enrichment produced zero original-release years despite 208 strict matches. Add a release-group detail lookup that hydrates the authoritative first-release-date only after the strict unique release-group match is established. Because this changes staged immutable product content, create a new immutable v3 dataset rather than rewriting v2. V1, v2, and the 116-record legacy catalog remain stored rollback targets.
+
+Rationale: The original-release year powers decade filtering and the content-based era feature. The search endpoint field is structurally absent, not merely sparse, so a release-group detail fetch is the minimal reliable correction. Creating v3 preserves the published v2 evidence and follows the immutable-version rule.
+
+Status: Implemented and verified. V3 is active with 2,305 products, 20,288 ratings, 2,387 historical subjects, 208 original-release years (versus zero in v2), 208 accepted local artwork files, exactly three showcase customers, and all dataset/index/privacy checks passing. Rollback to v2 and reactivation were rehearsed successfully.

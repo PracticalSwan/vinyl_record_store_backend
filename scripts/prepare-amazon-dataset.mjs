@@ -6,7 +6,6 @@ import path from "node:path";
 import {
   AMAZON_DATASET_KEY,
   AMAZON_IDENTITY_NAMESPACE,
-  AMAZON_PREVIOUS_DATASET_KEY,
   canonicalSourceIdentityKey,
   createDatasetUserKey,
   normalizeAmazonProduct,
@@ -19,14 +18,22 @@ import {
   verifySourceFile,
   sha256File,
 } from "../src/lib/dataset/amazonReviews2023.js";
+import {
+  AMAZON_IDENTITY_BASE_DATASET_KEY,
+  assertAmazonReleaseArtifactDigest,
+  assertAmazonReleaseArtifactOwnership,
+  getCurrentAmazonDatasetRelease,
+} from "../src/lib/dataset/amazonDatasetReleases.js";
 import { withRecordDigest } from "../src/lib/dataset/integrity.js";
+import { createPublicDataQualitySummary } from "../src/lib/dataset/publicDatasetEvidence.js";
 
 const ROOT = process.cwd();
 const DATA_ROOT = path.join(ROOT, "data", "amazon-reviews-2023");
 const MANIFEST_PATH = path.join(DATA_ROOT, "source-manifest.json");
 const CONFIG_PATH = path.join(DATA_ROOT, "transformation-config.json");
 const IDENTITY_REGISTRY_PATH = path.join(DATA_ROOT, "product-identity-registry.json");
-const ARTWORK_ENRICHMENT_PATH = path.join(DATA_ROOT, "artwork-enrichment-v2.json");
+const currentRelease = getCurrentAmazonDatasetRelease();
+const ARTWORK_ENRICHMENT_PATH = path.join(DATA_ROOT, currentRelease.artworkEnrichmentFilename);
 const STAGING_ROOT = path.join(DATA_ROOT, "staging", AMAZON_DATASET_KEY);
 
 function option(name, fallback) {
@@ -38,6 +45,11 @@ function option(name, fallback) {
   return parsed;
 }
 
+assertAmazonReleaseArtifactDigest(
+  currentRelease,
+  "transformationConfig",
+  await sha256File(CONFIG_PATH),
+);
 const transformationConfig = JSON.parse(await readFile(CONFIG_PATH, "utf8"));
 if (transformationConfig.datasetKey !== AMAZON_DATASET_KEY) {
   throw new Error("Transformation config datasetKey is unsupported.");
@@ -52,8 +64,13 @@ if (!profileOnly && (!secret || secret.length < 32)) {
   throw new Error("Staging requires DATASET_PSEUDONYM_KEY or AUTH_SECRET with at least 32 characters.");
 }
 
+assertAmazonReleaseArtifactDigest(currentRelease, "sourceManifest", await sha256File(MANIFEST_PATH));
 const manifest = JSON.parse(await readFile(MANIFEST_PATH, "utf8"));
 if (manifest.datasetKey !== AMAZON_DATASET_KEY) throw new Error("Source manifest datasetKey is unsupported.");
+assertAmazonReleaseArtifactOwnership(currentRelease, {
+  sourceManifest: manifest,
+  transformationConfig,
+});
 const metadataPath = path.join(DATA_ROOT, manifest.files.metadata.relativePath);
 const ratingsPath = path.join(DATA_ROOT, manifest.files.ratings.relativePath);
 const verified = {
@@ -67,7 +84,7 @@ const identityEntriesDigest = createHash("sha256")
   .digest("hex");
 if (
   identityRegistry.identityNamespace !== AMAZON_IDENTITY_NAMESPACE
-  || identityRegistry.derivedFromDatasetKey !== AMAZON_PREVIOUS_DATASET_KEY
+  || identityRegistry.derivedFromDatasetKey !== AMAZON_IDENTITY_BASE_DATASET_KEY
   || identityRegistry.entryCount !== identityRegistry.entries?.length
   || identityRegistry.entriesDigest !== identityEntriesDigest
 ) {
@@ -85,10 +102,16 @@ let artworkEnrichment = {
   counts: { accepted: 0, ambiguous: 0, unresolved: 0, error: 0 },
 };
 if (!baseOnly) {
+  assertAmazonReleaseArtifactDigest(
+    currentRelease,
+    "artworkEnrichment",
+    await sha256File(ARTWORK_ENRICHMENT_PATH),
+  );
   artworkEnrichment = JSON.parse(await readFile(ARTWORK_ENRICHMENT_PATH, "utf8"));
   if (artworkEnrichment.datasetKey !== AMAZON_DATASET_KEY || !Array.isArray(artworkEnrichment.entries)) {
     throw new Error("The artwork enrichment manifest is invalid or belongs to another dataset version.");
   }
+  assertAmazonReleaseArtifactOwnership(currentRelease, { artworkEnrichment });
 }
 const artworkEntriesDigest = createHash("sha256")
   .update(JSON.stringify(artworkEnrichment.entries))
@@ -429,23 +452,9 @@ if (!profileOnly) {
   };
   await writeFile(path.join(STAGING_ROOT, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
   if (!baseOnly) {
-    const dataQualitySummary = {
-      schemaVersion: 2,
-      datasetKey: AMAZON_DATASET_KEY,
+    const dataQualitySummary = createPublicDataQualitySummary(report, {
       sourceRevision: manifest.sourceRevision,
-      staged: report.staged,
-      filtering: report.filtering,
-      quality: report.quality,
-      artwork: report.artwork,
-      sourceLimitations: {
-        reviewTextIncluded: false,
-        verifiedPurchaseAvailable: false,
-        amazonImagesIncluded: false,
-        commercialFieldsAvailable: false,
-        formatGranularity: "broad-vinyl-only",
-      },
-      acceptance: report.acceptance,
-    };
+    });
     await writeFile(
       path.join(DATA_ROOT, "data-quality-summary.json"),
       `${JSON.stringify(dataQualitySummary, null, 2)}\n`,

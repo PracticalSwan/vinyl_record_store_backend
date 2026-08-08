@@ -164,6 +164,123 @@ test("guest merge filters unavailable products before the idempotent repository 
   assert.equal(result.warnings.some((warning) => warning.productId === 99), true);
 });
 
+test("research-only wishlist-only product produces no purchase-unavailable warning", async () => {
+  const capturedWarnings = [];
+  const state = {
+    mergeGuestState: async (_id, filtered, _hash, warnings) => {
+      capturedWarnings.push(...warnings);
+      return { wishlist: filtered.wishlist, cart: filtered.cart, warnings };
+    },
+  };
+  const researchCatalog = {
+    findByPublicId: async (id) => ({
+      id,
+      title: `Research ${id}`,
+      price: null,
+      currency: null,
+      stock: null,
+      catalogMode: "research-only",
+    }),
+  };
+  await mergeGuestState(user, {
+    mergeId: "merge-wishlist",
+    wishlist: [100],
+    cart: [],
+    ratings: [],
+  }, { state, catalog: researchCatalog });
+  assert.deepEqual(capturedWarnings.filter((w) => w.code === "PURCHASE_UNAVAILABLE"), []);
+});
+
+test("research-only rating-only product produces no purchase-unavailable warning", async () => {
+  const capturedWarnings = [];
+  const state = {
+    mergeGuestState: async (_id, filtered, _hash, warnings) => {
+      capturedWarnings.push(...warnings);
+      return { wishlist: filtered.wishlist, ratings: filtered.ratings, warnings };
+    },
+  };
+  const researchCatalog = {
+    findByPublicId: async (id) => ({
+      id,
+      title: `Research ${id}`,
+      price: null,
+      currency: null,
+      stock: null,
+      catalogMode: "research-only",
+    }),
+  };
+  await mergeGuestState(user, {
+    mergeId: "merge-rating",
+    wishlist: [],
+    cart: [],
+    ratings: [{ productPublicId: 100, rating: 5, updatedAt: new Date("2026-01-01") }],
+  }, { state, catalog: researchCatalog });
+  assert.deepEqual(capturedWarnings.filter((w) => w.code === "PURCHASE_UNAVAILABLE"), []);
+});
+
+test("research-only cart product is rejected with exactly one purchase-unavailable warning", async () => {
+  const capturedWarnings = [];
+  const state = {
+    mergeGuestState: async (_id, filtered, _hash, warnings) => {
+      capturedWarnings.push(...warnings);
+      return { cart: filtered.cart, warnings };
+    },
+  };
+  const researchCatalog = {
+    findByPublicId: async (id) => ({
+      id,
+      title: `Research ${id}`,
+      price: null,
+      currency: null,
+      stock: null,
+      catalogMode: "research-only",
+    }),
+  };
+  await mergeGuestState(user, {
+    mergeId: "merge-cart",
+    wishlist: [],
+    cart: [{ productPublicId: 100, quantity: 1 }],
+    ratings: [],
+  }, { state, catalog: researchCatalog });
+  const purchaseWarnings = capturedWarnings.filter((w) => w.code === "PURCHASE_UNAVAILABLE");
+  assert.equal(purchaseWarnings.length, 1);
+  assert.equal(purchaseWarnings[0].productId, 100);
+});
+
+test("research-only product in both wishlist and cart preserves wishlist but rejects cart", async () => {
+  const capturedInput = {};
+  const capturedWarnings = [];
+  const state = {
+    mergeGuestState: async (_id, filtered, _hash, warnings) => {
+      capturedInput.wishlist = filtered.wishlist;
+      capturedInput.cart = filtered.cart;
+      capturedWarnings.push(...warnings);
+      return { wishlist: filtered.wishlist, cart: filtered.cart, warnings };
+    },
+  };
+  const researchCatalog = {
+    findByPublicId: async (id) => ({
+      id,
+      title: `Research ${id}`,
+      price: null,
+      currency: null,
+      stock: null,
+      catalogMode: "research-only",
+    }),
+  };
+  await mergeGuestState(user, {
+    mergeId: "merge-both",
+    wishlist: [100],
+    cart: [{ productPublicId: 100, quantity: 1 }],
+    ratings: [],
+  }, { state, catalog: researchCatalog });
+  assert.deepEqual(capturedInput.wishlist, [100]);
+  assert.deepEqual(capturedInput.cart, []);
+  const purchaseWarnings = capturedWarnings.filter((w) => w.code === "PURCHASE_UNAVAILABLE");
+  assert.equal(purchaseWarnings.length, 1);
+  assert.equal(purchaseWarnings[0].productId, 100);
+});
+
 test("account deletion blocks seeded, administrator, and MongoDB showcase identities", async () => {
   let repositoryCalled = false;
   const repository = {

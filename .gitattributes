@@ -1,0 +1,7 @@
+data/amazon-reviews-2023/artwork-enrichment-v2.json text eol=lf
+data/amazon-reviews-2023/artwork-enrichment-v3.json text eol=lf
+data/amazon-reviews-2023/local-artwork-evidence-v2.json text eol=lf
+data/amazon-reviews-2023/source-manifest.json text eol=lf
+data/amazon-reviews-2023/source-manifest-v2.json text eol=lf
+data/amazon-reviews-2023/transformation-config.json text eol=lf
+data/amazon-reviews-2023/transformation-config-v2.json text eol=lf

@@ -273,7 +273,9 @@ export async function mergeGuestState(user, input, {
         productId: item.productPublicId,
         message: "An out-of-stock item remains in the merged cart for review.",
       })),
-    ...[...unavailableForPurchase].map((id) => ({
+    ...[...unavailableForPurchase]
+      .filter((id) => input.cart.some((item) => item.productPublicId === id))
+      .map((id) => ({
       code: "PURCHASE_UNAVAILABLE",
       productId: id,
       message: "A research-catalog product was not merged into the cart.",

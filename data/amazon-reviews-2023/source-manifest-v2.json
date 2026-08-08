@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v3",
+  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v2",
   "previousDatasetKey": "amazon-reviews-2023-cds-vinyl-5core-v1",
   "dataset": "Amazon Reviews 2023",
   "category": "CDs_and_Vinyl",

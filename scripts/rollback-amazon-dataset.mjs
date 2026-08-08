@@ -1,9 +1,13 @@
 import { connectMongoDB, disconnectMongoDB } from "../src/lib/db/mongodb.js";
-import { AMAZON_PREVIOUS_DATASET_KEY } from "../src/lib/dataset/amazonReviews2023.js";
+import {
+  AMAZON_IDENTITY_BASE_DATASET_KEY,
+  AMAZON_ROLLBACK_DATASET_KEY,
+} from "../src/lib/dataset/amazonDatasetReleases.js";
 import { assertRollbackTarget } from "../src/lib/dataset/integrity.js";
 import { DatasetImport } from "../src/models/DatasetImport.js";
 
-const target = process.argv.find((value) => value.startsWith("--to="))?.slice(5) || "legacy";
+const target = process.argv.find((value) => value.startsWith("--to="))?.slice(5)
+  || AMAZON_ROLLBACK_DATASET_KEY;
 const apply = process.argv.includes("--apply");
 if (target !== "legacy" && !/^[a-z0-9][a-z0-9-]{0,159}$/.test(target)) throw new Error("--to must be legacy or a valid dataset key.");
 try {
@@ -13,7 +17,7 @@ try {
     ? null
     : await DatasetImport.findOne({ datasetKey: target }).lean().exec();
   if (target !== "legacy") {
-    assertRollbackTarget(targetDocument, { allowLegacyUnsealed: target === AMAZON_PREVIOUS_DATASET_KEY });
+    assertRollbackTarget(targetDocument, { allowLegacyUnsealed: target === AMAZON_IDENTITY_BASE_DATASET_KEY });
   }
   if (!apply) {
     console.log(JSON.stringify({
@@ -27,7 +31,7 @@ try {
     await connection.transaction(async (session) => {
       if (target !== "legacy") {
         const transactionalTarget = await DatasetImport.findOne({ datasetKey: target }).session(session).lean().exec();
-        assertRollbackTarget(transactionalTarget, { allowLegacyUnsealed: target === AMAZON_PREVIOUS_DATASET_KEY });
+        assertRollbackTarget(transactionalTarget, { allowLegacyUnsealed: target === AMAZON_IDENTITY_BASE_DATASET_KEY });
       }
       await DatasetImport.updateMany(
         { active: true },

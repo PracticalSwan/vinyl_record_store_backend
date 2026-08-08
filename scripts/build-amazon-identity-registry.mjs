@@ -1,19 +1,22 @@
 import { createHash } from "node:crypto";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import {
   AMAZON_IDENTITY_NAMESPACE,
-  AMAZON_PREVIOUS_DATASET_KEY,
   canonicalSourceIdentityKey,
   readJsonlRows,
 } from "../src/lib/dataset/amazonReviews2023.js";
+import {
+  AMAZON_IDENTITY_BASE_DATASET_KEY,
+  assertAmazonIdentityRegistryReproduction,
+} from "../src/lib/dataset/amazonDatasetReleases.js";
 
 const apply = process.argv.includes("--apply");
 const dataRoot = path.join(process.cwd(), "data", "amazon-reviews-2023");
 const previousProducts = path.join(
   dataRoot,
   "staging",
-  AMAZON_PREVIOUS_DATASET_KEY,
+  AMAZON_IDENTITY_BASE_DATASET_KEY,
   "products.jsonl",
 );
 const destination = path.join(dataRoot, "product-identity-registry.json");
@@ -41,7 +44,7 @@ const entriesDigest = createHash("sha256").update(JSON.stringify(entries)).diges
 const registry = {
   schemaVersion: 1,
   identityNamespace: AMAZON_IDENTITY_NAMESPACE,
-  derivedFromDatasetKey: AMAZON_PREVIOUS_DATASET_KEY,
+  derivedFromDatasetKey: AMAZON_IDENTITY_BASE_DATASET_KEY,
   entryCount: entries.length,
   entriesDigest,
   entries,
@@ -57,14 +60,17 @@ if (!apply) {
   process.exit(0);
 }
 
-await writeFile(destination, `${JSON.stringify(registry, null, 2)}\n`, "utf8");
-const verified = JSON.parse(await readFile(destination, "utf8"));
-if (verified.entryCount !== entries.length || verified.entriesDigest !== entriesDigest) {
-  throw new Error("The published identity registry did not verify after writing.");
+let existing;
+try {
+  existing = JSON.parse(await readFile(destination, "utf8"));
+} catch (error) {
+  if (error.code !== "ENOENT") throw error;
 }
+assertAmazonIdentityRegistryReproduction(existing, registry);
 console.log(JSON.stringify({
   mode: "apply",
   destination,
   entryCount: entries.length,
   entriesDigest,
+  publication: "unchanged",
 }, null, 2));

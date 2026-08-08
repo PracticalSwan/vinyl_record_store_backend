@@ -113,6 +113,58 @@ test("product normalization does not treat Amazon availability dates as release 
   assert.equal(product.year, null);
 });
 
+test("enriched original-release-year from MusicBrainz sets year, provenance, and quality flags", () => {
+  const product = normalizeAmazonProduct({
+    parent_asin: "B000000010",
+    title: "Enriched Original Year",
+    store: "Example Artist Format: Vinyl",
+    categories: ["CDs & Vinyl", "Jazz", "Vinyl Records"],
+    details: { "Release Date": "2017-11-10", "Original Release Date": "2017" },
+  }, 100_010, {
+    artworkMatch: {
+      status: "accepted",
+      originalReleaseYear: 1969,
+      editionReleaseYear: 2017,
+      artist: "Enriched Artist",
+      musicBrainzReleaseId: "11111111-1111-4111-8111-111111111111",
+      musicBrainzReleaseGroupId: "22222222-2222-4222-8222-222222222222",
+      artwork: { url: "https://coverartarchive.org/cover.jpg" },
+      provenance: [{ field: "artwork", source: "musicbrainz-cover-art-archive", sourceId: "11111111-1111-4111-8111-111111111111", retrievedAt: "2026-08-08T00:00:00.000Z" }],
+    },
+  });
+  assert.equal(product.originalReleaseYear, 1969);
+  assert.equal(product.year, 1969);
+  assert.equal(product.editionReleaseYear, 2017);
+  assert.equal(product.yearDisplayType, "original");
+  assert.equal(product.fieldOrigins.year, "enriched");
+  assert.equal(product.fieldOrigins.originalReleaseYear, "enriched");
+  assert.ok(product.qualityFlags.includes("original-year-enriched-from-musicbrainz"));
+  assert.equal(product.musicBrainzReleaseGroupId, "22222222-2222-4222-8222-222222222222");
+});
+
+test("missing enriched original year keeps year null without promoting edition date", () => {
+  const product = normalizeAmazonProduct({
+    parent_asin: "B000000011",
+    title: "No Original Year Available",
+    store: "Example Artist Format: Vinyl",
+    categories: ["CDs & Vinyl", "Jazz", "Vinyl Records"],
+    details: { "Release Date": "2020" },
+  }, 100_011, {
+    artworkMatch: {
+      status: "accepted",
+      originalReleaseYear: null,
+      editionReleaseYear: 2020,
+      artwork: { url: "https://coverartarchive.org/cover.jpg" },
+    },
+  });
+  assert.equal(product.originalReleaseYear, null);
+  assert.equal(product.year, null);
+  assert.equal(product.editionReleaseYear, 2020);
+  assert.equal(product.yearDisplayType, "edition");
+  assert.equal(product.fieldOrigins.year, "unknown");
+  assert.ok(!product.qualityFlags.includes("original-year-enriched-from-musicbrainz"));
+});
+
 test("v2 normalization rejects contaminated genres and conservative artist noise", () => {
   const noisy = normalizeAmazonProduct({
     parent_asin: "B000000003",

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v3",
+  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v2",
   "previousDatasetKey": "amazon-reviews-2023-cds-vinyl-5core-v1",
   "targetProducts": 4000,
   "maximumUsers": 20000,

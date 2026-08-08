@@ -1,6 +1,6 @@
 # Amazon Reviews 2023 Dataset Integration
 
-Status: corrected immutable v2 implementation and migration evidence verified on 2026-08-08. The migration/rollback evidence and exact quality/artwork counts below are the release record. This document does not authorize PERS-03 through PERS-09 or any recommender-algorithm change.
+Status: corrected immutable v3 implementation and migration evidence verified on 2026-08-08. The migration/rollback evidence and exact quality/artwork counts below are the release record. This document does not authorize PERS-03 through PERS-09 or any recommender-algorithm change.
 
 Audience: backend/frontend maintainers, course assessors, and operators of the classroom `vinyl_record_store` MongoDB database.
 
@@ -10,12 +10,13 @@ Source of truth: committed files under `data/amazon-reviews-2023/`, dataset scri
 
 ## Executive Summary
 
-Groovehaus now uses immutable `amazon-reviews-2023-cds-vinyl-5core-v2` in MongoDB mode. It contains 2,305 source-derived vinyl products in `datasetProducts` and 20,288 isolated historical ratings from 2,387 HMAC-pseudonymous subjects. V1 and the original 116 reviewed Groovehaus records remain stored as non-destructive rollback targets. The only application customers remain `demo-jazz`, `demo-rock`, and `demo-soul`.
+Groovehaus now uses immutable `amazon-reviews-2023-cds-vinyl-5core-v3` in MongoDB mode. It contains 2,305 source-derived vinyl products in `datasetProducts` and 20,288 isolated historical ratings from 2,387 HMAC-pseudonymous subjects. V2 is the immediate non-destructive rollback release, v1 remains the identity/legacy base, and the original 116 reviewed Groovehaus records remain stored. The only application customers remain `demo-jazz`, `demo-rock`, and `demo-soul`.
 
-V2 corrects the earlier dataset metadata and migration gaps:
+V3 supersedes v2 with corrected original-release-year enrichment. V2 remains the immediate rollback target:
 
-- one controlled 14-genre taxonomy plus an explicit `Unresolved` bucket, with no retailer/navigation fallback;
+- a 15-label canonical genre taxonomy (14 represented in the active catalog plus `Unresolved` as a fallback state, not a 16th genre), with no retailer/navigation fallback;
 - conservative artist normalization, explicit original-versus-edition year semantics, and broad `Vinyl` only;
+- authoritative MusicBrainz release-group first-release-date for the 208 strict-match accepted products (v2 incorrectly reported zero original-year coverage because the release search endpoint omits this field);
 - a committed opaque identity registry that preserves every v1 numeric public ID;
 - exact record digests, separate immutable storage, sealing, and exact-set verification;
 - strict rate-limited MusicBrainz/Cover Art Archive decisions and a local fallback for every accepted image;
@@ -39,7 +40,7 @@ Raw source, staging output, reviewer IDs, review text, profiles, and Amazon prod
 | `meta_CDs_and_Vinyl.jsonl` | 948,861,684 | `c52275a5bce63bf293f987bff5ff1f2b268982797545f3df2b7662ab638e8aec` |
 | `CDs_and_Vinyl.5core.csv.gz` | 21,466,396 | `53811902ffb01eb22da31a35e0775f3b8351baebe7e1ab38b85b6c4aee689c20` |
 
-## Audit Findings And V2 Decisions
+## Historical V2 Audit Findings And Decisions
 
 | Finding | Classification | V2 outcome |
 | --- | --- | --- |
@@ -53,7 +54,7 @@ Raw source, staging output, reviewer IDs, review text, profiles, and Amazon prod
 | Dataset readiness demonstrated recommendation quality. | False | Readiness validates inputs only; no recommender work or quality claim. |
 | Amazon historical subjects were or should become app users. | False | They remain hidden HMAC keys in the historical collection only. |
 
-The initial proposal preferred storing all versions in `vinylRecords`. V2 deliberately uses `datasetProducts` instead. A separate collection is the smallest safe correction because v1 must remain byte-for-byte available while v2 must reject same-key mutation and stale rows. Repository selection still presents one active catalog contract, so this does not create a second application service or API.
+This table records the v2 foundation verified on 2026-08-08; it is not a statement that v2 is current. The initial proposal preferred storing all versions in `vinylRecords`. V2 deliberately uses `datasetProducts` instead. A separate collection is the smallest safe correction because v1 must remain byte-for-byte available while sealed later releases must reject same-key mutation and stale rows. Repository selection still presents one active catalog contract, so this does not create a second application service or API.
 
 ## Data Honesty And Canonical Mapping
 
@@ -87,7 +88,7 @@ The transformation streams both inputs, validates exact byte/hash evidence, sele
 | Positive ratings (`>= 4`) | 18,187 | 18,187 |
 | Rebalanced/fabricated negatives | No / No | No / No |
 
-Final v2 quality and artwork evidence (generated 2026-08-08):
+Historical v2 quality and artwork evidence (generated 2026-08-08):
 
 - canonical genre distribution: Blues 37, Classical 5, Electronic 30, Folk 66, Hip-Hop 38, Holiday 20, Jazz 71, Latin 1, Pop 742, Reggae 1, Rock 993, Soul 40, Soundtrack 32, Spoken Word 5, Unresolved 224;
 - artist quality: accepted 2,044, cleaned 238, ambiguous 20, rejected or missing 3;
@@ -97,7 +98,9 @@ Final v2 quality and artwork evidence (generated 2026-08-08):
 - artwork decisions: accepted 208, ambiguous 6, unresolved 2,091, errors 0; accepted local JPEGs 208 totaling 14,086,838 bytes;
 - evidence digests: config `233db0e03d4365a971e33dad9a7748c34c17f717f867f60ea64577f9456fb255`, staging products `9fd82e135992212ae849fa9bbd2328d032f6dac8e876df5b1451d4ebe61ac00e`, staging ratings `fce3b191502e28b79880c9bc5285e9bc7863af0500dae8685257f8be6541b9bf`, identity `316f58bd8eac7d9e687a7c99328450452842e47c936ce5092fa31dbecb63a7ad`, and artwork `1b47512e93688e24c24f53b8cb29e9520ff3660f185540575a00d3f6b4b16292`.
 
-The committed `data-quality-summary.json` is the exact machine-readable source for these aggregates. Positive skew is a dataset characteristic, not an error to “balance.” Future evaluation must disclose it and must not alter source ratings.
+Current v3 preserves the same product, subject, rating, split, genre, artist, format, artwork-decision, and commercial-null counts. It corrects original-year coverage to 208 products: 205 have original and edition years, 3 original only, 1,821 edition only, and 276 unresolved. The v3 evidence digests are config `6b7d56f957c663c49d2d1d79a7074fac4665dc531f1cf07396ee7639aae3d648`, staged products `87fb67c44e5ed4882058007f623941517a81d0b7a0595bfcea28f73fbbfb01ee`, staged ratings `b0412cd0050d171d89a209106ebbf954ce140946343dbbad19f7524dbb9c2746`, identity `316f58bd8eac7d9e687a7c99328450452842e47c936ce5092fa31dbecb63a7ad`, and artwork `733eb522644d8552787121a6b8e0008c98fbca4ff2de48e900ffab660f57ae89`.
+
+The committed `data-quality-summary.json` is the machine-readable public projection of current v3 aggregates. It deliberately excludes the secret-derived pseudonym-key fingerprint and internal source/staging hashes; those remain only in ignored staging and the private import record required for ownership verification. Positive skew is a dataset characteristic, not an error to “balance.” Future evaluation must disclose it and must not alter source ratings.
 
 The manual normalization audit sampled one row from every emitted canonical genre plus unresolved rows. It found one geographic navigation label that had been mapped to World; the generic `international` rule was removed and regression-tested. It also found a source category that disagreed with the album's apparent genre; the transformer retained the explicit controlled source-category result rather than inferring from title. No row-level reviewer data was inspected or documented.
 
@@ -118,23 +121,23 @@ Ambiguous, unresolved, and failed decisions use the placeholder. `dataset:artwor
 
 | Collection | Ownership and invariant |
 | --- | --- |
-| `vinylRecords` | 116 legacy records plus preserved v1 dataset rows; never deleted by v2. |
-| `datasetProducts` | Immutable v2 rows, one exact digest per record, compound unique dataset/public ID/slug/external key. |
-| `historicalAmazonRatings` | V1 and v2 version-owned rating evidence; unique dataset/user/product; no TTL. |
+| `vinylRecords` | 116 legacy records plus preserved v1 identity-base dataset rows; never deleted by later releases. |
+| `datasetProducts` | Immutable v2 and v3 rows, one exact digest per record, compound unique dataset/public ID/slug/external key. |
+| `historicalAmazonRatings` | V1, v2, and v3 version-owned rating evidence; unique dataset/user/product; no TTL. |
 | `datasetImports` | Source/staging/config/identity/artwork evidence, counts, collection owner, status, sealing, and one active pointer. |
 | `users` and customer-state collections | Application identities/state only; never populated from Amazon subjects and never deleted/remapped by activation. |
 
 Lifecycle:
 
-1. Prepare and verify ignored staging.
+1. Prepare and verify ignored staging owned by the intended release.
 2. Run `dataset:import` for a no-write dry run.
-3. Run `dataset:import:apply` to write v2 inactive.
-4. Verify exact persisted evidence while v1 remains active.
-5. Run `dataset:activate:apply` for the transactional pointer switch.
+3. For a genuinely new release only, run `dataset:import:apply` to write it inactive.
+4. Verify exact persisted evidence while the previous release remains active.
+5. For a genuinely new release only, run `dataset:activate:apply` for the transactional pointer switch.
 6. Verify APIs, UI, indexes, state, and counts.
 7. Use `dataset:rollback:apply -- --to=<key>` for a non-destructive rollback.
 
-A sealed `completed`, `active`, or `superseded` v2 key is immutable. An interrupted unsealed inactive import can resume. `dataset:clean:failed` is dry-run by default and may delete only the exact unsealed inactive v2 products/ratings/import record after `--apply`; it refuses active or sealed data.
+A sealed `completed`, `active`, or `superseded` release key is immutable. An interrupted unsealed inactive import can resume. `dataset:clean:failed` is dry-run by default and may delete only the exact selected unsealed inactive release products/ratings/import record after `--apply`; it refuses active or sealed data.
 
 Wishlist and rating references remain stored across activation. If a product is absent from the active version, reads hide or mark the product unavailable without deleting/remapping state. Cart writes reject research products before persistence; existing unavailable/research rows return null totals and warnings. Guest merge drops research-only cart entries but preserves valid wishlist/rating state.
 
@@ -150,12 +153,25 @@ Catalog responses set `meta.catalogMode` to `research-only`. The frontend:
 
 The Admin dashboard shows active source/version/counts and research policy. Dataset rows are browsable but read-only: update, delete, restore, and browser artwork enrichment return a conflict directing operators to the CLI. The ordinary bounded CSV/JSON preview/apply path remains available for non-dataset records and is not an Amazon ingestion surface.
 
-## Operator Runbook
+## Current V3 Operator Runbook
 
 Run from `vinyl_record_store_backend` in PowerShell. Review all dry-run output before an apply command.
 
+The normal sealed-release check is read-only and verifies current v3 plus the complete v2 rollback target while v3 remains active:
+
 ```powershell
 npm.cmd run db:ping
+npm.cmd run catalog:artwork:verify
+npm.cmd run dataset:artwork:verify
+npm.cmd run dataset:verify -- --dataset-key=amazon-reviews-2023-cds-vinyl-5core-v3 --expect-active=amazon-reviews-2023-cds-vinyl-5core-v3
+npm.cmd run dataset:verify -- --dataset-key=amazon-reviews-2023-cds-vinyl-5core-v2 --expect-active=amazon-reviews-2023-cds-vinyl-5core-v3
+npm.cmd run db:indexes
+npm.cmd run dataset:evaluation:readiness
+```
+
+Reproduce current v3 transformation/artwork only when the pinned raw input and MusicBrainz cache/network prerequisites are available. The enrichment command resumes transient release-group hydration, compares the recomputed semantic digest to the exact pinned artifact, leaves identical sealed v3 evidence unchanged, and fails closed if decisions differ. If the artifact is missing, restore its exact committed bytes from Git rather than regenerating timestamps under the sealed key. These commands do not justify re-importing sealed v3:
+
+```powershell
 npm.cmd run dataset:profile
 npm.cmd run dataset:identity:build
 npm.cmd run dataset:prepare -- --base-only
@@ -164,33 +180,39 @@ npm.cmd run dataset:artwork:download
 npm.cmd run dataset:artwork:verify
 npm.cmd run dataset:prepare
 npm.cmd run dataset:import
-npm.cmd run dataset:import:apply
-npm.cmd run dataset:verify -- --dataset-key=amazon-reviews-2023-cds-vinyl-5core-v2 --expect-active=amazon-reviews-2023-cds-vinyl-5core-v1
-npm.cmd run dataset:activate:apply
-npm.cmd run dataset:verify
-npm.cmd run db:indexes:ensure
-npm.cmd run db:indexes
-npm.cmd run dataset:evaluation:readiness
 ```
 
-Non-destructive rollback rehearsal:
+The 2026-08-08 v2 migration sequence and v2-to-v1 rehearsal are historical evidence, not current operator commands. A new database write rehearsal is necessary only after lifecycle transaction behavior changes. If one is required, rehearse v3 to v2 and back to v3, and verify the target meaningfully in each active state:
 
 ```powershell
-npm.cmd run dataset:rollback -- --to=amazon-reviews-2023-cds-vinyl-5core-v1
-npm.cmd run dataset:rollback:apply -- --to=amazon-reviews-2023-cds-vinyl-5core-v1
-npm.cmd run dataset:verify -- --dataset-key=amazon-reviews-2023-cds-vinyl-5core-v1 --expect-active=amazon-reviews-2023-cds-vinyl-5core-v1
+npm.cmd run dataset:rollback -- --to=amazon-reviews-2023-cds-vinyl-5core-v2
+npm.cmd run dataset:rollback:apply -- --to=amazon-reviews-2023-cds-vinyl-5core-v2
+npm.cmd run dataset:verify -- --dataset-key=amazon-reviews-2023-cds-vinyl-5core-v2 --expect-active=amazon-reviews-2023-cds-vinyl-5core-v2
 npm.cmd run dataset:activate:apply
-npm.cmd run dataset:verify
+npm.cmd run dataset:verify -- --dataset-key=amazon-reviews-2023-cds-vinyl-5core-v3 --expect-active=amazon-reviews-2023-cds-vinyl-5core-v3
 ```
 
-If an inactive unsealed v2 import cannot resume:
+If an inactive unsealed current-release import cannot resume:
 
 ```powershell
 npm.cmd run dataset:clean:failed
 npm.cmd run dataset:clean:failed:apply
 ```
 
-Never run failed-import cleanup against a sealed or active version. Never delete v1, legacy records, or customer state to repair v2.
+Never run failed-import cleanup against a sealed or active version. Never delete v1, v2, v3, legacy records, or customer state to repair a release.
+
+## V3 Release-Hardening Validation Record
+
+Observed on 2026-08-09 against active `amazon-reviews-2023-cds-vinyl-5core-v3`:
+
+- focused backend tests passed 74 with one intentional Windows file-symlink-permission skip; the full backend suite passed 220 with the same one skip, with zero failures;
+- ESLint and the Next.js 16.2.12 production build passed, generating all 23 application pages;
+- the legacy artwork verifier passed 116 files / 7,562,124 bytes and the dataset artwork verifier passed 208 files / 14,086,838 bytes;
+- the complete v3 verifier passed while v3 was active, and the complete v2 rollback-target verifier independently passed while v3 remained active; the v1 identity-base verifier also passed;
+- all 14 declared MongoDB collections reported no missing indexes; aggregate readiness reported 2,387 subjects, 1,708 eligible subjects, 2,305 products, and 20,288 ratings without running a recommender model;
+- the current-release import and v3-to-v2 rollback commands passed in dry-run mode; no database write rehearsal was performed because lifecycle transaction behavior did not change;
+- frontend unit tests passed 93/93, ESLint passed, and the Vite 8.1 production build passed. Broader dataset E2E was not applicable because neither frontend source nor the API/data contract changed;
+- the intended tracked/untracked set contained no raw/staging/cache/temp artifacts, credential or private-review patterns, secret-derived public fingerprint, non-EOL control bytes, or EOL-only files. Immutable v2/v3 JSON evidence is explicitly pinned to LF.
 
 ## Failure And Recovery Matrix
 
@@ -199,16 +221,16 @@ Never run failed-import cleanup against a sealed or active version. Never delete
 | Wrong/truncated source or staging | Byte count, SHA-256, bounded parser, gzip error | Reacquire the pinned input or rebuild ignored staging; never amend evidence silently. |
 | Changed config/identity/art under same key | Ownership and digest mismatch | Create/review a new dataset key; never rewrite the sealed key. |
 | Interrupted import | Unsealed inactive `importing`/`failed` state | Fix cause and rerun; use exact failed cleanup only when resume is inappropriate. |
-| Partial/stale persisted rows | Exact counts and digest sets fail | Keep v1 active, clean only unsealed v2, rebuild, and reverify. |
+| Partial/stale persisted rows | Exact counts and digest sets fail | Keep the current release active, clean only the exact unsealed inactive target, rebuild, and reverify. |
 | MusicBrainz/CAA error | Retry/cache, explicit `error`, no activation with errors | Resume enrichment; unresolved/ambiguous remain placeholders. |
 | Local artwork mismatch | Exact accepted coverage plus hash/dimension/orphan check | Republish from the reviewed manifest; do not hand-edit assets. |
-| API/UI regression | Separate inactive import and transactional pointer | Roll back to v1, verify state, repair, then reactivate v2. |
+| API/UI regression | Separate inactive import and transactional pointer | Roll back v3 to v2, verify v2 while active, repair, then reactivate and verify v3. |
 | Product absent after rollback | Stable IDs and non-destructive state | Hide/mark unavailable; restore visibility when product returns; never remap. |
 | Test cleanup targets evidence | Executable protected-collection policy | Stop; tests require dataset collections disjoint from deletion targets. |
 
-## Validation And Migration Record
+## Historical V2 Validation And Migration Record
 
-Observed on 2026-08-08:
+Observed on 2026-08-08. This block preserves v2/v1 migration history and does not supersede the current v3 runbook:
 
 - v1 preflight verifier: all checks passed with 2,305 products, 20,288 ratings, 2,387 subjects, 116 legacy records, and three showcase users;
 - v2 preparation determinism: repeated normal preparation kept product/rating hashes, config, identity, artwork, counts, and acceptance identical; only `generatedAt` changed;
@@ -218,7 +240,7 @@ Observed on 2026-08-08:
 - MongoDB indexes and post-E2E protected counts: all 14 declared collections reported no missing indexes; cleanup dry-run ended at zero `e2e_` users/residue while preserving `vinylRecords` 2,421, `datasetProducts` 2,305, `datasetImports` 2, and `historicalAmazonRatings` 40,576 (v1 plus v2);
 - backend tests/lint/build: 179/179 Node tests passed, ESLint passed, and the Next.js 16.2.12 production build passed on 2026-08-08;
 - frontend unit/seed-E2E/dataset-E2E/lint/build: 93/93 unit tests passed, seed E2E passed 67 with one intentional skip, deterministic dataset E2E passed 10 with two mobile-only skips, the dedicated accessibility suite passed 20/20, ESLint passed, and the Vite 8.1.0 production build passed on 2026-08-08;
-- live API/browser/artwork smoke: MongoDB mode returned research-only catalog metadata with 2,305 products, Vinyl facets, null commerce fields, accepted local fallback, unresolved 404 placeholder behavior, and Admin v2 source/version/counts; live browser checks passed catalog, local fallback, unresolved placeholder, mobile keyboard, Admin read-only rows, and authenticated wishlist/rating behavior.
+- live API/browser/artwork smoke: MongoDB mode returned research-only catalog metadata with 2,305 products, Vinyl facets, null commerce fields, accepted local fallback, unresolved 404 placeholder behavior, and the then-current Admin v2 source/version/counts; live browser checks passed catalog, local fallback, unresolved placeholder, mobile keyboard, Admin read-only rows, and authenticated wishlist/rating behavior.
 
 ## Recommender Gate
 

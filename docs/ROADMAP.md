@@ -17,7 +17,7 @@ This file records current completion and deferred scope. It does not authorize c
 - Exact-origin credentialed CORS, bounded inputs, safe errors, per-identity event cap, and transaction-backed consistency.
 - Backend tests, lint, production build, Atlas connectivity, and all declared index groups verified.
 - BFP-07 administrator catalog APIs and the matching FFP-07 administrator workspace; FFP-08 client-only simulated checkout.
-- DATA-00 through DATA-15 corrected v2 external-dataset integration, verified 2026-08-08: pinned Amazon source, controlled taxonomy/year semantics, stable cross-version identities, immutable sealed storage, 208 accepted/6 ambiguous/2,091 unresolved artwork decisions with exact local fallbacks, 2,305 research products, 20,288 isolated ratings, v1/legacy rollback, exact-three-user preservation, separate seed/dataset browser coverage, and readiness-only evaluation adapter.
+- DATA-00 through DATA-15 corrected v3 external-dataset integration: pinned Amazon source, controlled taxonomy/year semantics, authoritative original-year hydration for 208 accepted matches, stable cross-version identities, immutable sealed storage, exact local fallbacks, 2,305 active research products, 20,288 isolated ratings, v2 immediate rollback, v1/legacy preservation, exact-three-user verification, separate seed/dataset browser coverage, and a readiness-only evaluation adapter. The 2026-08-08 v2 migration record remains historical evidence.
 
 ## Deferred And Not Started
 
