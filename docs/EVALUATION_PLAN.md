@@ -4,7 +4,7 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 
 ## Current Automated Evidence
 
-| Check | Evidence through 2026-08-02 |
+| Check | Evidence through 2026-08-08 |
 | --- | --- |
 | Literal search, repeated facets, sorting, pagination, and validation | Passing Node tests. |
 | Public product shape | Passing Node test. |
@@ -24,14 +24,16 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 | Catalog import validation, deduplication, ownership, transactions, external-client limits, and artwork provenance | Passing Node tests plus a live no-write Atlas preview. |
 | Exact 116-file local artwork parity, hashes, JPEG dimensions, orphan detection, redirect security, canonical-ID route mapping, immutable headers, and browser decoding | Passing verifier, Node tests, live HTTP enumeration, and frontend Playwright coverage on 2026-07-21. |
 | Dataset relevance, minimum evidence, temporal split, leakage checks, deterministic baselines, and aggregate-only output | Passing Node tests plus a live report generation. |
-| Amazon source hashes/config digest, deterministic staging, active-version counts, pseudonym format, historical indexes/no-TTL, 116-record legacy preservation, and exact three-customer preservation | Passing DATA integration tests plus live `dataset:verify`, `dataset:evaluation:readiness`, and Atlas index verification. |
-| ESLint | Passed. |
-| Next.js production build | Passed with all catalog, recommendation, authentication, and customer-state routes. |
+| Amazon source/staging/config/identity/artwork ownership, deterministic record digests, active-version counts, stable v1 IDs, pseudonym format, historical indexes/no-TTL, exact accepted/local artwork coverage, v1/legacy preservation, and exact three-customer preservation | Passing DATA integration tests plus live `dataset:artwork:verify`, `dataset:verify`, `dataset:evaluation:readiness`, activation/v1 rollback/reactivation rehearsal, and Atlas index verification. |
+| Full backend behavior suite | 179/179 Node tests passed on 2026-08-08, including immutable evidence ownership, cleanup policy, and lifecycle predicates. |
+| ESLint | Passed on 2026-08-08. |
+| Next.js production build | Passed on 2026-08-08 with all catalog, recommendation, authentication, customer-state, dataset, and artwork routes. |
 
 Run:
 
 ```bash
 npm run catalog:artwork:verify
+npm run dataset:artwork:verify
 npm run dataset:verify
 npm run dataset:evaluation:readiness
 npm test

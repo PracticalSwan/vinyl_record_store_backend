@@ -8,9 +8,9 @@ This service is the core of the demo. It owns the product catalog, the recommend
 
 Three things worth knowing up front:
 
-- MongoDB mode currently activates a reproducible Amazon Reviews 2023 vinyl subset with 2,305 products and 20,288 isolated historical ratings from 2,387 pseudonymous subjects. The original 116 reviewed records remain the offline seed and reversible legacy fallback.
+- MongoDB mode currently activates the immutable `amazon-reviews-2023-cds-vinyl-5core-v2` research catalog: 2,305 products in `datasetProducts` and 20,288 isolated historical ratings from 2,387 pseudonymous subjects. The previous v1 import and the original 116 reviewed records remain available for non-destructive rollback.
 - Recommendations remain deterministic `content-demo-v1` behavior: the restricted legacy showcase is `demo-profile`, verified customers use a session-owned `cold-start` path, and visitors receive an `anonymous-fallback`. Preferences and behavior do not affect ranking yet, and no recommendation-quality claim is made.
-- The 116 legacy records retain their reviewed MusicBrainz/Cover Art Archive mappings and verified local JPEG fallbacks. Dataset products do not reuse unreviewed Amazon images; nullable commercial fields remain unknown and non-purchasable. Historical-data `ready` status is not a quality score, and the live evaluator still reports `insufficient-evidence`.
+- The 116 legacy records retain their reviewed MusicBrainz/Cover Art Archive mappings and verified local JPEG fallbacks. V2 has 208 strict accepted artwork decisions with a separate verified local fallback set; ambiguous or unresolved rows use the generic placeholder and never borrow legacy art. V2 does not reuse Amazon images. Nullable commercial fields remain unknown and non-purchasable. Historical-data `ready` status is not a quality score, and the live evaluator still reports `insufficient-evidence`.
 
 ## API
 
@@ -57,7 +57,11 @@ The current external-dataset workflow is hash-pinned, preview-first, and reversi
 ```powershell
 npm.cmd run dataset:profile
 npm.cmd run dataset:prepare
+npm.cmd run dataset:artwork:enrich
+npm.cmd run dataset:artwork:download
+npm.cmd run dataset:artwork:verify
 npm.cmd run dataset:import
+npm.cmd run dataset:import:apply
 npm.cmd run dataset:activate:apply
 npm.cmd run dataset:verify
 npm.cmd run dataset:evaluation:readiness
@@ -69,7 +73,7 @@ Catalog imports default to a no-write preview: `npm run catalog:import -- --dry-
 
 Artwork curation is also preview-first. `npm run catalog:artwork:propose` produces an ignored JSON report and visual gallery. After human review resolves every close match, `npm run catalog:artwork:build` validates the six explicit manual-review exceptions and regenerates `src/data/artworkManifest.js`. The seed migration manages this reviewed manifest, preserves immutable slugs and soft-delete tombstones, and remains idempotent.
 
-Run `npm run catalog:artwork:download` to stage, validate, and publish local JPEG fallbacks from that reviewed source manifest. The command is idempotent and reuses valid files; `--refresh` forces retrieval and `--prune` removes only verified orphan JPEGs. Run `npm run catalog:artwork:verify` for the non-network release check. It requires exact catalog/source/local ID parity, all 116 hashes and dimensions, and no orphan artwork files.
+Run `npm run catalog:artwork:download` to stage, validate, and publish local JPEG fallbacks from that reviewed source manifest. The command is idempotent and reuses valid files; `--refresh` forces retrieval and `--prune` removes only verified orphan JPEGs. Run `npm run catalog:artwork:verify` for the non-network legacy release check. It requires exact catalog/source/local ID parity, all 116 hashes and dimensions, and no orphan artwork files. Run `npm run dataset:artwork:verify` for the separate accepted-v2 set.
 
 ## Showcase accounts
 
@@ -78,13 +82,13 @@ Two roles exist: `customer` and `admin`. Exactly three showcase customer account
 - Customer (jazz): `jazzlistener` / `jazz-groove-2026`
 - Customer (rock): `rockcollector` / `rock-groove-2026`
 - Customer (soul): `soulseeker` / `soul-groove-2026`
-- Admin: `admin` / `groovehaus-admin`
+- Admin: environment-backed through `AUTH_DEMO_ADMIN_USERNAME`, `AUTH_DEMO_ADMIN_PASSWORD_HASH`, and `AUTH_DEMO_ADMIN_PASSWORD_SALT`; no administrator password is committed.
 
 Showcase customer logins require MongoDB mode. Seed the accounts with `npm run db:seed:users:apply`. Registered customers choose their own credentials through the frontend.
 
 ## Project structure
 
-- `public/artwork/` — 116 immutable content-addressed JPEG fallbacks; provenance lives in `src/data/localArtworkManifest.js`.
+- `public/artwork/` — 116 immutable legacy JPEG fallbacks plus the separate accepted-v2 set under `public/artwork/dataset/`; provenance lives in the two generated local-artwork manifests.
 - `src/app/api/` — Next.js route handlers.
 - `src/services/` — catalog, auth, customer-state, and account logic.
 - `src/lib/catalog/` and `src/lib/external/` — import validation and approved metadata clients.

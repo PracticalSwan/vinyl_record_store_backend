@@ -7,6 +7,7 @@ import {
 } from "../models/constants.js";
 import { Counter } from "../models/Counter.js";
 import { DatasetImport } from "../models/DatasetImport.js";
+import { DatasetProduct } from "../models/DatasetProduct.js";
 import { VinylRecord } from "../models/VinylRecord.js";
 import { slugifyProduct, toAdminProduct, toPublicProduct } from "./catalogMapping.js";
 
@@ -24,7 +25,7 @@ function eraRange(era) {
 }
 
 export function buildMongoCatalogFilter(query, activeDataset = { datasetKey: null }) {
-  const filter = { deletedAt: null, ...activeDataset };
+  const filter = { deletedAt: null, datasetKey: activeDataset.datasetKey ?? null };
   const clauses = [];
   if (query.q) {
     const pattern = contains(query.q);
@@ -71,7 +72,7 @@ const dynamicCounts = (preferred, source) => {
 
 async function readFacets(model, activeDataset) {
   const [facets = {}] = await model.aggregate([
-    { $match: { deletedAt: null, ...activeDataset } },
+    { $match: { deletedAt: null, datasetKey: activeDataset.datasetKey ?? null } },
     {
       $facet: {
         genres: [{ $group: { _id: "$genre", count: { $sum: 1 } } }],
@@ -106,6 +107,7 @@ export function createMongoCatalogRepository(
   model = VinylRecord,
   connect = connectMongoDB,
   datasetImportModel = model === VinylRecord ? DatasetImport : null,
+  datasetProductModel = model === VinylRecord ? DatasetProduct : model,
 ) {
   const runMongo = async (operation) => {
     try {
@@ -118,61 +120,96 @@ export function createMongoCatalogRepository(
   };
 
   const activeDatasetFilter = async () => {
-    if (!datasetImportModel) return { datasetKey: null };
+    if (!datasetImportModel) return { datasetKey: null, productCollection: "vinylRecords" };
     const active = await datasetImportModel
-      .findOne({ active: true, status: "active" }, { datasetKey: 1 })
+      .findOne({ active: true, status: "active" }, { datasetKey: 1, productCollection: 1 })
       .lean()
       .exec();
-    return { datasetKey: active?.datasetKey ?? null };
+    return {
+      datasetKey: active?.datasetKey ?? null,
+      productCollection: active?.productCollection || "vinylRecords",
+    };
   };
+
+  const activeCatalogModel = (activeDataset) => (
+    activeDataset.productCollection === "datasetProducts" ? datasetProductModel : model
+  );
 
   return {
     source: "mongodb",
 
     findByPublicId: (publicId) => runMongo(async () => {
       const activeDataset = await activeDatasetFilter();
+      const catalogModel = activeCatalogModel(activeDataset);
       return toPublicProduct(
-        await model.findOne({ publicId, deletedAt: null, ...activeDataset }).lean().exec(),
+        await catalogModel.findOne({
+          publicId,
+          deletedAt: null,
+          datasetKey: activeDataset.datasetKey,
+        }).lean().exec(),
       );
     }),
 
     findProducts: (query) => runMongo(async () => {
       const activeDataset = await activeDatasetFilter();
+      const catalogModel = activeCatalogModel(activeDataset);
       const filter = buildMongoCatalogFilter(query, activeDataset);
       const [items, total, facets] = await Promise.all([
-        model.find(filter)
+        catalogModel.find(filter)
           .sort(mongoSort(query.sort))
           .skip((query.page - 1) * query.limit)
           .limit(query.limit)
           .lean()
           .exec(),
-        model.countDocuments(filter).exec(),
-        readFacets(model, activeDataset),
+        catalogModel.countDocuments(filter).exec(),
+        readFacets(catalogModel, activeDataset),
       ]);
-      return { items: items.map(toPublicProduct), total, facets };
+      return {
+        items: items.map(toPublicProduct),
+        total,
+        facets,
+        catalogMode: activeDataset.datasetKey ? "research-only" : "commerce-preview",
+      };
     }),
 
-    listRecommendationCandidates: () => runMongo(async () => (
-      await model.find({ deletedAt: null, ...await activeDatasetFilter() })
+    listRecommendationCandidates: () => runMongo(async () => {
+      const activeDataset = await activeDatasetFilter();
+      return (
+      await activeCatalogModel(activeDataset).find({
+        deletedAt: null,
+        datasetKey: activeDataset.datasetKey,
+      })
         .sort({ publicId: 1 })
         .limit(MAX_RECOMMENDATION_CANDIDATES)
         .lean()
         .exec()
-    ).map(toPublicProduct)),
+      ).map(toPublicProduct);
+    }),
 
     // --- Administrator surface (BFP-07). Reads include soft-deleted rows when
     // asked; writes use compare-and-set on Mongoose-managed updatedAt. ---
 
     listProductsForAdmin: ({ page = 1, limit = 20, includeDeleted = false } = {}) => runMongo(async () => {
-      const filter = includeDeleted ? {} : { deletedAt: null };
-      const [items, total] = await Promise.all([
-        model.find(filter)
-          .sort({ publicId: 1 })
-          .skip((page - 1) * limit)
-          .limit(limit)
-          .lean(),
-        model.countDocuments(filter),
+      const activeDataset = await activeDatasetFilter();
+      const catalogModel = activeCatalogModel(activeDataset);
+      const activeFilter = {
+        datasetKey: activeDataset.datasetKey,
+        ...(includeDeleted ? {} : { deletedAt: null }),
+      };
+      const ordinaryFilter = {
+        datasetKey: null,
+        ...(includeDeleted ? {} : { deletedAt: null }),
+      };
+      const [activeItems, ordinaryItems] = await Promise.all([
+        activeDataset.datasetKey
+          ? catalogModel.find(activeFilter).sort({ publicId: 1 }).lean()
+          : Promise.resolve([]),
+        model.find(ordinaryFilter).sort({ publicId: 1 }).lean(),
       ]);
+      const combined = [...ordinaryItems, ...activeItems]
+        .sort((left, right) => left.publicId - right.publicId);
+      const items = combined.slice((page - 1) * limit, page * limit);
+      const total = combined.length;
       return {
         items: items.map(toAdminProduct),
         total,
@@ -181,24 +218,33 @@ export function createMongoCatalogRepository(
       };
     }),
 
-    findProductForAdmin: (publicId) => runMongo(async () => toAdminProduct(
-      await model.findOne({ publicId }).lean(),
-    )),
+    findProductForAdmin: (publicId) => runMongo(async () => {
+      const activeDataset = await activeDatasetFilter();
+      const catalogModel = activeCatalogModel(activeDataset);
+      const active = await catalogModel.findOne({
+        publicId,
+        datasetKey: activeDataset.datasetKey,
+      }).lean();
+      if (active) return toAdminProduct(active);
+      return toAdminProduct(await model.findOne({ publicId, datasetKey: null }).lean());
+    }),
 
     // Raw full-doc read for catalog import planning (duplicate/conflict
     // detection needs provenance, artwork, and soft-delete state).
-    listAllRawForImport: () => runMongo(async () => await model.find({}).lean()),
+    listAllRawForImport: () => runMongo(async () => await model.find({ datasetKey: null }).lean()),
 
     adminSummary: () => runMongo(async () => {
       const activeDataset = await activeDatasetFilter();
+      const catalogModel = activeCatalogModel(activeDataset);
+      const activeFilter = { datasetKey: activeDataset.datasetKey };
       const [active, lowStock, outOfStock, softDeleted, withArtwork] = await Promise.all([
-        model.countDocuments({ deletedAt: null, ...activeDataset }),
-        model.countDocuments({ deletedAt: null, stock: "low", ...activeDataset }),
-        model.countDocuments({ deletedAt: null, stock: "out", ...activeDataset }),
-        model.countDocuments({ deletedAt: { $ne: null } }),
-        model.countDocuments({
+        catalogModel.countDocuments({ deletedAt: null, ...activeFilter }),
+        catalogModel.countDocuments({ deletedAt: null, stock: "low", ...activeFilter }),
+        catalogModel.countDocuments({ deletedAt: null, stock: "out", ...activeFilter }),
+        catalogModel.countDocuments({ deletedAt: { $ne: null }, ...activeFilter }),
+        catalogModel.countDocuments({
           deletedAt: null,
-          ...activeDataset,
+          ...activeFilter,
           "artwork.thumbnailUrl": { $in: [null, ""] },
         }),
       ]);

@@ -1,3 +1,5 @@
+import { hasLocalArtwork } from "../services/localArtwork.js";
+
 const valueOf = (record) => (
   typeof record?.toObject === "function" ? record.toObject() : record
 );
@@ -70,6 +72,9 @@ export function toPublicProduct(record) {
     artist: value.artist,
     genre: value.genre,
     year: value.year,
+    originalReleaseYear: value.originalReleaseYear ?? null,
+    editionReleaseYear: value.editionReleaseYear ?? null,
+    yearDisplayType: value.yearDisplayType || (value.year ? "original" : "unknown"),
     price: value.price,
     stock: value.stock,
     condition: value.condition,
@@ -85,9 +90,11 @@ export function toPublicProduct(record) {
       source: value.artwork.source,
       sourceUrl,
     } : null,
+    localArtworkAvailable: hasLocalArtwork(value.publicId ?? value.id),
     source: value.source ?? (legacy ? "demo-seed" : null),
     datasetKey: value.datasetKey ?? null,
     sourceVersion: value.sourceVersion ?? null,
+    catalogMode: value.datasetKey ? "research-only" : "commerce-preview",
     fieldOrigins: value.fieldOrigins && typeof value.fieldOrigins === "object"
       ? { ...value.fieldOrigins }
       : legacyOrigins,
@@ -104,6 +111,11 @@ export function toAdminProduct(record) {
   if (!value) return null;
   const base = toPublicProduct(value);
   const artwork = value.artwork && typeof value.artwork === "object" ? value.artwork : {};
+  const provenance = toProvenance(value.provenance).map((entry) => (
+    value.datasetKey && entry.source === "amazon-reviews-2023"
+      ? { ...entry, sourceId: null }
+      : entry
+  ));
   return {
     ...base,
     musicBrainzReleaseId: value.musicBrainzReleaseId ?? null,
@@ -115,7 +127,7 @@ export function toAdminProduct(record) {
       sourceUrl: artwork.sourceUrl ?? null,
       retrievedAt: toIso(artwork.retrievedAt),
     },
-    provenance: toProvenance(value.provenance),
+    provenance,
     updatedAt: toIso(value.updatedAt),
     deletedAt: toIso(value.deletedAt),
   };
@@ -143,6 +155,9 @@ export function toPersistenceProduct(record) {
     artist: product.artist,
     genre: product.genre,
     year: product.year,
+    originalReleaseYear: product.originalReleaseYear,
+    editionReleaseYear: product.editionReleaseYear,
+    yearDisplayType: product.yearDisplayType,
     price: product.price,
     currency: product.currency,
     stock: product.stock,

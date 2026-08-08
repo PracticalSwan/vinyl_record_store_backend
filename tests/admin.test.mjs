@@ -109,8 +109,23 @@ test("admin summary exposes aggregate active-dataset status without reviewer ide
     auditRepository: { listRecentAuditActions: async () => [] },
     datasetRepository: { activeStatus: async () => dataset },
   });
-  assert.deepEqual(result.dataset, dataset);
+  assert.deepEqual(result.dataset, { ...dataset, catalogMode: "commerce-preview" });
   assert.equal(JSON.stringify(result).includes("userKey"), false);
+});
+
+test("admin summary labels datasetProducts as research-only", async () => {
+  const dataset = {
+    datasetKey: "amazon-reviews-2023-cds-vinyl-5core-v2",
+    productCollection: "datasetProducts",
+    counts: { products: 2305, users: 2387, ratings: 20288 },
+  };
+  const result = await getAdminSummary({
+    environment: mongoEnvironment,
+    repository: { adminSummary: async () => ({ activeProducts: 2305 }) },
+    auditRepository: { listRecentAuditActions: async () => [] },
+    datasetRepository: { activeStatus: async () => dataset },
+  });
+  assert.equal(result.dataset.catalogMode, "research-only");
 });
 
 test("admin product list paginates and get returns a product or not-found", async () => {

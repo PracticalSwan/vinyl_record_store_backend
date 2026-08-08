@@ -5,6 +5,9 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   AMAZON_DATASET_KEY,
+  AMAZON_IDENTITY_NAMESPACE,
+  AMAZON_PREVIOUS_DATASET_KEY,
+  canonicalSourceIdentityKey,
   createDatasetUserKey,
   normalizeAmazonProduct,
   pseudonymKeyFingerprint,
@@ -16,11 +19,14 @@ import {
   verifySourceFile,
   sha256File,
 } from "../src/lib/dataset/amazonReviews2023.js";
+import { withRecordDigest } from "../src/lib/dataset/integrity.js";
 
 const ROOT = process.cwd();
 const DATA_ROOT = path.join(ROOT, "data", "amazon-reviews-2023");
 const MANIFEST_PATH = path.join(DATA_ROOT, "source-manifest.json");
 const CONFIG_PATH = path.join(DATA_ROOT, "transformation-config.json");
+const IDENTITY_REGISTRY_PATH = path.join(DATA_ROOT, "product-identity-registry.json");
+const ARTWORK_ENRICHMENT_PATH = path.join(DATA_ROOT, "artwork-enrichment-v2.json");
 const STAGING_ROOT = path.join(DATA_ROOT, "staging", AMAZON_DATASET_KEY);
 
 function option(name, fallback) {
@@ -40,6 +46,7 @@ const targetProducts = option("products", transformationConfig.targetProducts);
 const maximumUsers = option("users", transformationConfig.maximumUsers);
 const minimumCore = option("core", transformationConfig.trainCoreMinimum);
 const profileOnly = process.argv.includes("--profile-only");
+const baseOnly = process.argv.includes("--base-only") || profileOnly;
 const secret = process.env.DATASET_PSEUDONYM_KEY || process.env.AUTH_SECRET;
 if (!profileOnly && (!secret || secret.length < 32)) {
   throw new Error("Staging requires DATASET_PSEUDONYM_KEY or AUTH_SECRET with at least 32 characters.");
@@ -53,6 +60,46 @@ const verified = {
   metadata: await verifySourceFile(metadataPath, manifest.files.metadata),
   ratings: await verifySourceFile(ratingsPath, manifest.files.ratings),
 };
+
+const identityRegistry = JSON.parse(await readFile(IDENTITY_REGISTRY_PATH, "utf8"));
+const identityEntriesDigest = createHash("sha256")
+  .update(JSON.stringify(identityRegistry.entries || []))
+  .digest("hex");
+if (
+  identityRegistry.identityNamespace !== AMAZON_IDENTITY_NAMESPACE
+  || identityRegistry.derivedFromDatasetKey !== AMAZON_PREVIOUS_DATASET_KEY
+  || identityRegistry.entryCount !== identityRegistry.entries?.length
+  || identityRegistry.entriesDigest !== identityEntriesDigest
+) {
+  throw new Error("The product identity registry is invalid or belongs to another source boundary.");
+}
+const identityBySourceKey = new Map(identityRegistry.entries.map((entry) => [entry.sourceIdentityKey, entry]));
+if (identityBySourceKey.size !== identityRegistry.entries.length) {
+  throw new Error("The product identity registry contains duplicate source identities.");
+}
+
+let artworkEnrichment = {
+  schemaVersion: 1,
+  datasetKey: AMAZON_DATASET_KEY,
+  entries: [],
+  counts: { accepted: 0, ambiguous: 0, unresolved: 0, error: 0 },
+};
+if (!baseOnly) {
+  artworkEnrichment = JSON.parse(await readFile(ARTWORK_ENRICHMENT_PATH, "utf8"));
+  if (artworkEnrichment.datasetKey !== AMAZON_DATASET_KEY || !Array.isArray(artworkEnrichment.entries)) {
+    throw new Error("The artwork enrichment manifest is invalid or belongs to another dataset version.");
+  }
+}
+const artworkEntriesDigest = createHash("sha256")
+  .update(JSON.stringify(artworkEnrichment.entries))
+  .digest("hex");
+if (!baseOnly && artworkEnrichment.entriesDigest !== artworkEntriesDigest) {
+  throw new Error("The artwork enrichment manifest digest is invalid.");
+}
+const artworkByPublicId = new Map(artworkEnrichment.entries.map((entry) => [entry.publicId, entry]));
+if (artworkByPublicId.size !== artworkEnrichment.entries.length) {
+  throw new Error("The artwork enrichment manifest contains duplicate public IDs.");
+}
 
 async function writeJsonl(filePath, rows) {
   const output = createWriteStream(filePath, { encoding: "utf8" });
@@ -95,6 +142,11 @@ const metadataCoverage = {
 };
 const candidateByExternalItemKey = new Map();
 let duplicateVinylMetadataRows = 0;
+const occupiedIds = new Set([
+  ...Array.from({ length: 245 }, (_, index) => index),
+  ...identityRegistry.entries.map((entry) => entry.publicId),
+]);
+const unregisteredCandidateKeys = new Set();
 for await (const metadata of readMetadataRows(metadataPath)) {
   metadataCount += 1;
   if (!ratedItems.has(metadata.parent_asin)) continue;
@@ -105,8 +157,18 @@ for await (const metadata of readMetadataRows(metadataPath)) {
   if (Array.isArray(metadata.images) && metadata.images.length) metadataCoverage.images += 1;
   if (Array.isArray(metadata.categories) && metadata.categories.length) metadataCoverage.categories += 1;
   if (metadata.details && typeof metadata.details === "object") metadataCoverage.details += 1;
-  const normalized = normalizeAmazonProduct(metadata, 100_000);
+  const sourceIdentityKey = canonicalSourceIdentityKey(metadata.parent_asin);
+  if (!sourceIdentityKey) continue;
+  const registered = identityBySourceKey.get(sourceIdentityKey) || null;
+  const publicId = registered?.publicId || stableProductPublicId(sourceIdentityKey, occupiedIds);
+  const artworkEntry = artworkByPublicId.get(publicId);
+  const artworkMatch = artworkEntry?.status === "accepted" ? artworkEntry : null;
+  const normalized = normalizeAmazonProduct(metadata, publicId, {
+    stableSlug: registered ? `record-${publicId}` : null,
+    artworkMatch,
+  });
   if (!normalized) continue;
+  if (!registered) unregisteredCandidateKeys.add(sourceIdentityKey);
   vinylCandidateCount += 1;
   if (candidateByExternalItemKey.has(normalized.externalItemKey)) {
     duplicateVinylMetadataRows += 1;
@@ -121,19 +183,16 @@ for await (const metadata of readMetadataRows(metadataPath)) {
 const candidates = [...candidateByExternalItemKey.values()];
 candidates.sort((a, b) => a.externalItemKey.localeCompare(b.externalItemKey));
 const products = candidates.slice(0, targetProducts);
-const occupiedIds = new Set(Array.from({ length: 245 }, (_, index) => index));
 const productByAsin = new Map();
 for (const product of products) {
   const parentAsin = product.provenance[0].sourceId;
-  product.publicId = stableProductPublicId(parentAsin, occupiedIds);
-  product.slug = `${product.slug.replace(/-\d+$/, "")}-${product.publicId}`;
   productByAsin.set(parentAsin, product);
 }
 
 const rawUsers = new Map();
 let selectedRatingRows = 0;
 let duplicateSelectedUserItems = 0;
-let sourceRow = 1;
+let sourceRow = 0;
 for await (const row of readRatingRows(ratingsPath)) {
   sourceRow += 1;
   const product = productByAsin.get(row.parentAsin);
@@ -179,7 +238,7 @@ for (const user of userCandidates.slice(0, maximumUsers)) {
       split: row.split,
       verifiedPurchase: null,
       sourceRow: row.sourceRow,
-      schemaVersion: 1,
+      schemaVersion: 2,
       qualityFlags: ["verified-purchase-unavailable-in-rating-only-source"],
   })));
 }
@@ -187,6 +246,25 @@ stagedRatings = trainCore(stagedRatings, minimumCore);
 const activeUserKeys = new Set(stagedRatings.map((row) => row.userKey));
 const activeProductIds = new Set(stagedRatings.map((row) => row.productPublicId));
 const stagedProducts = products.filter((product) => activeProductIds.has(product.publicId));
+const missingRegistryProducts = stagedProducts.filter((product) => !identityBySourceKey.has(product.externalItemKey));
+if (missingRegistryProducts.length) {
+  throw new Error(
+    `${missingRegistryProducts.length} staged product(s) are missing stable identity-registry entries. `
+    + "Review and extend the registry before creating a new immutable dataset version.",
+  );
+}
+if (!baseOnly) {
+  const stagedIdSet = new Set(stagedProducts.map((product) => product.publicId));
+  if (
+    artworkEnrichment.entries.length !== stagedProducts.length
+    || artworkEnrichment.entries.some((entry) => !stagedIdSet.has(entry.publicId))
+  ) {
+    throw new Error("Artwork enrichment coverage does not exactly match the staged product set.");
+  }
+}
+
+const digestedProducts = stagedProducts.map(withRecordDigest);
+stagedRatings = stagedRatings.map(withRecordDigest);
 stagedRatings.sort((a, b) => (
   a.userKey.localeCompare(b.userKey)
   || a.occurredAt.localeCompare(b.occurredAt)
@@ -197,6 +275,69 @@ const splitCounts = stagedRatings.reduce((result, row) => {
   result[row.split] += 1;
   return result;
 }, { train: 0, validation: 0, test: 0 });
+function countValues(values) {
+  return Object.fromEntries([...values.reduce((counts, value) => {
+    const key = value === null || value === undefined || value === "" ? "Unresolved" : String(value);
+    counts.set(key, (counts.get(key) || 0) + 1);
+    return counts;
+  }, new Map())].sort(([left], [right]) => left.localeCompare(right)));
+}
+
+const stagedRatingDistribution = Object.fromEntries([1, 2, 3, 4, 5].map((value) => [
+  value,
+  stagedRatings.filter((row) => row.rating === value).length,
+]));
+const artistQuality = stagedProducts.reduce((counts, product) => {
+  if (product.artist) {
+    const cleaned = product.qualityFlags.includes("artist-role-markers-removed")
+      || product.qualityFlags.includes("artist-normalized-various-artists");
+    counts[cleaned ? "cleaned" : "accepted"] += 1;
+  } else if (product.qualityFlags.includes("artist-rejected-ambiguous-multi-credit")) {
+    counts.ambiguous += 1;
+  } else {
+    counts.rejectedOrMissing += 1;
+  }
+  return counts;
+}, { accepted: 0, cleaned: 0, ambiguous: 0, rejectedOrMissing: 0 });
+const yearCoverage = stagedProducts.reduce((counts, product) => {
+  if (product.originalReleaseYear && product.editionReleaseYear) counts.originalAndEdition += 1;
+  else if (product.originalReleaseYear) counts.originalOnly += 1;
+  else if (product.editionReleaseYear) counts.editionOnly += 1;
+  else counts.unresolved += 1;
+  return counts;
+}, { originalAndEdition: 0, originalOnly: 0, editionOnly: 0, unresolved: 0 });
+const qualityFlagDistribution = countValues(stagedProducts.flatMap((product) => product.qualityFlags));
+const stagedPositiveRatings = stagedRatings.filter((row) => row.rating >= 4).length;
+const quality = {
+  canonicalGenreDistribution: countValues(stagedProducts.map((product) => product.genre)),
+  canonicalGenreCount: new Set(stagedProducts.map((product) => product.genre).filter(Boolean)).size,
+  artistQuality,
+  yearCoverage,
+  originalReleaseYearByDecade: countValues(stagedProducts.map((product) => (
+    product.year ? `${Math.floor(product.year / 10) * 10}s` : null
+  ))),
+  formatDistribution: countValues(stagedProducts.map((product) => product.format)),
+  fieldCoverage: {
+    artist: stagedProducts.filter((product) => product.artist).length,
+    canonicalGenre: stagedProducts.filter((product) => product.genre).length,
+    originalReleaseYear: stagedProducts.filter((product) => product.originalReleaseYear).length,
+    editionReleaseYear: stagedProducts.filter((product) => product.editionReleaseYear).length,
+    label: stagedProducts.filter((product) => product.label).length,
+    description: stagedProducts.filter((product) => product.description).length,
+    commercialFields: stagedProducts.filter((product) => (
+      product.price !== null || product.currency !== null || product.stock !== null || product.condition !== null
+    )).length,
+  },
+  qualityFlagDistribution,
+  ratings: {
+    distribution: stagedRatingDistribution,
+    positiveThreshold: 4,
+    positiveCount: stagedPositiveRatings,
+    positiveRate: Number((stagedPositiveRatings / stagedRatings.length).toFixed(6)),
+    rebalanced: false,
+    fabricatedNegatives: false,
+  },
+};
 const config = {
   ...transformationConfig,
   targetProducts,
@@ -204,7 +345,7 @@ const config = {
   trainCoreMinimum: minimumCore,
 };
 const report = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   datasetKey: AMAZON_DATASET_KEY,
   generatedAt: new Date().toISOString(),
   profileOnly,
@@ -236,8 +377,24 @@ const report = {
     ratings: stagedRatings.length,
     splits: splitCounts,
   },
+  quality,
   config,
-  configDigest: createHash("sha256").update(JSON.stringify(config)).digest("hex"),
+  configDigest: createHash("sha256").update(JSON.stringify({
+    config,
+    identityRegistryDigest: identityRegistry.entriesDigest,
+    artworkEntriesDigest,
+  })).digest("hex"),
+  identityRegistry: {
+    entryCount: identityRegistry.entryCount,
+    entriesDigest: identityRegistry.entriesDigest,
+    unregisteredCandidateCount: unregisteredCandidateKeys.size,
+    missingStagedEntries: missingRegistryProducts.length,
+  },
+  artwork: {
+    baseOnly,
+    entriesDigest: artworkEntriesDigest,
+    counts: artworkEnrichment.counts,
+  },
   pseudonymKeyFingerprint: profileOnly ? null : pseudonymKeyFingerprint(secret),
   sourceFiles: {
     metadata: { bytes: verified.metadata.bytes, sha256: verified.metadata.sha256 },
@@ -248,7 +405,9 @@ const report = {
     trainOnlyCoreMinimum: minimumCore,
     noReviewText: true,
     noSourceReviewerIdsInStaging: true,
-    productImagesExcluded: true,
+    amazonProductImagesExcluded: true,
+    artworkEnrichmentCoverageComplete: baseOnly ? null : artworkEnrichment.entries.length === stagedProducts.length,
+    stablePublicIdsRegistered: missingRegistryProducts.length === 0,
     sourceRowsValid: true,
     stagedRowsUseOneDatasetVersion: true,
   },
@@ -258,7 +417,7 @@ if (!profileOnly) {
   await mkdir(STAGING_ROOT, { recursive: true });
   const productsPath = path.join(STAGING_ROOT, "products.jsonl");
   const ratingsOutputPath = path.join(STAGING_ROOT, "ratings.jsonl");
-  await writeJsonl(productsPath, stagedProducts);
+  await writeJsonl(productsPath, digestedProducts);
   await writeJsonl(ratingsOutputPath, stagedRatings);
   const [productsDetails, ratingsDetails] = await Promise.all([
     stat(productsPath),
@@ -269,5 +428,29 @@ if (!profileOnly) {
     ratings: { bytes: ratingsDetails.size, sha256: await sha256File(ratingsOutputPath) },
   };
   await writeFile(path.join(STAGING_ROOT, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
+  if (!baseOnly) {
+    const dataQualitySummary = {
+      schemaVersion: 2,
+      datasetKey: AMAZON_DATASET_KEY,
+      sourceRevision: manifest.sourceRevision,
+      staged: report.staged,
+      filtering: report.filtering,
+      quality: report.quality,
+      artwork: report.artwork,
+      sourceLimitations: {
+        reviewTextIncluded: false,
+        verifiedPurchaseAvailable: false,
+        amazonImagesIncluded: false,
+        commercialFieldsAvailable: false,
+        formatGranularity: "broad-vinyl-only",
+      },
+      acceptance: report.acceptance,
+    };
+    await writeFile(
+      path.join(DATA_ROOT, "data-quality-summary.json"),
+      `${JSON.stringify(dataQualitySummary, null, 2)}\n`,
+      "utf8",
+    );
+  }
 }
 console.log(JSON.stringify(report, null, 2));

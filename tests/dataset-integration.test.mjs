@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   AMAZON_DATASET_KEY,
+  AMAZON_CANONICAL_GENRES,
+  canonicalSourceIdentityKey,
   classifyVinylMetadata,
   createDatasetUserKey,
   normalizeAmazonProduct,
@@ -15,10 +17,11 @@ import {
   summarizeHistoricalEvaluationReadiness,
 } from "../src/lib/dataset/historicalEvaluationAdapter.js";
 import { datasetImportSchema } from "../src/models/DatasetImport.js";
+import { datasetProductSchema } from "../src/models/DatasetProduct.js";
 import { historicalAmazonRatingSchema } from "../src/models/HistoricalAmazonRating.js";
 import { vinylRecordSchema } from "../src/models/VinylRecord.js";
 import { buildMongoCatalogFilter } from "../src/repositories/mongoCatalogRepository.js";
-import { toPublicProduct } from "../src/repositories/catalogMapping.js";
+import { toAdminProduct, toPublicProduct } from "../src/repositories/catalogMapping.js";
 import { recommendForUser } from "../src/lib/recommender/contentBased.js";
 
 const secret = "dataset-test-secret-with-at-least-thirty-two-characters";
@@ -82,6 +85,22 @@ test("product normalization preserves source truth and does not simulate store f
   assert.equal(product.fieldOrigins.price, "unknown");
   assert.ok(product.qualityFlags.includes("source-reference-price-excluded-from-store-price"));
   assert.equal(product.provenance[0].sourceId, "B000000001");
+  assert.equal(product.originalReleaseYear, null);
+  assert.equal(product.editionReleaseYear, 1965);
+  assert.equal(product.year, null);
+  assert.equal(product.yearDisplayType, "edition");
+});
+
+test("dataset provenance keeps source identity internal to the CLI boundary", () => {
+  const product = normalizeAmazonProduct({
+    parent_asin: "B000000001",
+    title: "Internal Source Identity",
+    store: "Example Artist Format: Vinyl",
+    categories: ["CDs & Vinyl", "Jazz", "Vinyl Records"],
+    details: { Format: "Vinyl" },
+  }, 100_001);
+  assert.equal(product.provenance[0].sourceId, "B000000001");
+  assert.equal(toAdminProduct(product).provenance[0].sourceId, null);
 });
 
 test("product normalization does not treat Amazon availability dates as release years", () => {
@@ -94,12 +113,48 @@ test("product normalization does not treat Amazon availability dates as release 
   assert.equal(product.year, null);
 });
 
+test("v2 normalization rejects contaminated genres and conservative artist noise", () => {
+  const noisy = normalizeAmazonProduct({
+    parent_asin: "B000000003",
+    title: "Source Album",
+    store: "Format: Vinyl",
+    categories: ["CDs & Vinyl", "Blue Note Records", "AutoRip"],
+    details: { Format: "Vinyl" },
+  }, 100_003);
+  assert.equal(noisy.artist, null);
+  assert.equal(noisy.genre, null);
+  assert.deepEqual(noisy.genres, []);
+  assert.deepEqual(noisy.sourceMetadata.unmatchedCategories, ["Blue Note Records"]);
+  assert.ok(noisy.qualityFlags.includes("genre-unresolved"));
+
+  const geographicNavigation = normalizeAmazonProduct({
+    parent_asin: "B000000005",
+    title: "Geography Is Not A Genre",
+    store: "Example Artist Format: Vinyl",
+    categories: ["CDs & Vinyl", "International Music", "Europe", "Ireland"],
+    details: { Format: "Vinyl" },
+  }, 100_005);
+  assert.equal(geographicNavigation.genre, null);
+
+  const canonical = normalizeAmazonProduct({
+    parent_asin: "B000000004",
+    title: "Compilation",
+    store: "Various Artists (Artist), Example (Artist) & 2 more Format: Vinyl",
+    categories: ["CDs & Vinyl", "Movie Soundtracks"],
+    details: { Format: "Vinyl" },
+  }, 100_004);
+  assert.equal(canonical.artist, "Various Artists");
+  assert.ok(AMAZON_CANONICAL_GENRES.includes(canonical.genre));
+  assert.equal(canonical.genre, "Soundtrack");
+});
+
 test("pseudonyms and numeric product IDs are stable without exposing source IDs", () => {
   const first = createDatasetUserKey("SOURCE-USER-1", secret);
   const second = createDatasetUserKey("SOURCE-USER-1", secret);
   assert.equal(first, second);
   assert.match(first, /^[0-9a-f]{64}$/);
   assert.equal(first.includes("SOURCE-USER-1"), false);
+  assert.match(canonicalSourceIdentityKey("B000000001"), /^[0-9a-f]{64}$/);
 
   const occupied = new Set([stableProductPublicId("B000000001")]);
   const collisionResolved = stableProductPublicId("B000000001", occupied);
@@ -167,6 +222,9 @@ test("dataset schemas enforce version ownership and historical rows have no TTL"
   )));
   assert.ok(vinylRecordSchema.indexes().some(([fields, options]) => (
     fields.datasetKey === 1 && fields.externalItemKey === 1 && options.unique
+  )));
+  assert.ok(datasetProductSchema.indexes().some(([fields, options]) => (
+    fields.datasetKey === 1 && fields.publicId === 1 && options.unique
   )));
   assert.equal(
     historicalAmazonRatingSchema.indexes().some(([, options]) => "expireAfterSeconds" in options),

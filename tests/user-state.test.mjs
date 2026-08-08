@@ -5,6 +5,8 @@ import {
   ingestInteractions,
   mergeGuestState,
   readCart,
+  readRatings,
+  readWishlist,
   replacePreferences,
   setCart,
 } from "../src/services/userState.js";
@@ -26,6 +28,7 @@ const catalog = {
     title: `Record ${id}`,
     artist: "Artist",
     price: id === 2 ? 15.5 : 10,
+    currency: "USD",
     stock: id === 2 ? "out" : "in",
   }),
 };
@@ -44,6 +47,28 @@ test("wishlist writes use the authenticated subject and remain idempotent", asyn
   assert.deepEqual(result.productIds, [1]);
 });
 
+test("activation changes hide unavailable products without deleting saved state", async () => {
+  const state = {
+    getWishlist: async () => ({ productPublicIds: [100001, 100002] }),
+    getCart: async () => ({ items: [{ productPublicId: 100002, quantity: 2 }] }),
+    listRatings: async () => [{ productPublicId: 100002, rating: 5, updatedAt: new Date("2026-01-01") }],
+  };
+  const activeCatalog = {
+    findByPublicId: async (id) => id === 100001 ? { id, title: "Shared stable product" } : null,
+  };
+  const wishlist = await readWishlist(user, { state, catalog: activeCatalog });
+  assert.deepEqual(wishlist.productIds, [100001, 100002]);
+  assert.deepEqual(wishlist.items.map((item) => item.id), [100001]);
+
+  const cart = await readCart(user, { state, catalog: activeCatalog });
+  assert.equal(cart.items[0].product, null);
+  assert.equal(cart.items[0].quantity, 2);
+  assert.equal(cart.warnings[0].code, "PRODUCT_UNAVAILABLE");
+
+  const ratings = await readRatings(user, { state });
+  assert.deepEqual(ratings.items.map((item) => [item.productId, item.rating]), [[100002, 5]]);
+});
+
 test("cart uses absolute quantities and returns availability warnings and totals", async () => {
   let items = [];
   const state = {
@@ -56,6 +81,28 @@ test("cart uses absolute quantities and returns availability warnings and totals
   assert.equal(updated.subtotal, 46.5);
   assert.equal(updated.warnings[0].code, "OUT_OF_STOCK");
   assert.equal((await readCart(user, { state, catalog })).items[0].quantity, 3);
+});
+
+test("research-only products are rejected before cart persistence", async () => {
+  let called = false;
+  const state = {
+    setCartItem: async () => { called = true; },
+  };
+  const researchCatalog = {
+    findByPublicId: async (id) => ({
+      id,
+      title: "Research record",
+      price: null,
+      currency: null,
+      stock: null,
+      catalogMode: "research-only",
+    }),
+  };
+  await assert.rejects(
+    () => setCart(user, 100_001, 1, { state, catalog: researchCatalog }),
+    /research-catalog product is not available/i,
+  );
+  assert.equal(called, false);
 });
 
 test("preference writes cannot alter identity or role", async () => {

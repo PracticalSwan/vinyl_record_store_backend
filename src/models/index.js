@@ -2,6 +2,7 @@ export { AuditLog } from "./AuditLog.js";
 export { Cart } from "./Cart.js";
 export { Counter } from "./Counter.js";
 export { DatasetImport } from "./DatasetImport.js";
+export { DatasetProduct } from "./DatasetProduct.js";
 export { GuestMerge } from "./GuestMerge.js";
 export { HistoricalAmazonRating } from "./HistoricalAmazonRating.js";
 export { Interaction } from "./Interaction.js";
@@ -16,6 +17,7 @@ import { AuditLog } from "./AuditLog.js";
 import { Cart } from "./Cart.js";
 import { Counter } from "./Counter.js";
 import { DatasetImport } from "./DatasetImport.js";
+import { DatasetProduct } from "./DatasetProduct.js";
 import { GuestMerge } from "./GuestMerge.js";
 import { HistoricalAmazonRating } from "./HistoricalAmazonRating.js";
 import { Interaction } from "./Interaction.js";
@@ -39,5 +41,6 @@ export const ALL_MODELS = [
   Counter,
   GuestMerge,
   DatasetImport,
+  DatasetProduct,
   HistoricalAmazonRating,
 ];

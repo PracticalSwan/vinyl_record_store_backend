@@ -82,6 +82,7 @@ export const seedCatalogRepository = {
       items: filtered.slice(start, start + query.limit).map(toPublicProduct),
       total: filtered.length,
       facets: buildFacets(active),
+      catalogMode: "commerce-preview",
     };
   },
 

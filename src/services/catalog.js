@@ -89,6 +89,7 @@ export async function listProducts(
       totalPages: Math.ceil(result.total / query.limit),
       sort: query.sort,
       facets: result.facets,
+      catalogMode: result.catalogMode || result.facets?.catalogMode || "commerce-preview",
     },
     query,
   };

@@ -40,10 +40,31 @@ const provenanceSchema = new mongoose.Schema(
   { _id: false, strict: "throw" },
 );
 
-const FIELD_ORIGIN_VALUES = ["source", "derived", "simulated", "legacy", "unknown"];
+const sourceMetadataSchema = new mongoose.Schema(
+  {
+    artistRaw: { type: String, default: null, maxlength: 500 },
+    categoriesRaw: { type: [{ type: String, maxlength: 100 }], default: [] },
+    unmatchedCategories: { type: [{ type: String, maxlength: 100 }], default: [] },
+    releaseDatesRaw: {
+      releaseDate: { type: String, default: null, maxlength: 100 },
+      originalReleaseDate: { type: String, default: null, maxlength: 100 },
+      dateFirstAvailable: { type: String, default: null, maxlength: 100 },
+    },
+    artistConfidence: { type: String, default: "none", enum: ["none", "low", "medium", "high"] },
+    genreConfidence: { type: String, default: "none", enum: ["none", "low", "medium", "high"] },
+    artworkMatchStatus: {
+      type: String,
+      default: "unresolved",
+      enum: ["accepted", "ambiguous", "unresolved", "error"],
+    },
+  },
+  { _id: false, strict: "throw" },
+);
+
+const FIELD_ORIGIN_VALUES = ["source", "derived", "enriched", "simulated", "legacy", "unknown"];
 const fieldOriginsSchema = new mongoose.Schema(
   Object.fromEntries([
-    "title", "artist", "genre", "year", "price", "currency",
+    "title", "artist", "genre", "year", "originalReleaseYear", "editionReleaseYear", "price", "currency",
     "stock", "condition", "format", "label", "artwork",
   ].map((field) => [field, { type: String, enum: FIELD_ORIGIN_VALUES, default: "unknown" }])),
   { _id: false, strict: "throw" },
@@ -66,6 +87,9 @@ export const vinylRecordSchema = new mongoose.Schema(
     genre: { type: String, default: null, trim: true, maxlength: 100 },
     genres: { type: [{ type: String, trim: true, maxlength: 100 }], default: [] },
     year: { type: Number, default: null, min: 1900, max: 2100 },
+    originalReleaseYear: { type: Number, default: null, min: 1900, max: 2100 },
+    editionReleaseYear: { type: Number, default: null, min: 1900, max: 2100 },
+    yearDisplayType: { type: String, default: "unknown", enum: ["original", "edition", "unknown"] },
     price: { type: Number, default: null, min: 0, max: 1_000_000 },
     currency: { type: String, default: null, enum: ["USD"] },
     stock: { type: String, default: null, enum: PRODUCT_STOCK_LEVELS },
@@ -85,6 +109,8 @@ export const vinylRecordSchema = new mongoose.Schema(
     fieldOrigins: { type: fieldOriginsSchema, default: () => ({}) },
     qualityFlags: { type: [{ type: String, maxlength: 100 }], default: [] },
     provenance: { type: [provenanceSchema], default: [] },
+    sourceMetadata: { type: sourceMetadataSchema, default: null },
+    recordDigest: { type: String, default: null, match: /^[0-9a-f]{64}$/ },
     deletedAt: { type: Date, default: null },
   },
   {

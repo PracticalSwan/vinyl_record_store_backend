@@ -21,7 +21,7 @@ test("MusicBrainz client identifies the application and waits between uncached r
   });
   await client.findReleaseCandidates({ title: "One", artist: "Artist" });
   await client.findReleaseCandidates({ title: "Two", artist: "Artist" });
-  assert.deepEqual(waits, [1_000]);
+  assert.deepEqual(waits, [1_100]);
   assert.equal(headers[0]["User-Agent"], "GroovehausTest/1.0 (test@example.com)");
 });
 

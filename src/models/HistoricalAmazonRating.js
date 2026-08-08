@@ -25,6 +25,7 @@ export const historicalAmazonRatingSchema = new mongoose.Schema(
     sourceRow: { type: Number, required: true, min: 1, immutable: true },
     schemaVersion: { type: Number, required: true, default: 1, min: 1, immutable: true },
     qualityFlags: { type: [{ type: String, maxlength: 100 }], default: [] },
+    recordDigest: { type: String, required: true, immutable: true, match: /^[0-9a-f]{64}$/ },
   },
   { ...schemaOptions, collection: "historicalAmazonRatings" },
 );

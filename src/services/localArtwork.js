@@ -1,4 +1,5 @@
 import { localArtworkManifest } from "../data/localArtworkManifest.js";
+import { datasetLocalArtworkManifest } from "../data/datasetLocalArtworkManifest.js";
 
 const PUBLIC_ID_PATTERN = /^[1-9][0-9]{0,9}$/;
 const FILENAME_PATTERN = /^[1-9][0-9]*\.[0-9a-f]{12}\.jpg$/;
@@ -18,22 +19,27 @@ function manifestIndex(manifest) {
   return index;
 }
 
-const sharedIndex = manifestIndex(localArtworkManifest);
+const combinedManifest = Object.freeze([...localArtworkManifest, ...datasetLocalArtworkManifest]);
+const sharedIndex = manifestIndex(combinedManifest);
 
-export function createLocalArtworkRedirect(publicId, { manifest = localArtworkManifest } = {}) {
+export function hasLocalArtwork(publicId) {
+  return sharedIndex.has(String(publicId));
+}
+
+export function createLocalArtworkRedirect(publicId, { manifest = combinedManifest } = {}) {
   const value = typeof publicId === "string" ? publicId : "";
   if (!PUBLIC_ID_PATTERN.test(value)) {
     return failure(400, "ARTWORK_ID_INVALID", "Artwork ID must be a canonical positive integer.");
   }
 
-  const index = manifest === localArtworkManifest ? sharedIndex : manifestIndex(manifest);
+  const index = manifest === combinedManifest ? sharedIndex : manifestIndex(manifest);
   const entry = index.get(value);
   if (!entry) return failure(404, "ARTWORK_NOT_FOUND", "Local artwork was not found.");
 
   return {
     ok: true,
     status: 307,
-    location: `/artwork/${entry.filename}`,
+    location: entry.assetPath || `/artwork/${entry.filename}`,
     headers: {
       "Cache-Control": "public, max-age=300, must-revalidate",
       "X-Content-Type-Options": "nosniff",

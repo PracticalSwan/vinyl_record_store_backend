@@ -50,6 +50,13 @@ async function productOrThrow(productPublicId, catalog) {
   return product;
 }
 
+function purchasable(product) {
+  return Number.isFinite(product?.price)
+    && Boolean(product?.currency)
+    && ["in", "low", "out"].includes(product?.stock)
+    && product?.catalogMode !== "research-only";
+}
+
 async function resolveProducts(productPublicIds, catalog) {
   const products = await Promise.all(productPublicIds.map((id) => catalog.findByPublicId(id)));
   return products.filter(Boolean);
@@ -96,12 +103,18 @@ function cartResponse(value, products) {
         productId: item.productPublicId,
         message: `${product.title} is out of stock.`,
       });
+    } else if (!purchasable(product)) {
+      warnings.push({
+        code: "PURCHASE_UNAVAILABLE",
+        productId: item.productPublicId,
+        message: `${product.title} is available for research browsing only.`,
+      });
     }
     return {
       productId: item.productPublicId,
       quantity: item.quantity,
       product,
-      lineTotal: product ? Number((product.price * item.quantity).toFixed(2)) : null,
+      lineTotal: purchasable(product) ? Number((product.price * item.quantity).toFixed(2)) : null,
     };
   });
   return {
@@ -128,7 +141,10 @@ export async function setCart(user, productPublicId, quantity, {
   state = userStateRepository,
   catalog = getCatalogRepository(),
 } = {}) {
-  await productOrThrow(productPublicId, catalog);
+  const product = await productOrThrow(productPublicId, catalog);
+  if (!purchasable(product)) {
+    throw conflict("This research-catalog product is not available for cart or checkout actions.");
+  }
   await state.setCartItem(user.publicId, productPublicId, quantity);
   return readCart(user, { state, catalog });
 }
@@ -231,11 +247,17 @@ export async function mergeGuestState(user, input, {
   })));
   const missing = new Set(products.filter(({ product }) => !product).map(({ id }) => id));
   const stock = new Map(products.filter(({ product }) => product).map(({ id, product }) => [id, product.stock]));
+  const unavailableForPurchase = new Set(products
+    .filter(({ product }) => product && !purchasable(product))
+    .map(({ id }) => id));
 
   const filtered = {
     ...input,
     wishlist: input.wishlist.filter((id) => !missing.has(id)),
-    cart: input.cart.filter((item) => !missing.has(item.productPublicId)),
+    cart: input.cart.filter((item) => (
+      !missing.has(item.productPublicId)
+      && !unavailableForPurchase.has(item.productPublicId)
+    )),
     ratings: input.ratings.filter((item) => !missing.has(item.productPublicId)),
   };
   const warnings = [
@@ -251,6 +273,11 @@ export async function mergeGuestState(user, input, {
         productId: item.productPublicId,
         message: "An out-of-stock item remains in the merged cart for review.",
       })),
+    ...[...unavailableForPurchase].map((id) => ({
+      code: "PURCHASE_UNAVAILABLE",
+      productId: id,
+      message: "A research-catalog product was not merged into the cart.",
+    })),
   ];
   const result = await state.mergeGuestState(
     user.publicId,

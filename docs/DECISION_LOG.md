@@ -196,7 +196,7 @@ Decision: Store dataset-owned records additively, permit exactly one active `Dat
 
 Rationale: A reversible pointer gives the classroom deployment a fast recovery path, preserves stable legacy assets, and prevents one-off browser edits from breaking dataset reproducibility.
 
-Status: `amazon-reviews-2023-cds-vinyl-5core-v1` is active with 2,305 products; 116 legacy products remain preserved.
+Status: Immutable `amazon-reviews-2023-cds-vinyl-5core-v2` is active with 2,305 products; v1 and 116 legacy products remain preserved.
 
 ## BDEC-023: Isolate Historical Evidence From Customer Identity And Live Signals
 
@@ -207,3 +207,23 @@ Decision: Represent source reviewers only as keyed HMAC-SHA-256 values in `histo
 Rationale: Historical research evidence has different provenance, retention, consent, and evaluation semantics from live Groovehaus activity. Isolation prevents identity conflation and leakage while leaving a separately approvable future evaluation path.
 
 Status: Implemented in DATA-05 through DATA-13; PERS-03 through PERS-09 remain deferred.
+
+## BDEC-024: Seal V2 Rows And Enrich Artwork Conservatively
+
+Date: 2026-08-02
+
+Decision: Preserve v1 public IDs through a committed opaque identity registry, store v2 products in the separate `datasetProducts` collection, attach exact record digests, and seal a dataset key after exact-set verification. Never rewrite a sealed version. Search MusicBrainz at its published rate limit and accept artwork only for an official vinyl result with an exact normalized title, strong artist agreement, score at least 95, and one unique release group. Download every accepted Cover Art Archive 500-pixel JPEG into a separately verified content-addressed fallback set. Ambiguous, unresolved, and failed decisions never receive borrowed artwork.
+
+Rationale: A separate immutable collection prevents same-key upserts from silently changing an active research dataset. The identity registry preserves deep links and saved state across versions. Conservative artwork acceptance and exact local coverage improve availability without treating Amazon images or uncertain MusicBrainz candidates as verified facts.
+
+Status: Implemented and verified in the corrected v2 dataset closure. The storefront remains research-only; this decision does not authorize a recommender change.
+
+## BDEC-025: Require A Rehearsed V2 Lifecycle Before Publication
+
+Date: 2026-08-08
+
+Decision: Treat the corrected v2 dataset as publishable only after normal enriched preparation is deterministic, the sealed inactive import is verified while v1 remains active, activation and exact repeated import are safe, rollback to v1 preserves v2 evidence/legacy IDs/customer state without deletion, reactivation restores v2, and post-E2E cleanup leaves protected collections unchanged. Keep historical readiness aggregate-only and leave PERS-03 through PERS-09 deferred.
+
+Rationale: A final active pointer and green unit tests do not prove the transition path or customer-state boundary. The bounded rehearsal records the operational evidence required for the classroom database without introducing event sourcing, state migration, or recommendation work.
+
+Status: Verified. V2 is active with 2,305 products, 20,288 ratings, 2,387 historical subjects, 208 accepted local artwork files, exactly three showcase customers, and all dataset/index/privacy checks passing. The live rollback snapshot preserved v2 evidence, legacy IDs, showcase state, and customer collections; cleanup ended with zero `e2e_` residue.

@@ -1,6 +1,6 @@
 # Backend Requirements
 
-Requirement status reflects the integrated academic demo as of 2026-08-02.
+Requirement status reflects the integrated academic demo as of 2026-08-08.
 
 ## Requirement Status
 
@@ -19,9 +19,9 @@ Requirement status reflects the integrated academic demo as of 2026-08-02.
 | BR-011 | Optional MongoDB catalog persistence. | Implemented | Explicit data-source selection, strict models, repository parity, conflict-safe seed migration, and index verification. |
 | BR-012 | Authentication and authorization. | Implemented | Registration, seeded/registered login, signed HttpOnly sessions, logout, restoration, role checks, and account deletion. |
 | BR-013 | Preferences and ratings. | Implemented | Validated preference replacement and current rating/history mutation routes. |
-| BR-014 | Controlled catalog ingestion and artwork. | Implemented | Preview/apply CSV/JSON import, source/conflict safeguards, verified enrichment/provenance, structured public artwork, a bounded remote proxy, and one hash-verified local JPEG fallback for all 116 bundled records. |
+| BR-014 | Controlled catalog ingestion and artwork. | Implemented | Preview/apply CSV/JSON import, source/conflict safeguards, verified enrichment/provenance, structured public artwork, a bounded remote proxy, a hash-verified local JPEG fallback for all 116 legacy records, and a separate exact fallback set for every accepted v2 decision. |
 | BR-015 | Offline recommender evaluation. | Implemented | Pseudonymized dataset, evidence gate, leakage-safe split, matched baselines, and aggregate-only reporting. |
-| BR-016 | Versioned external research dataset. | Implemented | DATA-00 through DATA-15: pinned provenance/hashes, ignored raw boundary, streaming deterministic subset, nullable field origins, 2,305 active products, 20,288 isolated ratings, activation/rollback, exact-three-user verification, and readiness-only reporting. |
+| BR-016 | Versioned external research dataset. | Implemented | DATA-00 through DATA-15: pinned provenance/hashes, ignored raw boundary, streaming deterministic subset, stable cross-version IDs, exact sealed records, conservative metadata, strict reviewed artwork with complete accepted local coverage, 2,305 active products, 20,288 isolated ratings, activation/v1 rollback/reactivation, exact-three-user verification, and readiness-only reporting. |
 
 ## Non-Functional Requirements
 

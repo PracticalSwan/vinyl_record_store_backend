@@ -77,6 +77,14 @@ export async function getAdminSummary({
   if (getCatalogDataSource(environment) === "mongodb") {
     try {
       dataset = await datasetRepository.activeStatus();
+      if (dataset) {
+        dataset = {
+          ...dataset,
+          catalogMode: dataset.productCollection === "datasetProducts"
+            ? "research-only"
+            : "commerce-preview",
+        };
+      }
     } catch {
       dataset = null;
     }
@@ -267,7 +275,7 @@ export async function previewArtwork(admin, publicId, {
 } = {}) {
   const product = await repository.findProductForAdmin(publicId);
   if (!product) throw notFound("That product was not found.");
-  if (product.datasetKey) throw conflict("Dataset-managed products use the placeholder artwork policy and cannot be enriched in the browser.");
+  if (product.datasetKey) throw conflict("Dataset-managed products use the reviewed CLI enrichment manifest and cannot be enriched in the browser.");
   const resolution = await resolveArtworkForProduct(
     { title: product.title, artist: product.artist, year: product.year, musicBrainzReleaseId: product.musicBrainzReleaseId, musicBrainzReleaseGroupId: product.musicBrainzReleaseGroupId },
     { musicBrainz, coverArt },
@@ -291,7 +299,7 @@ export async function applyArtwork(admin, publicId, { releaseId, updatedAt }, {
   requireMongo(environment);
   const current = await mongoRepository.findProductForAdmin(publicId);
   if (!current) throw notFound("That product was not found.");
-  if (current.datasetKey) throw conflict("Dataset-managed products use the placeholder artwork policy and cannot be enriched in the browser.");
+  if (current.datasetKey) throw conflict("Dataset-managed products use the reviewed CLI enrichment manifest and cannot be enriched in the browser.");
   const resolution = await resolveArtworkForProduct(
     { title: current.title, artist: current.artist, year: current.year, musicBrainzReleaseId: current.musicBrainzReleaseId, musicBrainzReleaseGroupId: current.musicBrainzReleaseGroupId },
     { musicBrainz, coverArt, releaseId },

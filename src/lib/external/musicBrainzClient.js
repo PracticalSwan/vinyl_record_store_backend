@@ -1,8 +1,9 @@
 import { createJsonFileCache } from "./jsonFileCache.js";
 
 const API_ROOT = "https://musicbrainz.org/ws/2";
-const REQUEST_INTERVAL_MS = 1_000;
+const REQUEST_INTERVAL_MS = 1_100;
 const REQUEST_TIMEOUT_MS = 10_000;
+const RETRYABLE_STATUSES = new Set([429, 503]);
 const DEFAULT_USER_AGENT = "GroovehausVinyl/0.1 (https://github.com/PracticalSwan/vinyl_record_store_backend)";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -41,6 +42,14 @@ function releaseSummary(release) {
       ? release["release-group"].id
       : null,
     releaseGroupTitle: release["release-group"]?.title || null,
+    releaseGroupFirstReleaseDate: release["release-group"]?.["first-release-date"] || null,
+    primaryType: release["release-group"]?.["primary-type"] || null,
+    secondaryTypes: Array.isArray(release["release-group"]?.["secondary-types"])
+      ? [...release["release-group"]["secondary-types"]]
+      : [],
+    mediaFormats: Array.isArray(release.media)
+      ? release.media.map((medium) => medium?.format).filter(Boolean)
+      : [],
     label: (release["label-info"] || []).map((item) => item.label?.name).find(Boolean) || null,
     genres: [...(release.genres || []), ...(release["release-group"]?.genres || [])]
       .filter((item) => item?.name)
@@ -69,19 +78,30 @@ export function createMusicBrainzClient({
     const cached = await cache.get(cacheKey);
     if (cached) return cached;
 
-    const delay = Math.max(0, nextRequestAt - now());
-    if (delay) await sleep(delay);
-    nextRequestAt = now() + REQUEST_INTERVAL_MS;
     let response;
-    try {
-      response = await fetchImpl(url, {
-        headers: { Accept: "application/json", "User-Agent": applicationUserAgent },
-        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      });
-    } catch (error) {
-      throw new ExternalCatalogError(`MusicBrainz request failed: ${error.name || "network error"}.`, {
-        service: "musicbrainz",
-      });
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const delay = Math.max(0, nextRequestAt - now());
+      if (delay) await sleep(delay);
+      nextRequestAt = now() + REQUEST_INTERVAL_MS;
+      try {
+        response = await fetchImpl(url, {
+          headers: { Accept: "application/json", "User-Agent": applicationUserAgent },
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
+      } catch (error) {
+        if (attempt < 3) {
+          await sleep(1_500 * (2 ** attempt));
+          continue;
+        }
+        throw new ExternalCatalogError(`MusicBrainz request failed: ${error.name || "network error"}.`, {
+          service: "musicbrainz",
+        });
+      }
+      if (RETRYABLE_STATUSES.has(response.status) && attempt < 3) {
+        await sleep(1_500 * (2 ** attempt));
+        continue;
+      }
+      break;
     }
     if (response.status === 404) return null;
     if (!response.ok) {
@@ -96,18 +116,22 @@ export function createMusicBrainzClient({
   };
 
   return {
-    async findReleaseCandidates({ title, artist, year, limit = 5 }) {
+    async findReleaseCandidates({ title, artist, asin, year, limit = 5, vinylOnly = false, officialOnly = false }) {
       const query = [
-        `release:${JSON.stringify(title)}`,
-        `artist:${JSON.stringify(artist)}`,
+        title ? `release:${JSON.stringify(title)}` : null,
+        artist ? `artist:${JSON.stringify(artist)}` : null,
+        asin ? `asin:${String(asin)}` : null,
         year ? `date:${year}` : null,
+        vinylOnly ? "format:vinyl" : null,
+        officialOnly ? "status:official" : null,
       ].filter(Boolean).join(" AND ");
+      if (!query) throw new Error("MusicBrainz release search requires at least one supported field.");
       const payload = await request("release", { query, limit: Math.min(Math.max(limit, 1), 10) });
       return (payload?.releases || []).map(releaseSummary).filter(Boolean);
     },
     async getRelease(id) {
       if (!UUID_PATTERN.test(String(id))) throw new Error("MusicBrainz release ID is invalid.");
-      const release = await request(`release/${id}`, { inc: "artist-credits+release-groups+labels+genres" });
+      const release = await request(`release/${id}`, { inc: "artist-credits+release-groups+labels+genres+media" });
       return release ? releaseSummary(release) : null;
     },
   };

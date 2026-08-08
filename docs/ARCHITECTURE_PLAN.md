@@ -22,7 +22,7 @@ This document describes the implemented read and authenticated mutation service 
 - Authentication layer: `src/lib/auth/` for scrypt, signed cookies, sessions, roles, and recommendation-subject derivation; `src/lib/interactionCap.js` bounds interaction ingestion per identity.
 - Recommender layer: `src/lib/recommender/`.
 - Catalog ingestion layer: `src/lib/catalog/`, `src/lib/external/`, `src/services/catalogImport.js`, and the preview/apply command.
-- External dataset layer: `src/lib/dataset/`, `DatasetImport`, `HistoricalAmazonRating`, `datasetImportRepository`, and the prepare/import/activate/rollback/readiness/verify commands.
+- External dataset layer: `src/lib/dataset/`, immutable `DatasetProduct`, `DatasetImport`, `HistoricalAmazonRating`, `datasetImportRepository`, and the prepare/enrich/download/import/activate/rollback/readiness/verify commands.
 - Artwork layer: the remote proxy in `src/services/artworkImage.js` and `src/lib/external/artworkImageProxy.js`; the committed fallback verifier/downloader in `src/lib/external/localArtworkAssets.js` and `scripts/download-local-artwork.mjs`; and the stable-ID redirect in `src/services/localArtwork.js`.
 - Error/response helpers: `src/lib/errors.js` and `src/lib/http.js`.
 - Default data source: `src/data/records.js` through `seedCatalogRepository.js`.
@@ -39,7 +39,7 @@ This document describes the implemented read and authenticated mutation service 
 - Registered customer state requires MongoDB mode. Seeded identities can authenticate from environment configuration and store preferences/state when persistence is available.
 - Recommendation responses always receive request/list IDs. `GET /api/recommendations/me` uses a verified customer descriptor or anonymous fallback; administrators are rejected. MongoDB mode logs a tracking-enabled served list before response; seed mode and usage opt-out skip persistence.
 - Offline evaluation is a command path, not a request route. Live evidence remains separate from the versioned historical Amazon collection. The historical adapter consumes only the active dataset, validates temporal splits and eligibility, and emits aggregate readiness rather than model metrics.
-- Legacy bundled artwork is proxy-first but upstream-independent after failover: a reviewed legacy `ProductImage` can retry through `/api/artwork/local/:publicId`, which maps a canonical ID to an immutable content-addressed JPEG. The release verifier enforces the exact 116-record set, SHA-256, JPEG dimensions, and orphan-free directory. Dataset products skip that identity-bound endpoint and use the generic placeholder.
+- Artwork remains proxy-first but upstream-independent after failover. The legacy manifest binds all 116 reviewed records to content-addressed JPEGs; the v2 dataset manifest binds only strict accepted MusicBrainz/Cover Art Archive decisions to `public/artwork/dataset/`. `/api/artwork/local/:publicId` resolves either verified manifest, while ambiguous and unresolved v2 records skip the endpoint and use the generic placeholder. Both verifiers enforce exact coverage, SHA-256, JPEG dimensions, and orphan-free directories.
 
 ## Security
 

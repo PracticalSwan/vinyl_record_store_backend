@@ -1,7 +1,7 @@
 // Removes automated-test residue from the Atlas `vinyl_record_store` database
 // so evaluation and catalog inspection start from a clean state. Safe by
-// design: dry-run by default; never touches `vinylRecords` (the catalog) or any
-// non-test user. Intended to run after every E2E/auth-write run that exercised a
+// design: dry-run by default; never touches either catalog collection, dataset
+// lifecycle/evidence collections, or any non-test user. Intended to run after every E2E/auth-write run that exercised a
 // MongoDB-mode backend, and any time accumulated test cruft needs clearing.
 //
 //   node --env-file-if-exists=.env.local scripts/clean-test-residue.mjs            # dry-run
@@ -14,26 +14,23 @@
 //     deletion already cleans per-user data, and this also removes anonymous
 //     traffic and orphans from failed or aborted test runs)
 // What this never deletes:
-//   - vinylRecords (the 116-title catalog), counters, orders, auditLogs
+//   - vinylRecords, datasetProducts, datasetImports, historicalAmazonRatings,
+//     counters, orders, and auditLogs
 //   - showcase users (jazzlistener / rockcollector / soulseeker) and admin
 import { connectMongoDB, disconnectMongoDB } from "../src/lib/db/mongodb.js";
+import {
+  TEST_CLEANUP_PROTECTED_COLLECTIONS as PROTECTED_COLLECTIONS,
+  TEST_RESIDUE_COLLECTIONS as RESIDUE_COLLECTIONS,
+  TEST_USER_FILTER,
+} from "../src/lib/db/testResiduePolicy.js";
 
 const apply = process.argv.includes("--apply");
 
 // Customer-operational collections that currently hold only automated-test data. Each
 // entry is wiped completely; vinylRecords and the admin/accounting collections
 // are deliberately absent from this list.
-const RESIDUE_COLLECTIONS = [
-  "interactions",
-  "recommendationLogs",
-  "carts",
-  "wishlists",
-  "ratings",
-  "guestMerges",
-];
-// Collections that must be left untouched. Asserted unchanged after --apply.
-const PROTECTED_COLLECTIONS = ["vinylRecords", "counters", "orders", "auditLogs"];
-const TEST_USER_FILTER = { username: { $regex: "^e2e_", $options: "" } };
+// The executable policy lives in src/lib/db/testResiduePolicy.js so tests can
+// prove dataset collections are outside the deletion set.
 
 function exitSkipped(reason) {
   console.log(`[clean-test-residue] skipped: ${reason}`);
@@ -121,7 +118,9 @@ try {
       console.log(`deleted ${name.padEnd(19)} ${deleted[name]}`);
     }
     console.log(`\n--- post-state ---`);
-    console.log(`vinylRecords:           ${protectedAfter.vinylRecords} (unchanged)`);
+    for (const name of PROTECTED_COLLECTIONS) {
+      console.log(`${`${name}:`.padEnd(22)} ${protectedAfter[name]} (unchanged)`);
+    }
     console.log(`users remaining:        ${await db.collection("users").countDocuments({})}`);
   }
 } catch (error) {

@@ -4,25 +4,51 @@ import { stat } from "node:fs/promises";
 import readline from "node:readline";
 import { createGunzip } from "node:zlib";
 
-export const AMAZON_DATASET_KEY = "amazon-reviews-2023-cds-vinyl-5core-v1";
+export const AMAZON_DATASET_KEY = "amazon-reviews-2023-cds-vinyl-5core-v2";
+export const AMAZON_PREVIOUS_DATASET_KEY = "amazon-reviews-2023-cds-vinyl-5core-v1";
 export const AMAZON_SOURCE = "amazon-reviews-2023";
-export const AMAZON_SOURCE_VERSION = "2023-cds-vinyl-5core-v1";
+export const AMAZON_SOURCE_VERSION = "2023-cds-vinyl-5core-v2";
+export const AMAZON_PRODUCT_COLLECTION = "datasetProducts";
+export const AMAZON_IDENTITY_NAMESPACE = "amazon-reviews-2023:CDs_and_Vinyl:vinyl";
 const MAX_JSONL_LINE_BYTES = 2_000_000;
 
-const BROAD_GENRES = [
-  ["Jazz", /\bjazz\b/i],
-  ["Rock", /\b(rock|metal|punk|alternative)\b/i],
-  ["Soul", /\b(soul|r&b|funk|motown)\b/i],
-  ["Electronic", /\b(electronic|dance|house|techno|ambient)\b/i],
-  ["Classical", /\b(classical|opera|orchestral|chamber)\b/i],
-  ["Folk", /\b(folk|country|bluegrass|americana)\b/i],
+export const AMAZON_CANONICAL_GENRES = Object.freeze([
+  "Blues",
+  "Classical",
+  "Electronic",
+  "Folk",
+  "Hip-Hop",
+  "Holiday",
+  "Jazz",
+  "Latin",
+  "Pop",
+  "Reggae",
+  "Rock",
+  "Soul",
+  "Soundtrack",
+  "Spoken Word",
+  "World",
+]);
+
+const GENRE_RULES = [
+  ["Jazz", /\b(jazz|bebop|swing|big band|cool jazz|fusion)\b/i],
+  ["Rock", /\b(rock|metal|punk|grunge|alternative|indie|emo|hardcore|psychedelic|new wave)\b/i],
+  ["Soul", /\b(soul|r&b|rhythm and blues|funk|motown|neo-soul|gospel)\b/i],
+  ["Electronic", /\b(electronic|dance|house|techno|ambient|trance|electronica|drum and bass|dubstep)\b/i],
+  ["Classical", /\b(classical|opera|orchestral|chamber|symphon|concerto|baroque|romantic period)\b/i],
+  ["Folk", /\b(folk|country|bluegrass|americana|singer-songwriter|traditional country)\b/i],
   ["Hip-Hop", /\b(hip[- ]?hop|rap)\b/i],
   ["Blues", /\bblues\b/i],
-  ["Reggae", /\breggae\b/i],
-  ["Latin", /\b(latin|salsa|bossa|tango)\b/i],
-  ["World", /\b(world|international)\b/i],
-  ["Soundtrack", /\b(soundtrack|cast recording)\b/i],
+  ["Reggae", /\b(reggae|ska|dancehall)\b/i],
+  ["Latin", /\b(latin|salsa|bossa|tango|mariachi|latin jazz)\b/i],
+  ["World", /\b(world music|african music|celtic|flamenco|indian classical)\b/i],
+  ["Soundtrack", /\b(soundtracks?|movie scores?|film scores?|cast recordings?|musicals?|broadway|television music)\b/i],
+  ["Holiday", /\b(christmas|holiday|hanukkah|wedding music)\b/i],
+  ["Spoken Word", /\b(spoken word|comedy|poetry|audiobook)\b/i],
+  ["Pop", /\b(pop|adult contemporary|easy listening|oldies|vocal)\b/i],
 ];
+
+const GENERIC_CATEGORIES = /^(?:cds?\s*&\s*vinyl|vinyl(?: records?)?|music|genres?|digital music|autorip|vinyl store|today'?s deals(?: deprecated)?)$/i;
 
 const clean = (value, max = 200) => {
   const result = typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
@@ -52,7 +78,7 @@ export function createDatasetUserKey(sourceUserId, secret, datasetKey = AMAZON_D
     throw new Error("DATASET_PSEUDONYM_KEY or AUTH_SECRET must contain at least 32 characters.");
   }
   return createHmac("sha256", secret)
-    .update(`groovehaus-dataset-user:v1:${datasetKey}:${sourceUserId}`)
+    .update(`groovehaus-dataset-user:v2:${AMAZON_IDENTITY_NAMESPACE}:${datasetKey}:${sourceUserId}`)
     .digest("hex");
 }
 
@@ -64,9 +90,17 @@ export function pseudonymKeyFingerprint(secret) {
     .slice(0, 16);
 }
 
-export function stableProductPublicId(parentAsin, occupied = new Set()) {
+export function canonicalSourceIdentityKey(parentAsin) {
+  const value = clean(parentAsin, 20);
+  if (!value || !/^[A-Z0-9]{10}$/.test(value)) return null;
+  return createHash("sha256")
+    .update(`${AMAZON_IDENTITY_NAMESPACE}:${value}`)
+    .digest("hex");
+}
+
+export function stableProductPublicId(sourceIdentity, occupied = new Set()) {
   const digest = createHash("sha256")
-    .update(`${AMAZON_DATASET_KEY}:${parentAsin}`)
+    .update(`groovehaus-public-product:v2:${AMAZON_IDENTITY_NAMESPACE}:${sourceIdentity}`)
     .digest();
   let candidate = 100_000 + (digest.readUInt32BE(0) % 800_000);
   while (occupied.has(candidate)) {
@@ -180,48 +214,121 @@ export function classifyVinylMetadata(metadata) {
 }
 
 function deriveArtist(metadata) {
-  const store = clean(metadata?.store);
-  if (!store) return null;
-  const artist = clean(store.split(/\s+Format\s*:/i)[0]);
-  if (!artist || /^(various|amazon|unknown|vinyl)$/i.test(artist)) return null;
-  return artist;
+  const raw = clean(metadata?.store);
+  if (!raw) return { value: null, confidence: "none", flags: ["artist-missing"], raw: null };
+  if (/\bvarious(?:\s+artists?)?\b/i.test(raw)) {
+    return {
+      value: "Various Artists",
+      confidence: "high",
+      flags: ["artist-normalized-various-artists"],
+      raw,
+    };
+  }
+  const roleMarkers = raw.match(/\((?:artist|composer|performer|conductor|orchestra|ensemble)\)/gi) || [];
+  const moreMarker = /(?:&|and)\s*\d+\s+more\b/i.test(raw);
+  let artist = raw
+    .split(/\s+Format\s*:/i)[0]
+    .replace(/\((?:artist|composer|performer|conductor|orchestra|ensemble)\)/gi, "")
+    .replace(/(?:&|and)\s*\d+\s+more\b/gi, "")
+    .replace(/\s*,\s*/g, ", ")
+    .replace(/\s+/g, " ")
+    .replace(/[\s,;:&-]+$/g, "")
+    .trim();
+  if (
+    !artist
+    || /^(?:format|amazon|unknown|vinyl|music|record(?:s| store)?|audio)$/i.test(artist)
+    || /^format\s*:/i.test(artist)
+  ) {
+    return { value: null, confidence: "none", flags: ["artist-rejected-generic-store-value"], raw };
+  }
+  if (roleMarkers.length >= 3 || moreMarker || artist.length > 120) {
+    return {
+      value: null,
+      confidence: "low",
+      flags: ["artist-rejected-ambiguous-multi-credit"],
+      raw,
+    };
+  }
+  artist = clean(artist);
+  return {
+    value: artist,
+    confidence: roleMarkers.length ? "medium" : "high",
+    flags: [roleMarkers.length ? "artist-role-markers-removed" : "artist-store-value-cleaned"],
+    raw,
+  };
 }
 
 function deriveGenre(metadata) {
-  const categories = Array.isArray(metadata?.categories) ? metadata.categories.map(String) : [];
-  for (const [genre, pattern] of BROAD_GENRES) {
-    if (categories.some((value) => pattern.test(value))) return genre;
+  const categories = Array.isArray(metadata?.categories)
+    ? metadata.categories.map((value) => clean(String(value), 100)).filter(Boolean)
+    : [];
+  const matched = [];
+  for (const category of categories) {
+    if (GENERIC_CATEGORIES.test(category)) continue;
+    for (const [genre, pattern] of GENRE_RULES) {
+      if (pattern.test(category) && !matched.includes(genre)) matched.push(genre);
+    }
   }
-  const ignored = /^(cds?\s*&\s*vinyl|vinyl(?: records?)?|music|genres?)$/i;
-  return clean([...categories].reverse().find((value) => !ignored.test(value.trim())), 100);
+  const unmatched = categories.filter((category) => (
+    !GENERIC_CATEGORIES.test(category)
+    && !GENRE_RULES.some(([, pattern]) => pattern.test(category))
+  ));
+  return {
+    value: matched[0] || null,
+    genres: matched,
+    confidence: matched.length ? "high" : "none",
+    categories,
+    unmatched,
+  };
 }
 
-function deriveYear(details = {}) {
-  const candidates = [
-    details["Original Release Date"],
-    details["Release Date"],
-  ];
-  for (const value of candidates) {
+function parseYear(value) {
     const matches = String(value || "").match(/\b(19\d{2}|20\d{2})\b/g);
     if (matches?.length) {
       const year = Number(matches[0]);
       if (year >= 1900 && year <= 2100) return year;
     }
-  }
   return null;
 }
 
-export function normalizeAmazonProduct(metadata, publicId) {
+function deriveYears(details = {}) {
+  const releaseDate = clean(details["Release Date"], 100);
+  const amazonOriginalReleaseDate = clean(details["Original Release Date"], 100);
+  const editionReleaseYear = parseYear(releaseDate) ?? parseYear(amazonOriginalReleaseDate);
+  return {
+    originalReleaseYear: null,
+    editionReleaseYear,
+    sourceField: releaseDate ? "Release Date" : amazonOriginalReleaseDate ? "Original Release Date" : null,
+    raw: {
+      releaseDate,
+      originalReleaseDate: amazonOriginalReleaseDate,
+      dateFirstAvailable: clean(details["Date First Available"], 100),
+    },
+  };
+}
+
+export function normalizeAmazonProduct(metadata, publicId, {
+  stableSlug = null,
+  artworkMatch = null,
+} = {}) {
   const parentAsin = clean(metadata?.parent_asin, 20);
   const title = clean(metadata?.title);
   if (!parentAsin || !/^[A-Z0-9]{10}$/.test(parentAsin) || !title) return null;
   const classification = classifyVinylMetadata(metadata);
   if (!classification.accepted) return null;
   const details = metadata?.details && typeof metadata.details === "object" ? metadata.details : {};
-  const artist = deriveArtist(metadata);
-  const genre = deriveGenre(metadata);
+  const artistResult = deriveArtist(metadata);
+  const genreResult = deriveGenre(metadata);
+  const artist = artworkMatch?.artist || artistResult.value;
+  const genre = genreResult.value;
   const sourceReferencePriceAvailable = Number.isFinite(metadata?.price) && metadata.price >= 0;
-  const year = deriveYear(details);
+  const years = deriveYears(details);
+  const originalReleaseYear = artworkMatch?.originalReleaseYear ?? years.originalReleaseYear;
+  const editionReleaseYear = artworkMatch?.editionReleaseYear ?? years.editionReleaseYear;
+  // The generic year field is intentionally original-release-only because it
+  // powers decade filtering and the existing content-based era feature.
+  // Amazon edition/reissue evidence remains separately displayable.
+  const year = originalReleaseYear ?? null;
   // Eligibility proves only the broad carrier. It does not prove LP, EP,
   // single, diameter, or box-set semantics, and Amazon price is not a current
   // Groovehaus selling price.
@@ -237,12 +344,15 @@ export function normalizeAmazonProduct(metadata, publicId) {
     .replace(/-+$/g, "");
   return {
     publicId,
-    slug: `${slugBase || "record"}-${publicId}`,
+    slug: stableSlug || `${slugBase || "record"}-${publicId}`,
     title,
     artist,
     genre,
-    genres: genre ? [genre] : [],
+    genres: genreResult.genres,
     year,
+    originalReleaseYear,
+    editionReleaseYear,
+    yearDisplayType: originalReleaseYear ? "original" : editionReleaseYear ? "edition" : "unknown",
     price: null,
     currency: null,
     stock: null,
@@ -252,33 +362,39 @@ export function normalizeAmazonProduct(metadata, publicId) {
     pressing: null,
     description: null,
     imageUrl: null,
-    artwork: {},
+    musicBrainzReleaseId: artworkMatch?.musicBrainzReleaseId || null,
+    musicBrainzReleaseGroupId: artworkMatch?.musicBrainzReleaseGroupId || null,
+    artwork: artworkMatch?.artwork ? { ...artworkMatch.artwork } : {},
     source: AMAZON_SOURCE,
     datasetKey: AMAZON_DATASET_KEY,
     sourceVersion: AMAZON_SOURCE_VERSION,
-    externalItemKey: createHash("sha256")
-      .update(`${AMAZON_DATASET_KEY}:${parentAsin}`)
-      .digest("hex"),
+    externalItemKey: canonicalSourceIdentityKey(parentAsin),
     fieldOrigins: {
       title: "source",
-      artist: artist ? "derived" : "unknown",
+      artist: artworkMatch?.artist ? "enriched" : artist ? "derived" : "unknown",
       genre: genre ? "derived" : "unknown",
-      year: year ? "derived" : "unknown",
+      year: originalReleaseYear ? "enriched" : "unknown",
+      originalReleaseYear: artworkMatch?.originalReleaseYear ? "enriched" : "unknown",
+      editionReleaseYear: editionReleaseYear ? (artworkMatch?.editionReleaseYear ? "enriched" : "derived") : "unknown",
       price: "unknown",
       currency: "unknown",
       stock: "unknown",
       condition: "unknown",
       format: "derived",
       label: label ? "source" : "unknown",
-      artwork: "unknown",
+      artwork: artworkMatch?.artwork ? "enriched" : "unknown",
     },
     qualityFlags: [
       `vinyl-confidence:${classification.confidence}`,
-      ...(artist ? ["artist-derived-from-store:medium-confidence"] : []),
-      ...(genre ? ["genre-derived-from-categories:medium-confidence"] : []),
-      ...(year ? ["year-derived-from-release-details:medium-confidence"] : []),
+      ...artistResult.flags,
+      `artist-confidence:${artworkMatch?.artist ? "high" : artistResult.confidence}`,
+      ...(genre ? [`genre-canonical-taxonomy:${genreResult.confidence}-confidence`] : ["genre-unresolved"]),
+      ...(genreResult.unmatched.length ? ["source-categories-partially-unmapped"] : []),
+      ...(editionReleaseYear ? [`edition-year-derived-from-amazon-${years.sourceField === "Release Date" ? "release-date" : "original-release-date"}`] : ["release-year-unresolved"]),
+      ...(originalReleaseYear ? ["original-year-enriched-from-musicbrainz"] : []),
+      ...(artworkMatch?.artwork ? ["artwork-high-confidence-musicbrainz-match"] : ["artwork-unresolved-or-ambiguous"]),
       "format-normalized-to-broad-vinyl",
-      ...(!artist ? ["artist-missing"] : []),
+      ...(!artist ? ["artist-unresolved"] : []),
       ...(sourceReferencePriceAvailable
         ? ["source-reference-price-excluded-from-store-price"]
         : ["price-missing"]),
@@ -288,7 +404,16 @@ export function normalizeAmazonProduct(metadata, publicId) {
       source: AMAZON_SOURCE,
       sourceId: parentAsin,
       retrievedAt: null,
-    }],
+    }, ...(artworkMatch?.provenance || [])],
+    sourceMetadata: {
+      artistRaw: artistResult.raw,
+      categoriesRaw: genreResult.categories,
+      unmatchedCategories: genreResult.unmatched,
+      releaseDatesRaw: years.raw,
+      artistConfidence: artworkMatch?.artist ? "high" : artistResult.confidence,
+      genreConfidence: genreResult.confidence,
+      artworkMatchStatus: artworkMatch?.status || "unresolved",
+    },
     deletedAt: null,
   };
 }
