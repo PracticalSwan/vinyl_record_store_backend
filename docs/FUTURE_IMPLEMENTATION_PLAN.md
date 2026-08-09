@@ -1,6 +1,6 @@
 # Backend Future Implementation Plan
 
-Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, and DATA-00 through DATA-15 are complete. BFP-05 remains a historical on-hold placeholder whose open method decision was frozen by PERS-00; personalization from BFP-10 onward remains future work pending a separate explicit task and was not implemented with the dataset.
+Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, DATA-00 through DATA-15, and PERS-00 through PERS-05 are complete. BFP-05 remains a historical on-hold placeholder whose open method decision was frozen by PERS-00; PERS-06 through PERS-09 remain future work and were not implemented with the dataset.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
@@ -17,7 +17,7 @@ Any remaining recommender milestone must now:
 - treat `dataset:evaluation:readiness` as input validation, not model quality;
 - keep nullable commercial fields and exclude unavailable products according to the public catalog contract;
 - preserve `content-demo-v1`, the three showcase users, and a non-destructive rollback path;
-- require a new explicit implementation request. This plan alone authorizes no PERS-03 through PERS-09 code.
+- require a new explicit implementation request for PERS-06 through PERS-09. The completed PERS-03 through PERS-05 batch was implemented separately behind default-off flags and does not change the dataset lifecycle.
 
 ## User Decisions Recorded On 2026-07-03
 
@@ -350,7 +350,7 @@ Excluded:
 
 - Three showcase demo customer accounts (`jazzlistener`, `rockcollector`, `soulseeker`) are seeded into MongoDB as real `users` documents by `scripts/seed-demo-users.mjs` (`npm run db:seed:users[:apply]`), driven by `src/data/demoUsers.js`. Their public classroom passwords are documented in the frontend README; only scrypt hashes are stored.
 - The seed is idempotent: it classifies each account as create/update/skip by `publicId`, never overwrites a username held by a different account, and applies transactionally. The demo usernames are reserved in `register`, so visitors cannot claim them, and account deletion rejects all three immutable showcase public IDs before repository access.
-- These accounts carry EMPTY preferences for now. Distinct per-account preference profiles (for example a jazz listener, a rock collector, and a soul seeker) are DEFERRED until recommender algorithm selection is finalized. At that point they will be added to `src/data/demoUsers.js`, re-seeded, and the offline recommender evaluation re-baselined against them. Tracking this here is the agreed placeholder; do not implement it until the recommender decision is made.
+- These shared showcase accounts carry EMPTY preferences by design. The optional `preference-profile-v1` branch honors saved customer preferences, but seeded showcase fixtures remain neutral demonstrations and are not re-seeded as quality evidence.
 - These MongoDB customers have PERSISTENT preferences (they are real customer documents), so a tester's preference edits survive until the next `db:seed:users:apply` resets them to the canonical profile.
 
 ### Registration After User Persistence
@@ -405,23 +405,11 @@ All required BFP-04 checks below passed on 2026-07-04; the role helper is verifi
 
 ## BFP-05: Recommender Algorithm Selection
 
-Status: on hold by user decision.
+Status: historical on-hold placeholder; its method-selection question is resolved by PERS-00 and the 2026-08-09/10 PERS re-review. Do not implement BFP-05 as a separate algorithm task.
 
-The current deterministic `content-demo-v1` implementation remains active. Do not implement collaborative filtering, matrix factorization, hybrid ranking, learned weights, or an algorithm replacement until the user selects the method.
+The current deterministic `content-demo-v1` implementation remains active until the separately authorized PERS milestones are implemented/enabled. The selected later roadmap is knowledge-based preference scoring, behavioral content affinity, active-dataset historical popularity, and a true hybrid only when preference + behavior are both available. Collaborative filtering, matrix factorization/SVD, learned ranking, and learned weights remain excluded from this project scope.
 
-Work allowed while this plan is held:
-
-- Capture versioned interactions and recommendation logs.
-- Build the leakage-safe dataset and baseline evaluation pipeline.
-- Store explicit user preferences without claiming the current algorithm uses them.
-- Preserve the current content-based behavior and honest `demo-profile`, `content-similarity`, `cold-start`, and `anonymous-fallback` labels.
-
-Decision package required to reopen the plan:
-
-- Available user, item, and interaction counts and sparsity.
-- Baseline results under one shared split.
-- Candidate methods with implementation cost, explainability, cold-start behavior, and expected data requirements.
-- User approval of the selected method and explanation strategy.
+Preserve the existing leakage-safe evaluation/logging infrastructure and honest current mode labels. Reopen algorithm selection only if the user explicitly asks to replace the PERS method choices; otherwise PERS-03 through PERS-09 are the sole implementation path.
 
 ## BFP-06: Catalog Ingestion And Metadata Quality
 
@@ -561,11 +549,11 @@ Database phases additionally require the relevant smoke, migration dry-run, pari
 
 ## Personalization Roadmap (PERS-00 - PERS-09)
 
-This section records the dependency-safe personalization roadmap. PERS-00 through PERS-02 were completed on 2026-07-10 after BFP-07, FFP-07, and FFP-08; PERS-03 through PERS-09 remain planned. The sequence does not reorder, replace, remove, or silently redefine any existing plan. Full detail lives in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`.
+This section records the dependency-safe personalization roadmap. PERS-00 through PERS-05 were completed on 2026-08-10 after BFP-07, FFP-07, and FFP-08; PERS-06 through PERS-09 remain planned and default-off. The sequence does not reorder, replace, remove, or silently redefine any existing plan. Full detail lives in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`.
 
 BFP-05 remains its own on-hold placeholder; completed PERS-00 records the method decision that resolves its open question under new IDs and does not reuse the BFP-05 ID.
 
-Collaborative filtering and matrix factorization are explicitly excluded; the project is not collecting sufficient real-user evidence. The existing offline evaluator, interaction logging, recommendation logging, algorithm versioning, and privacy boundaries are preserved; "evaluation with sufficient evidence" is not part of this roadmap, and the `insufficient-evidence` status is unchanged.
+Collaborative filtering, SVD/matrix factorization, learned ranking, and another model-training pipeline remain excluded. The live app has only three showcase customers; the historical matrix is only about 0.37% dense (20,288 ratings across 2,387 × 2,305 subject-product positions). User-user CF cannot treat historical subjects as app users; item-item CF is technically possible but would add another historical model/artifact/evaluation path without enough project benefit. The selected roadmap is intentionally smaller: knowledge-based preference scoring, live behavioral content-affinity, active-dataset historical popularity, and a weighted hybrid. The existing offline evaluator, logging/versioning, and privacy boundaries remain; "evaluation with sufficient evidence" is not part of this roadmap and `insufficient-evidence` remains unchanged.
 
 ### Plan Status Summary (Personalization)
 
@@ -574,12 +562,12 @@ Collaborative filtering and matrix factorization are explicitly excluded; the pr
 | PERS-00 / BDEC-016 | Audit and decision freeze | Completed 2026-07-10 | Architecture, privacy, modes, rollback, and no-quality-claim decisions are frozen. |
 | PERS-01 / BFP-08 | Proper identity enforcement | Completed 2026-07-10 | Safe subject descriptors restrict the arbitrary-user route; cross-user and product-route guards pass. |
 | PERS-02 / BFP-09 | Session-owned signed-in-user endpoint | Completed 2026-07-10 | `GET /api/recommendations/me` serves verified-customer cold-start or anonymous fallback with parity ranking. |
-| PERS-03 / BFP-10 | Unified profile and feedback domain | Planned | One backend-owned profile service; durable feedback collection. |
-| PERS-04 / BFP-11 | Preference-aware ranking | Planned | Hard constraints and soft scores; truthful explanations. |
-| PERS-05 / BFP-12 | Negative feedback | Planned | Not-interested, already-own, undo, optional show-fewer-like-this. |
-| PERS-06 / BFP-13 | Behavioral-signal personalization | Planned | Differentiated strength; opt-out boundary fix. |
-| PERS-07 / BFP-14 | Popularity baseline and fallback | Planned | Aggregate-evidence popularity; fallback ladder. |
-| PERS-08 / BFP-15 | Hybrid recommendation orchestration | Planned | Normalized components; diversity reranking; `personalized-hybrid-v1`. |
+| PERS-03 / BFP-10 | Unified profile and feedback domain | Completed 2026-08-10 | One backend-owned profile service; durable feedback collection; default-off `PERS_PROFILE_DOMAIN`. |
+| PERS-04 / BFP-11 | Preference-aware ranking | Completed 2026-08-10 | Knowledge-based soft scoring over actual stored preferences; research-null fields neutral; default-off `PERS_PREFERENCE_RANKING`. |
+| PERS-05 / BFP-12 | Negative feedback | Completed 2026-08-10 | Exact-item not-interested/already-own plus undo; show-fewer deferred; default-off `PERS_NEGATIVE_FEEDBACK`. |
+| PERS-06 / BFP-13 | Behavioral-signal personalization | Planned | Durable live-account state + bounded opt-in passive content affinity. |
+| PERS-07 / BFP-14 | Popularity baseline and fallback | Planned | Active-dataset historical rating-count popularity; deterministic fallback. |
+| PERS-08 / BFP-15 | Hybrid recommendation orchestration | Planned | Blend only when preference + behavior are both available; popularity is optional inside that hybrid; lower modes stay pure. |
 | PERS-09 / BFP-16 | Integration, hardening, documentation closure | Planned | End-to-end integration; regression protection; documentation closure. |
 
 ### Dependency-Safe Personalization Order (Appended After FFP-08)
@@ -590,11 +578,11 @@ Collaborative filtering and matrix factorization are explicitly excluded; the pr
 | 16 | PERS-01 / BFP-08: identity enforcement | Recommendation subject derived only from the verified session. |
 | 17 | PERS-02 / BFP-09 + FFP-09: session-owned endpoint | Authenticated users get their own recommendations; anonymous fallback works. |
 | 18 | PERS-03 / BFP-10: unified profile and feedback domain | One profile service; durable feedback; opt-out split. |
-| 19 | PERS-04 / BFP-11 + FFP-10: preference-aware ranking | Stored preferences drive ranking without silent constraint relaxation. |
-| 20 | PERS-05 / BFP-12 + FFP-11: negative feedback | Durable suppression and controlled negative evidence. |
-| 21 | PERS-06 / BFP-13 + FFP-12: behavioral signals | Differentiated behavioral personalization; opt-out fully honored. |
-| 22 | PERS-07 / BFP-14: popularity baseline and fallback | Real aggregate-evidence popularity; feedback-loop safeguards. |
-| 23 | PERS-08 / BFP-15 + FFP-13: hybrid orchestration | Preference, content, behavioral, and popularity combined truthfully. |
-| 24 | PERS-09 / BFP-16 + FFP-14: integration and hardening | End-to-end personalization; regression protection; documentation closed. |
+| 19 | PERS-04 / BFP-11 + FFP-10: preference-aware ranking | Stored applicable preferences produce null-safe knowledge-based scores; no hard relaxation engine. |
+| 20 | PERS-05 / BFP-12 + FFP-11: negative feedback | Durable exact-item suppression for not-interested/already-own plus undo. |
+| 21 | PERS-06 / BFP-13 + FFP-12: behavioral signals | Current durable state + weak opt-in passive content affinity; removals are not negative taste. |
+| 22 | PERS-07 / BFP-14: popularity baseline and fallback | Active-dataset historical rating-count popularity; train-only offline baseline stays separate. |
+| 23 | PERS-08 / BFP-15 + FFP-13: hybrid orchestration | Combine only preference + behavior (plus popularity when available) into `personalized-hybrid`; otherwise return the pure lower component mode. |
+| 24 | PERS-09 / BFP-16 + FFP-14: integration and hardening | Read-only DATA-15 regression protection, cross-repo integration, documentation closure; new ranking flags stay off pending authorization. |
 
-Each milestone ships behind a feature flag, preserves `content-demo-v1` for regression, and is independently reversible. Implementation requires a separate explicit task and must not begin before FFP-08 is complete and the user opens personalization work.
+Each milestone ships behind a feature flag, preserves `content-demo-v1` for regression, and is independently reversible. PERS-03 through PERS-05 were opened and completed on 2026-08-10; PERS-06 through PERS-09 still require a separate explicit task.

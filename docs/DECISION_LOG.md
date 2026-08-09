@@ -206,7 +206,7 @@ Decision: Represent source reviewers only as keyed HMAC-SHA-256 values in `histo
 
 Rationale: Historical research evidence has different provenance, retention, consent, and evaluation semantics from live Groovehaus activity. Isolation prevents identity conflation and leakage while leaving a separately approvable future evaluation path.
 
-Status: Implemented in DATA-05 through DATA-13; PERS-03 through PERS-09 remain deferred.
+Status: Implemented in DATA-05 through DATA-13. PERS-03 through PERS-05 were subsequently implemented as a separate default-off batch; PERS-06 through PERS-09 remain deferred.
 
 ## BDEC-024: Seal V2 Rows And Enrich Artwork Conservatively
 
@@ -222,11 +222,31 @@ Status: Implemented and verified in the corrected v2 dataset closure. The storef
 
 Date: 2026-08-08
 
-Decision: Treat the corrected v2 dataset as publishable only after normal enriched preparation is deterministic, the sealed inactive import is verified while v1 remains active, activation and exact repeated import are safe, rollback to v1 preserves v2 evidence/legacy IDs/customer state without deletion, reactivation restores v2, and post-E2E cleanup leaves protected collections unchanged. Keep historical readiness aggregate-only and leave PERS-03 through PERS-09 deferred.
+Decision: Treat the corrected v2 dataset as publishable only after normal enriched preparation is deterministic, the sealed inactive import is verified while v1 remains active, activation and exact repeated import are safe, rollback to v1 preserves v2 evidence/legacy IDs/customer state without deletion, reactivation restores v2, and post-E2E cleanup leaves protected collections unchanged. Keep historical readiness aggregate-only; the separately implemented PERS-03 through PERS-05 batch does not alter this dataset, while PERS-06 through PERS-09 remain deferred.
 
 Rationale: A final active pointer and green unit tests do not prove the transition path or customer-state boundary. The bounded rehearsal records the operational evidence required for the classroom database without introducing event sourcing, state migration, or recommendation work.
 
 Status: Verified. V2 is active with 2,305 products, 20,288 ratings, 2,387 historical subjects, 208 accepted local artwork files, exactly three showcase customers, and all dataset/index/privacy checks passing. The live rollback snapshot preserved v2 evidence, legacy IDs, showcase state, and customer collections; cleanup ended with zero `e2e_` residue.
+
+## BDEC-027: Recompute The Recommendation Profile On Demand
+
+Date: 2026-08-10
+
+Decision: Build the session-owned recommendation profile on demand from the verified customer's preferences, ratings, wishlist, cart, exact feedback, and at most 500 recent interactions. Keep the profile server-internal and do not add public source flags, completeness fields, raw interaction rows, or a profile cache. Durable functional state remains available regardless of passive tracking opt-out; passive interactions are read only when tracking is enabled, and feedback is read only when its effective feature gate is enabled.
+
+Rationale: A single bounded orchestrator prevents each ranking component from reading different snapshots or leaking private source state. Recompute-on-demand keeps the first batch small and avoids a derived collection that would need invalidation and account-deletion handling.
+
+Status: Implemented behind default-off `PERS_PROFILE_DOMAIN`; PERS-04 and PERS-05 remain independently fail-closed until their flags are enabled.
+
+## BDEC-028: Durable Exact-Item Feedback Is Authoritative
+
+Date: 2026-08-10
+
+Decision: Store only `not-interested` and `already-own` as the current durable feedback intent per customer/product. A `PUT` is pessimistic, idempotent, and replaces the other allowed kind; `DELETE` is an idempotent undo. Enabled recommendation requests exclude only the exact product IDs present in the active feedback rows. No artist/genre propagation, show-fewer control, free-text reason, public feedback-list route, or analytics event is authoritative for suppression.
+
+Rationale: Exact suppression is predictable and reversible for a classroom storefront, while broad similarity propagation would require a separate policy decision. Keeping feedback separate from the 90-day interaction collection preserves account ownership, durable intent, and deletion guarantees.
+
+Status: Implemented behind default-off `PERS_PROFILE_DOMAIN && PERS_NEGATIVE_FEEDBACK`; account deletion removes feedback transactionally and disabled rows remain inert.
 
 ## BDEC-026: Hydrate Original-Release Year From Release-Group Detail (V3)
 

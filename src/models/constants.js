@@ -13,6 +13,7 @@ export const PRODUCT_CONDITIONS = ["M", "NM", "VG+", "VG", "G"];
 export const PRODUCT_STOCK_LEVELS = ["in", "low", "out"];
 export const PRODUCT_FORMATS = ["LP, 33 1/3 rpm", "2xLP", "3xLP", "8xLP", "11xLP", "2xLP + EP"];
 export const USER_ROLES = ["customer", "admin"];
+export const FEEDBACK_KINDS = ["not-interested", "already-own"];
 
 export const INTERACTION_TYPES = [
   "recommendation_impression",

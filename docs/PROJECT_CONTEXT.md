@@ -15,6 +15,7 @@ The backend is a Next.js 16.2.12 integration service. Seed mode serves the 116-r
 - BFP-02 Part A request logging: server request/list IDs, exact ordered items/scores/ranks/reasons, algorithm version, mode, exclusions, surface, safe subject, and 90-day eventual TTL.
 - Usage-data opt-out suppresses request logs; seed catalog mode returns attribution IDs but does not persist logs.
 - PERS-00/01/02 identity boundary: safe subject descriptors, cross-user-safe legacy behavior, customer-only verified-session ownership, administrator rejection, anonymous fallback, auth-aware frontend consumption, and default-on rollback flags. Ranking remains `content-demo-v1` parity.
+- PERS-03/04/05 first batch: server-internal on-demand recommendation profiles, durable exact-item feedback, `preference-profile-v1` scoring, session-owned exclusion, and default-off fail-closed flags. No public profile/source fields or quality claim was added; `content-demo-v1` remains the rollback path.
 - Strict Mongoose models, repositories, conflict-safe seed migration, exactly three MongoDB showcase customers, one environment-backed administrator, and additive index verification.
 - DATA-00 through DATA-15 v3 closure: pinned-source streaming transformation, controlled canonical taxonomy, conservative artist/year semantics, stable cross-version product IDs, exact immutable row digests, strict MusicBrainz/Cover Art Archive enrichment with verified local fallbacks, HMAC-pseudonymous historical identities, 2,305 source-derived catalog records, 20,288 isolated historical ratings from 2,387 subjects, transactional activation/rollback, and aggregate-only leakage-safe readiness checks. V3 adds authoritative MusicBrainz release-group first-release-date enrichment for the 208 strict-match accepted products (208 of 2,305 now have a non-null original-release year).
 - Preview-first CSV/JSON catalog imports with validation, duplicate/conflict reports, atomic apply by default, source ownership, collision-free public IDs, optional controlled partial mode, and no implicit deletion.
@@ -36,7 +37,7 @@ The current report is `insufficient-evidence`: no ranking-quality metrics are em
 ## Deferred Scope
 
 - Demo orders, payments, collaborative/hybrid ranking, and deployment automation. (Administrator catalog APIs are implemented in BFP-07; only demo orders/payments remain deferred.)
-- Preference, feedback, behavioral, popularity, and hybrid personalization (PERS-03 through PERS-09) remains planned. PERS-00 through PERS-02 are complete; no ranking-quality claim is made, and collaborative filtering and matrix factorization remain excluded.
+- Behavioral, popularity, and hybrid personalization (PERS-06 through PERS-09) remains planned. PERS-00 through PERS-05 are complete behind default-off flags; no ranking-quality claim is made, and collaborative filtering and matrix factorization remain excluded.
 
 BFP-01, BFP-03, BFP-04, BFP-06, BFP-07, BFP-08, BFP-09, both parts of BFP-02, and the shared FFP-01/02/03/05/06/07/08/09 contracts are complete. Behavior tests and insufficient interaction evidence do not establish recommendation quality.
 

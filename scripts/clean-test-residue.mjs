@@ -9,7 +9,7 @@
 //
 // What this deletes:
 //   - users whose username starts with `e2e_` (Playwright-registered test accounts)
-//   - interactions, recommendationLogs, carts, wishlists, ratings, guestMerges
+//   - interactions, recommendationLogs, carts, wishlists, ratings, guestMerges, feedback
 //     (every document in these collections is currently test-generated; account
 //     deletion already cleans per-user data, and this also removes anonymous
 //     traffic and orphans from failed or aborted test runs)

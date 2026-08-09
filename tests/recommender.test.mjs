@@ -28,6 +28,24 @@ test("unknown users receive an explicit cold-start list", async () => {
   assert.match(result.profileSummary[0], /No stored history/);
 });
 
+test("preference mode only explains feedback suppression when that flag is enabled", async () => {
+  const result = await recommendForUser(
+    { kind: "registered", publicId: "user-1" },
+    2,
+    {
+      candidates: [
+        { id: 1, title: "Jazz One", artist: "A", genre: "Jazz", stock: "in", catalogMode: "research-only" },
+        { id: 2, title: "Rock Two", artist: "B", genre: "Rock", stock: "in", catalogMode: "research-only" },
+      ],
+      profile: { explicitPreferences: { favoriteGenres: ["Jazz"] }, explicitFeedback: [] },
+      preferenceRankingEnabled: true,
+      feedbackEnabled: false,
+    },
+  );
+  assert.equal(result.mode, "preference-profile");
+  assert.deepEqual(result.profileSummary, ["Results use the preferences saved for this account."]);
+});
+
 test("NDCG is one for an ideal ordering", () => {
   const relevant = new Set([2, 3, 4]);
   assert.equal(ndcgAtK(relevant, [2, 3, 4], 3), 1);

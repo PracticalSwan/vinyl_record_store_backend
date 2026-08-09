@@ -4,12 +4,10 @@
 // script (`scripts/seed-demo-users.mjs`) runs each password through scrypt
 // before storing, so only the hash is persisted in MongoDB, never the plaintext.
 //
-// Preferences are intentionally EMPTY for now. Distinct per-account preference
-// profiles (for example a jazz listener, a rock collector, and a soul seeker)
-// will be added to this list once recommender algorithm selection is unblocked
-// (see docs/FUTURE_IMPLEMENTATION_PLAN.md). Keeping them empty avoids implying
-// personalization that the recommender cannot honor yet, and keeps every demo
-// account on a clean profile.
+// Preferences are intentionally EMPTY in the seeded showcase fixtures. The
+// optional preference-profile branch can honor saved customer preferences, but
+// these shared accounts remain neutral demonstrations and are not quality
+// evidence.
 
 export const DEMO_USERS = [
   {

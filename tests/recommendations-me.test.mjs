@@ -83,6 +83,33 @@ test("PERS-02 registered and anonymous results preserve content-demo-v1 ranking 
   );
 });
 
+test("first-batch flags select preference ranking and exact feedback without exposing exclusions", async () => {
+  const result = await serveUserRecommendations(
+    { kind: "registered", publicId: "user-one" },
+    8,
+    { actor: { kind: "registered", publicId: "user-one" }, surface: "home", trackingAllowed: false },
+    {
+      repository: seedCatalogRepository,
+      profile: {
+        explicitPreferences: { favoriteGenres: ["Jazz"] },
+        explicitFeedback: [{ productPublicId: 1, kind: "not-interested" }],
+      },
+      environment: {
+        ...mongoEnvironment,
+        PERS_PROFILE_DOMAIN: "true",
+        PERS_PREFERENCE_RANKING: "true",
+        PERS_NEGATIVE_FEEDBACK: "true",
+      },
+      events: { appendRecommendationLog: async () => {} },
+    },
+  );
+  assert.equal(result.mode, "preference-profile");
+  assert.equal(result.algorithmVersion, "preference-profile-v1");
+  assert.equal("excludedProductIds" in result, false);
+  assert.ok(result.recommendations.every((item) => item.product.id !== 1));
+  assert.ok(result.profileSummary.some((line) => line.includes("Negative feedback")));
+});
+
 test("PERS-02 rejects a missing or malformed logging actor before catalog access", async () => {
   let catalogReads = 0;
   const repository = {

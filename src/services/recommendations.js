@@ -1,10 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { getCatalogDataSource } from "../lib/db/dataSource.js";
+import { forbidden } from "../lib/errors.js";
 import {
   recommendForProduct,
   recommendForUser,
 } from "../lib/recommender/contentBased.js";
+import {
+  personalizationNegativeFeedbackEnabled,
+  personalizationPreferenceRankingEnabled,
+  personalizationProfileDomainEnabled,
+} from "../lib/features.js";
 import { eventRepository } from "../repositories/eventRepository.js";
+import { buildUserRecommendationProfile } from "./recommendationProfile.js";
 
 function recommendationItems(recommendations) {
   return recommendations.map((item) => ({
@@ -54,7 +61,35 @@ export async function serveUserRecommendations(subject, limit, context, options 
   ) {
     throw new TypeError("A verified recommendation actor is required.");
   }
-  const result = await recommendForUser(subject, limit, options);
+  if (
+    subject.kind === "registered"
+    && (actor.kind !== "registered" || actor.publicId !== subject.publicId)
+  ) {
+    throw forbidden("The recommendation subject does not belong to the active session.");
+  }
+  const environment = options.environment || process.env;
+  const profileEnabled = personalizationProfileDomainEnabled(environment);
+  const preferenceRankingEnabled = profileEnabled
+    && personalizationPreferenceRankingEnabled(environment);
+  const feedbackEnabled = profileEnabled
+    && personalizationNegativeFeedbackEnabled(environment);
+  const profile = options.profile || (
+    subject.kind === "registered" && (preferenceRankingEnabled || feedbackEnabled)
+      ? await buildUserRecommendationProfile(subject, {
+          trackingAllowed: context.trackingAllowed !== false,
+          feedbackAllowed: feedbackEnabled,
+          users: options.users,
+          state: options.state,
+          feedback: options.feedback,
+        })
+      : null
+  );
+  const result = await recommendForUser(subject, limit, {
+    ...options,
+    profile,
+    preferenceRankingEnabled,
+    feedbackEnabled,
+  });
   return record(result, {
     subjectType: actor.kind === "registered" ? "user" : "anonymous",
     subjectId: actor.kind === "registered" ? actor.publicId : context.anonymousId || null,

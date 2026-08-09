@@ -5,6 +5,7 @@ export const TEST_RESIDUE_COLLECTIONS = Object.freeze([
   "wishlists",
   "ratings",
   "guestMerges",
+  "feedback",
 ]);
 
 export const TEST_CLEANUP_PROTECTED_COLLECTIONS = Object.freeze([

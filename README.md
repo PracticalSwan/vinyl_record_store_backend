@@ -9,7 +9,7 @@ This service is the core of the demo. It owns the product catalog, the recommend
 Three things worth knowing up front:
 
 - MongoDB mode currently activates the immutable `amazon-reviews-2023-cds-vinyl-5core-v3` research catalog: 2,305 products in `datasetProducts` and 20,288 isolated historical ratings from 2,387 pseudonymous subjects. V2 is the immediate rollback release, v1 is the legacy identity-registry base, and the original 116 reviewed records remain available.
-- Recommendations remain deterministic `content-demo-v1` behavior: the restricted legacy showcase is `demo-profile`, verified customers use a session-owned `cold-start` path, and visitors receive an `anonymous-fallback`. Preferences and behavior do not affect ranking yet, and no recommendation-quality claim is made.
+- Recommendations default to deterministic `content-demo-v1` behavior: the restricted legacy showcase is `demo-profile`, verified customers use a session-owned `cold-start` path, and visitors receive an `anonymous-fallback`. When the default-off profile and preference flags are enabled, a verified customer may receive `preference-profile-v1`; exact feedback remains an optional server-owned exclusion. No recommendation-quality claim is made.
 - The 116 legacy records retain their reviewed MusicBrainz/Cover Art Archive mappings and verified local JPEG fallbacks. V3 has 208 strict accepted artwork decisions with a separate verified local fallback set; v2 rollback evidence independently pins the same stable assets. Ambiguous or unresolved rows use the generic placeholder and never borrow legacy art. The dataset workflow does not reuse Amazon images. Nullable commercial fields remain unknown and non-purchasable. Historical-data `ready` status is not a quality score, and the live evaluator still reports `insufficient-evidence`.
 
 ## API
@@ -23,7 +23,7 @@ Three things worth knowing up front:
 | `GET` | `/api/artwork?u=` | Primary artwork proxy: validates every redirect hop, bounds time/size, and disk-caches approved Cover Art Archive bytes. |
 | `GET` | `/api/artwork/local/:publicId` | Redirects a canonical bundled-record ID to its immutable, content-addressed local JPEG; malformed IDs return 400 and unmapped IDs return 404. |
 | `GET` | `/api/recommendations/product/:id` | Similar records with explanations. |
-| `GET` | `/api/recommendations/me` | Session-owned customer `cold-start` or anonymous fallback list. |
+| `GET` | `/api/recommendations/me` | Session-owned customer `cold-start`, optional `preference-profile`, or anonymous fallback list. |
 | `GET` | `/api/recommendations/user/:userId` | Restricted legacy showcase: `demo-user` or generic cold-start only. |
 | `POST` | `/api/auth/register` | Create a customer account and session. |
 | `POST` | `/api/auth/login` | Sign in a registered or demo identity. |
@@ -35,6 +35,7 @@ Three things worth knowing up front:
 | `GET`, `PUT`, `DELETE` | `/api/wishlist` | Read or mutate the wishlist. |
 | `GET`, `PUT`, `DELETE` | `/api/cart` | Read or mutate cart quantities. |
 | `GET`, `PUT`, `DELETE` | `/api/ratings` | Read or mutate ratings. |
+| `PUT`, `DELETE` | `/api/me/feedback/:productId` | Optional exact-item `not-interested`/`already-own` feedback and idempotent undo. |
 | `POST` | `/api/me/merge-guest-state` | Merge guest wishlist, cart, and ratings. |
 
 Full query, filter, and response-shape details are documented in `docs/API_CONTRACT_PLAN.md`.

@@ -51,9 +51,9 @@ Response data: `{ sourceProductId, mode, recommendations, algorithmVersion, requ
 
 ### `GET /api/recommendations/me`
 
-Optional authentication. A verified customer session receives `mode: "cold-start"`; no, expired, tampered, disabled, or deleted customer session receives `mode: "anonymous-fallback"`; a verified administrator receives `403 FORBIDDEN`. Optional `limit` defaults to 12 and is capped at 20. Optional `surface` is controlled.
+Optional authentication. A verified customer session receives `mode: "preference-profile"` only when the effective profile and preference flags are enabled and an applicable saved preference signal exists; otherwise it receives `mode: "cold-start"`. No, expired, tampered, disabled, or deleted customer session receives `mode: "anonymous-fallback"`; a verified administrator receives `403 FORBIDDEN`. Optional `limit` defaults to 12 and is capped at 20. Optional `surface` is controlled.
 
-The client never sends a customer ID. Authenticated logging ownership is the verified public ID, and `X-Anonymous-Id` is accepted only when no customer session resolves. The response is `{ mode, algorithmVersion, requestId, listId, recommendationLogged, profileSummary, recommendations }` and never exposes `userId`, raw events, internal exclusions, or database IDs. PERS-02 preserves the `content-demo-v1` item ranking; preference and behavioral ranking remain deferred.
+The client never sends a customer ID. Authenticated logging ownership is the verified public ID, and `X-Anonymous-Id` is accepted only when no customer session resolves. The response is `{ mode, algorithmVersion, requestId, listId, recommendationLogged, profileSummary, recommendations }` and never exposes `userId`, raw events, internal exclusions, or database IDs. With flags disabled, PERS-03 through PERS-05 preserve the `content-demo-v1`/cold-start behavior. The `preference-profile` mode uses `preference-profile-v1`; behavioral, popularity, and hybrid modes remain deferred.
 
 ### `GET /api/recommendations/user/:userId`
 
@@ -129,10 +129,10 @@ Demo-order and payment routes are not implemented (the storefront ships a client
 
 ## Planned Routes (Remaining Personalization Roadmap)
 
-The following remain planned in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`. PERS-00 through PERS-02 are complete; later entries do not authorize implementation by themselves.
+The following describe the completed PERS-05 route and the remaining roadmap. PERS-00 through PERS-05 are complete behind default-off flags; later entries do not authorize implementation by themselves.
 
-- `PUT`, `DELETE`, `GET /api/me/feedback[/:productId]` (PERS-05 / BFP-12): durable explicit feedback (not-interested, already-own, optional show-fewer-like-this) with idempotent undo.
-- Future `/api/recommendations/me` response extensions: `mode` (`preference-profile`, `behavior-profile`, `popularity`, `personalized-hybrid`), corresponding algorithm versions, safe `dataSourceFlags`, and `profileCompleteness`. No raw interaction rows, MongoDB object IDs, internal exclusions, or raw component weights will be exposed.
+- `PUT /api/me/feedback/:productId` and `DELETE /api/me/feedback/:productId` (PERS-05 / BFP-12, implemented behind `PERS_PROFILE_DOMAIN && PERS_NEGATIVE_FEEDBACK`): durable exact-item feedback. `PUT` accepts only `{ kind: "not-interested" | "already-own" }` and returns `{ productPublicId, kind }`; one current row exists per customer/product, so changing kind replaces the prior kind. `DELETE` idempotently removes the current row and returns `{ productPublicId, removed: boolean }`. Disabled flags return `404 NOT_FOUND` and retain rows inert. No public feedback-list route is added in v1. `show-fewer-like-this`, free-text reason, and broad scope are deferred.
+- Future `/api/recommendations/me` response extensions are limited to the new `mode` values (`preference-profile`, `behavior-profile`, `popularity`, `personalized-hybrid`) and corresponding algorithm versions while preserving the existing item/reason envelope. `personalized-hybrid` requires both preference and behavioral components and may also include popularity; if either personalized component is unavailable, the response uses the pure lower component's own score/version rather than blending popularity under a misleading lower-mode label. Do not add `dataSourceFlags`, `profileCompleteness`, raw interaction rows, historical user keys/aggregates, MongoDB object IDs, internal exclusions, component scores, or raw component weights.
 
 ## CORS
 
