@@ -169,16 +169,14 @@ npm.cmd run db:indexes
 npm.cmd run dataset:evaluation:readiness
 ```
 
-Reproduce current v3 transformation/artwork only when the pinned raw input and MusicBrainz cache/network prerequisites are available. The enrichment command resumes transient release-group hydration, compares the recomputed semantic digest to the exact pinned artifact, leaves identical sealed v3 evidence unchanged, and fails closed if decisions differ. If the artifact is missing, restore its exact committed bytes from Git rather than regenerating timestamps under the sealed key. These commands do not justify re-importing sealed v3:
+Reproduce current v3 transformation/artwork only when the pinned raw input and the existing private v3 staging evidence are available. Because v3 is sealed, `dataset:prepare` is now a no-write reproduction check: it recomputes product/rating evidence in memory, verifies the existing private staging files and report, compares every stable report field plus the public aggregate summary, and refuses `--base-only` or product/user/core overrides. A different pseudonym key therefore fails closed instead of replacing v3 staging. The enrichment command resumes transient release-group hydration, compares the recomputed semantic digest to the exact pinned artifact, leaves identical sealed v3 evidence unchanged, and fails closed if decisions differ. If sealed staging or an immutable committed artifact is missing, restore the exact evidence rather than regenerating or publishing different bytes under the v3 key. These commands do not justify re-importing sealed v3:
 
 ```powershell
 npm.cmd run dataset:profile
 npm.cmd run dataset:identity:build
-npm.cmd run dataset:prepare -- --base-only
-npm.cmd run dataset:artwork:enrich
-npm.cmd run dataset:artwork:download
-npm.cmd run dataset:artwork:verify
 npm.cmd run dataset:prepare
+npm.cmd run dataset:artwork:enrich
+npm.cmd run dataset:artwork:verify
 npm.cmd run dataset:import
 ```
 

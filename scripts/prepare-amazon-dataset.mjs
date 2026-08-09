@@ -3,6 +3,7 @@ import { createWriteStream } from "node:fs";
 import { once } from "node:events";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import {
   AMAZON_DATASET_KEY,
   AMAZON_IDENTITY_NAMESPACE,
@@ -22,6 +23,7 @@ import {
   AMAZON_IDENTITY_BASE_DATASET_KEY,
   assertAmazonReleaseArtifactDigest,
   assertAmazonReleaseArtifactOwnership,
+  assertAmazonSealedStagingReproduction,
   getCurrentAmazonDatasetRelease,
 } from "../src/lib/dataset/amazonDatasetReleases.js";
 import { withRecordDigest } from "../src/lib/dataset/integrity.js";
@@ -35,6 +37,8 @@ const IDENTITY_REGISTRY_PATH = path.join(DATA_ROOT, "product-identity-registry.j
 const currentRelease = getCurrentAmazonDatasetRelease();
 const ARTWORK_ENRICHMENT_PATH = path.join(DATA_ROOT, currentRelease.artworkEnrichmentFilename);
 const STAGING_ROOT = path.join(DATA_ROOT, "staging", AMAZON_DATASET_KEY);
+const STAGING_REPORT_PATH = path.join(STAGING_ROOT, "report.json");
+const DATA_QUALITY_SUMMARY_PATH = path.join(DATA_ROOT, "data-quality-summary.json");
 
 function option(name, fallback) {
   const prefix = `--${name}=`;
@@ -59,6 +63,15 @@ const maximumUsers = option("users", transformationConfig.maximumUsers);
 const minimumCore = option("core", transformationConfig.trainCoreMinimum);
 const profileOnly = process.argv.includes("--profile-only");
 const baseOnly = process.argv.includes("--base-only") || profileOnly;
+const sealedOptionOverrides = ["products", "users", "core"].filter((name) => (
+  process.argv.some((value) => value.startsWith(`--${name}=`))
+));
+if (currentRelease.sealedEvidenceRequired && !profileOnly && baseOnly) {
+  throw new Error("Base-only staging is not allowed for a sealed current release; use dataset:profile for read-only profiling.");
+}
+if (currentRelease.sealedEvidenceRequired && !profileOnly && sealedOptionOverrides.length) {
+  throw new Error(`Sealed current-release reproduction does not accept staging overrides: ${sealedOptionOverrides.join(", ")}.`);
+}
 const secret = process.env.DATASET_PSEUDONYM_KEY || process.env.AUTH_SECRET;
 if (!profileOnly && (!secret || secret.length < 32)) {
   throw new Error("Staging requires DATASET_PSEUDONYM_KEY or AUTH_SECRET with at least 32 characters.");
@@ -122,6 +135,17 @@ if (!baseOnly && artworkEnrichment.entriesDigest !== artworkEntriesDigest) {
 const artworkByPublicId = new Map(artworkEnrichment.entries.map((entry) => [entry.publicId, entry]));
 if (artworkByPublicId.size !== artworkEnrichment.entries.length) {
   throw new Error("The artwork enrichment manifest contains duplicate public IDs.");
+}
+
+function jsonlEvidence(rows) {
+  const hash = createHash("sha256");
+  let bytes = 0;
+  for (const row of rows) {
+    const line = `${JSON.stringify(row)}\n`;
+    hash.update(line);
+    bytes += Buffer.byteLength(line, "utf8");
+  }
+  return { bytes, sha256: hash.digest("hex") };
 }
 
 async function writeJsonl(filePath, rows) {
@@ -437,29 +461,53 @@ const report = {
 };
 
 if (!profileOnly) {
-  await mkdir(STAGING_ROOT, { recursive: true });
-  const productsPath = path.join(STAGING_ROOT, "products.jsonl");
-  const ratingsOutputPath = path.join(STAGING_ROOT, "ratings.jsonl");
-  await writeJsonl(productsPath, digestedProducts);
-  await writeJsonl(ratingsOutputPath, stagedRatings);
-  const [productsDetails, ratingsDetails] = await Promise.all([
-    stat(productsPath),
-    stat(ratingsOutputPath),
-  ]);
   report.stagingFiles = {
-    products: { bytes: productsDetails.size, sha256: await sha256File(productsPath) },
-    ratings: { bytes: ratingsDetails.size, sha256: await sha256File(ratingsOutputPath) },
+    products: jsonlEvidence(digestedProducts),
+    ratings: jsonlEvidence(stagedRatings),
   };
-  await writeFile(path.join(STAGING_ROOT, "report.json"), `${JSON.stringify(report, null, 2)}\n`);
-  if (!baseOnly) {
-    const dataQualitySummary = createPublicDataQualitySummary(report, {
-      sourceRevision: manifest.sourceRevision,
+  const dataQualitySummary = createPublicDataQualitySummary(report, {
+    sourceRevision: manifest.sourceRevision,
+  });
+
+  if (currentRelease.sealedEvidenceRequired) {
+    const canonicalReport = JSON.parse(await readFile(STAGING_REPORT_PATH, "utf8"));
+    assertAmazonReleaseArtifactOwnership(currentRelease, {
+      sourceManifest: manifest,
+      transformationConfig,
+      artworkEnrichment,
+      report: canonicalReport,
     });
-    await writeFile(
-      path.join(DATA_ROOT, "data-quality-summary.json"),
-      `${JSON.stringify(dataQualitySummary, null, 2)}\n`,
-      "utf8",
-    );
+    await Promise.all([
+      verifySourceFile(path.join(STAGING_ROOT, "products.jsonl"), canonicalReport.stagingFiles?.products),
+      verifySourceFile(path.join(STAGING_ROOT, "ratings.jsonl"), canonicalReport.stagingFiles?.ratings),
+    ]);
+    assertAmazonSealedStagingReproduction(canonicalReport, report);
+    const publishedSummary = JSON.parse(await readFile(DATA_QUALITY_SUMMARY_PATH, "utf8"));
+    if (!isDeepStrictEqual(publishedSummary, dataQualitySummary)) {
+      throw new Error("Refusing to rewrite the sealed public data-quality summary because reproduced aggregate evidence differs.");
+    }
+  } else {
+    await mkdir(STAGING_ROOT, { recursive: true });
+    const productsPath = path.join(STAGING_ROOT, "products.jsonl");
+    const ratingsOutputPath = path.join(STAGING_ROOT, "ratings.jsonl");
+    await writeJsonl(productsPath, digestedProducts);
+    await writeJsonl(ratingsOutputPath, stagedRatings);
+    const [productsDetails, ratingsDetails] = await Promise.all([
+      stat(productsPath),
+      stat(ratingsOutputPath),
+    ]);
+    report.stagingFiles = {
+      products: { bytes: productsDetails.size, sha256: await sha256File(productsPath) },
+      ratings: { bytes: ratingsDetails.size, sha256: await sha256File(ratingsOutputPath) },
+    };
+    await writeFile(STAGING_REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`);
+    if (!baseOnly) {
+      await writeFile(
+        DATA_QUALITY_SUMMARY_PATH,
+        `${JSON.stringify(dataQualitySummary, null, 2)}\n`,
+        "utf8",
+      );
+    }
   }
 }
 console.log(JSON.stringify(report, null, 2));

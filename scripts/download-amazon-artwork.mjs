@@ -20,12 +20,14 @@ import {
 } from "../src/lib/external/localArtworkAssets.js";
 
 const checkOnly = process.argv.includes("--check");
-const dataRoot = path.join(process.cwd(), "data", "amazon-reviews-2023");
+const repositoryRoot = process.cwd();
+const dataRoot = path.join(repositoryRoot, "data", "amazon-reviews-2023");
 const currentRelease = getCurrentAmazonDatasetRelease();
 const enrichmentPath = path.join(dataRoot, currentRelease.artworkEnrichmentFilename);
-const assetDirectory = path.join(process.cwd(), "public", "artwork", "dataset");
-const generatedManifest = path.join(process.cwd(), "src", "data", "datasetLocalArtworkManifest.js");
-const cacheRoot = path.join(process.cwd(), ".cache");
+const artworkRoot = path.join(repositoryRoot, "public", "artwork");
+const assetDirectory = path.join(artworkRoot, "dataset");
+const generatedManifest = path.join(repositoryRoot, "src", "data", "datasetLocalArtworkManifest.js");
+const cacheRoot = path.join(repositoryRoot, ".cache");
 const configuredConcurrency = Number.parseInt(process.env.DATASET_ARTWORK_CONCURRENCY || "2", 10);
 const downloadConcurrency = Number.isInteger(configuredConcurrency)
   ? Math.min(6, Math.max(1, configuredConcurrency))
@@ -107,14 +109,16 @@ if (checkOnly) {
     accepted,
     sourceManifestSha256,
     assetDirectory,
+    boundaryRoot: repositoryRoot,
   });
   console.log(JSON.stringify({ status: "ok", ...result, sourceManifestSha256 }, null, 2));
   process.exit(0);
 }
 
 await mkdir(cacheRoot, { recursive: true });
+await assertDatasetArtworkDirectory(artworkRoot, { boundaryRoot: repositoryRoot });
 await mkdir(assetDirectory, { recursive: true });
-await assertDatasetArtworkDirectory(assetDirectory);
+await assertDatasetArtworkDirectory(assetDirectory, { boundaryRoot: repositoryRoot });
 const stagingDirectory = await mkdtemp(path.join(cacheRoot, "dataset-artwork-download-"));
 const publishedById = new Map(published.map((entry) => [entry.publicId, entry]));
 let reused = 0;
@@ -129,6 +133,7 @@ try {
           accepted: [source],
           sourceManifestSha256,
           assetDirectory,
+          boundaryRoot: repositoryRoot,
           exactDirectory: false,
           requireSourceManifestDigest: false,
         });
@@ -180,6 +185,7 @@ try {
     accepted,
     sourceManifestSha256,
     assetDirectory,
+    boundaryRoot: repositoryRoot,
     manifestPath: generatedManifest,
   });
   console.log(JSON.stringify({

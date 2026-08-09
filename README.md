@@ -52,22 +52,19 @@ npm run dev
 
 The service runs at `http://localhost:3000`. By default it serves the bundled seed catalog, so no database is needed to try it. To use MongoDB Atlas, set `MONGODB_URI`, `MONGODB_DB_NAME`, and `CATALOG_DATA_SOURCE=mongodb` in `.env.local`, then run the seed and index scripts. See `.env.example` for all options.
 
-The current external-dataset workflow is hash-pinned, preview-first, and reversible:
+The current sealed-v3 dataset workflow is hash-pinned and fail-closed. `dataset:prepare` is a no-write reproduction check for the existing private v3 staging evidence; it will not replace sealed staging or the committed public quality summary and it rejects same-key staging overrides:
 
 ```powershell
 npm.cmd run dataset:profile
 npm.cmd run dataset:prepare
 npm.cmd run dataset:artwork:enrich
-npm.cmd run dataset:artwork:download
 npm.cmd run dataset:artwork:verify
 npm.cmd run dataset:import
-npm.cmd run dataset:import:apply
-npm.cmd run dataset:activate:apply
 npm.cmd run dataset:verify
 npm.cmd run dataset:evaluation:readiness
 ```
 
-Raw source and staging files remain ignored. See [`docs/AMAZON_REVIEWS_DATA_INTEGRATION_PLAN.md`](docs/AMAZON_REVIEWS_DATA_INTEGRATION_PLAN.md) before reacquiring, importing, activating, or rolling back the dataset.
+Raw source and staging files remain ignored. Apply/activation commands are not part of normal sealed-v3 verification; use them only for an explicitly approved new release or lifecycle rehearsal. See [`docs/AMAZON_REVIEWS_DATA_INTEGRATION_PLAN.md`](docs/AMAZON_REVIEWS_DATA_INTEGRATION_PLAN.md) before reacquiring artwork, importing, activating, or rolling back the dataset.
 
 Catalog imports default to a no-write preview: `npm run catalog:import -- --dry-run --input examples/catalog-import-template.json`. Add `--apply` only after reviewing every action; `--enrich` uses MusicBrainz and Cover Art Archive under their service limits. Run `npm run recommender:evaluate` to regenerate the privacy-safe report under `reports/recommender/`.
 

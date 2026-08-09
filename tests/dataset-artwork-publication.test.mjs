@@ -71,11 +71,11 @@ test("production candidate validation tolerates stale files but strict validatio
     await writeFile(path.join(root, "999999.aaaaaaaaaaaa.jpg"), VALID_JPEG);
     await assert.doesNotReject(() => verifyDatasetArtworkPublication({
       entries: [entry], accepted: [accepted], sourceManifestSha256: SOURCE_DIGEST,
-      assetDirectory: root, exactDirectory: false,
+      assetDirectory: root, boundaryRoot: root, exactDirectory: false,
     }));
     await assert.rejects(() => verifyDatasetArtworkPublication({
       entries: [entry], accepted: [accepted], sourceManifestSha256: SOURCE_DIGEST,
-      assetDirectory: root, exactDirectory: true,
+      assetDirectory: root, boundaryRoot: root, exactDirectory: true,
     }), /orphan JPEG/);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -113,7 +113,7 @@ test("failure after manifest swap leaves a complete new manifest and the next ru
     await writeFile(manifestPath, "old manifest\n", "utf8");
     await assert.rejects(() => publishDatasetArtworkManifest({
       entries: [entry], accepted: [accepted], sourceManifestSha256: SOURCE_DIGEST,
-      assetDirectory, manifestPath,
+      assetDirectory, boundaryRoot: root, manifestPath,
       afterManifestSwap: async () => { throw new Error("simulated post-swap interruption"); },
     }), /post-swap interruption/);
     assert.equal(
@@ -123,7 +123,7 @@ test("failure after manifest swap leaves a complete new manifest and the next ru
     assert.equal((await readdir(assetDirectory)).includes("999999.aaaaaaaaaaaa.jpg"), true);
     const result = await publishDatasetArtworkManifest({
       entries: [entry], accepted: [accepted], sourceManifestSha256: SOURCE_DIGEST,
-      assetDirectory, manifestPath,
+      assetDirectory, boundaryRoot: root, manifestPath,
     });
     assert.deepEqual(result.removed.sort(), ["999999.aaaaaaaaaaaa.jpg", "STALE.JPG"]);
     assert.deepEqual(await readdir(legacyDirectory), ["legacy.jpg"]);
@@ -163,7 +163,10 @@ test("stale hard links are unlinked without touching their outside target", asyn
     const stale = path.join(assetDirectory, "999999.bbbbbbbbbbbb.jpg");
     await writeFile(outside, VALID_JPEG);
     await link(outside, stale);
-    assert.deepEqual(await cleanupStaleDatasetArtwork(assetDirectory, new Set()), [path.basename(stale)]);
+    assert.deepEqual(
+      await cleanupStaleDatasetArtwork(assetDirectory, new Set(), { boundaryRoot: root }),
+      [path.basename(stale)],
+    );
     assert.deepEqual(await readFile(outside), VALID_JPEG);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -189,7 +192,7 @@ test("referenced symlink artwork is rejected when the platform permits symlink c
     }
     await assert.rejects(() => verifyDatasetArtworkPublication({
       entries: [entry], accepted: [accepted], sourceManifestSha256: SOURCE_DIGEST,
-      assetDirectory, exactDirectory: false,
+      assetDirectory, boundaryRoot: root, exactDirectory: false,
     }), /regular file/);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -212,8 +215,36 @@ test("dataset artwork root rejects a symlink or junction before publication", as
       throw error;
     }
     await assert.rejects(
-      () => assertDatasetArtworkDirectory(linkedDirectory),
+      () => assertDatasetArtworkDirectory(linkedDirectory, { boundaryRoot: root }),
       /real directory/,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("dataset artwork rejects an ancestor junction even when the final directory is real", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "dataset-art-ancestor-link-"));
+  try {
+    const repositoryRoot = path.join(root, "repo");
+    const publicDirectory = path.join(repositoryRoot, "public");
+    const outsideArtwork = path.join(root, "outside-artwork");
+    const outsideDataset = path.join(outsideArtwork, "dataset");
+    await mkdir(publicDirectory, { recursive: true });
+    await mkdir(outsideDataset, { recursive: true });
+    const linkedArtwork = path.join(publicDirectory, "artwork");
+    try {
+      await symlink(outsideArtwork, linkedArtwork, process.platform === "win32" ? "junction" : "dir");
+    } catch (error) {
+      if (["EPERM", "EACCES"].includes(error.code)) {
+        t.skip("Directory link creation is not permitted in this session.");
+        return;
+      }
+      throw error;
+    }
+    await assert.rejects(
+      () => assertDatasetArtworkDirectory(path.join(linkedArtwork, "dataset"), { boundaryRoot: repositoryRoot }),
+      /traverses a symbolic link or junction/,
     );
   } finally {
     await rm(root, { recursive: true, force: true });

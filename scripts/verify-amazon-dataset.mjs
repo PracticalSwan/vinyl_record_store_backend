@@ -230,6 +230,7 @@ if (artworkEnrichment) {
     accepted,
     sourceManifestSha256: artworkEnrichment.entriesDigest,
     assetDirectory: path.join(process.cwd(), "public", "artwork", "dataset"),
+    boundaryRoot: process.cwd(),
     requireSourceManifestDigest: release.role === "current",
   });
   if (localArtworkCompatibility) {

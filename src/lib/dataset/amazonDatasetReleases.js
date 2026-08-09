@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from "node:util";
+
 export const AMAZON_CURRENT_DATASET_KEY = "amazon-reviews-2023-cds-vinyl-5core-v3";
 export const AMAZON_ROLLBACK_DATASET_KEY = "amazon-reviews-2023-cds-vinyl-5core-v2";
 export const AMAZON_IDENTITY_BASE_DATASET_KEY = "amazon-reviews-2023-cds-vinyl-5core-v1";
@@ -66,6 +68,23 @@ export function assertAmazonReleaseArtifactDigest(release, artifactName, actualS
   }
   if (actualSha256 !== expectedSha256) {
     throw new Error(`The ${artifactName} artifact differs from pinned immutable ${release.datasetKey} evidence.`);
+  }
+}
+
+function stableStagingReport(report) {
+  if (!report || typeof report !== "object") return null;
+  const { generatedAt: _generatedAt, ...stable } = report;
+  return stable;
+}
+
+export function assertAmazonSealedStagingReproduction(existingReport, candidateReport) {
+  const existing = stableStagingReport(existingReport);
+  const candidate = stableStagingReport(candidateReport);
+  if (!existing || !candidate) {
+    throw new Error("The sealed staging report is missing; restore the private staging evidence instead of regenerating it in place.");
+  }
+  if (!isDeepStrictEqual(existing, candidate)) {
+    throw new Error("Refusing to rewrite sealed staging because the reproduced report differs from the published release evidence.");
   }
 }
 

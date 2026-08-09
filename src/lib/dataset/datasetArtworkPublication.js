@@ -6,6 +6,7 @@ import {
   open,
   readFile,
   readdir,
+  realpath,
   rename,
   rm,
 } from "node:fs/promises";
@@ -18,6 +19,14 @@ import {
 
 const DATASET_ARTWORK_FILENAME = /^[1-9][0-9]*\.[0-9a-f]{12}\.jpg$/;
 
+function samePhysicalPath(left, right) {
+  const normalizedLeft = path.normalize(left);
+  const normalizedRight = path.normalize(right);
+  return process.platform === "win32"
+    ? normalizedLeft.toLowerCase() === normalizedRight.toLowerCase()
+    : normalizedLeft === normalizedRight;
+}
+
 async function requireRegularFile(filePath, label) {
   const info = await lstat(filePath);
   if (info.isSymbolicLink() || !info.isFile()) {
@@ -26,12 +35,29 @@ async function requireRegularFile(filePath, label) {
   return info;
 }
 
-export async function assertDatasetArtworkDirectory(assetDirectory) {
-  const info = await lstat(assetDirectory);
+export async function assertDatasetArtworkDirectory(assetDirectory, { boundaryRoot } = {}) {
+  if (!boundaryRoot) {
+    throw new Error("Dataset artwork validation requires an explicit trusted boundary root.");
+  }
+  const lexicalRoot = path.resolve(boundaryRoot);
+  const lexicalDirectory = path.resolve(assetDirectory);
+  const relative = path.relative(lexicalRoot, lexicalDirectory);
+  if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error("The dataset artwork directory is outside the trusted repository boundary.");
+  }
+  const info = await lstat(lexicalDirectory);
   if (info.isSymbolicLink() || !info.isDirectory()) {
     throw new Error("The dataset artwork directory must be a real directory, not a reparse point.");
   }
-  return path.resolve(assetDirectory);
+  const [physicalRoot, physicalDirectory] = await Promise.all([
+    realpath(lexicalRoot),
+    realpath(lexicalDirectory),
+  ]);
+  const expectedPhysicalDirectory = path.resolve(physicalRoot, relative);
+  if (!samePhysicalPath(physicalDirectory, expectedPhysicalDirectory)) {
+    throw new Error("The dataset artwork path traverses a symbolic link or junction inside the trusted boundary.");
+  }
+  return lexicalDirectory;
 }
 
 function resolveDatasetArtworkPath(assetDirectory, filename) {
@@ -67,10 +93,11 @@ export async function verifyDatasetArtworkPublication({
   accepted,
   sourceManifestSha256,
   assetDirectory,
+  boundaryRoot,
   exactDirectory = true,
   requireSourceManifestDigest = true,
 }) {
-  await assertDatasetArtworkDirectory(assetDirectory);
+  await assertDatasetArtworkDirectory(assetDirectory, { boundaryRoot });
   if (entries.length !== accepted.length) throw new Error("Dataset local artwork coverage is incomplete.");
   const acceptedById = new Map(accepted.map((entry) => [entry.publicId, entry]));
   if (acceptedById.size !== accepted.length) throw new Error("Accepted dataset artwork contains duplicate IDs.");
@@ -170,8 +197,8 @@ export async function publishContentAddressedDatasetArtwork(stagedPath, destinat
   }
 }
 
-export async function cleanupStaleDatasetArtwork(assetDirectory, expectedFiles) {
-  await assertDatasetArtworkDirectory(assetDirectory);
+export async function cleanupStaleDatasetArtwork(assetDirectory, expectedFiles, { boundaryRoot } = {}) {
+  await assertDatasetArtworkDirectory(assetDirectory, { boundaryRoot });
   const removed = [];
   for (const item of await readdir(assetDirectory, { withFileTypes: true })) {
     if (expectedFiles.has(item.name) || !item.name.toLowerCase().endsWith(".jpg")) continue;
@@ -188,6 +215,7 @@ export async function publishDatasetArtworkManifest({
   accepted,
   sourceManifestSha256,
   assetDirectory,
+  boundaryRoot,
   manifestPath,
   afterManifestSwap = async () => {},
 }) {
@@ -196,6 +224,7 @@ export async function publishDatasetArtworkManifest({
     accepted,
     sourceManifestSha256,
     assetDirectory,
+    boundaryRoot,
     exactDirectory: false,
   });
   await writeTextAtomically(
@@ -204,12 +233,13 @@ export async function publishDatasetArtworkManifest({
   );
   await afterManifestSwap();
   const expectedFiles = new Set(entries.map((entry) => entry.filename));
-  const removed = await cleanupStaleDatasetArtwork(assetDirectory, expectedFiles);
+  const removed = await cleanupStaleDatasetArtwork(assetDirectory, expectedFiles, { boundaryRoot });
   const result = await verifyDatasetArtworkPublication({
     entries,
     accepted,
     sourceManifestSha256,
     assetDirectory,
+    boundaryRoot,
     exactDirectory: true,
   });
   return { ...result, removed };

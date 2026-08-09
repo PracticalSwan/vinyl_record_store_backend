@@ -33,9 +33,12 @@ do not regenerate timestamped bytes under an existing sealed dataset key.
 The v1-derived identity registry follows the same rule: its apply command is an
 exact reproduction check and refuses missing or changed committed evidence.
 
-Run `npm.cmd run dataset:profile` before staging or importing. Staged files contain
-HMAC-pseudonymized reviewer keys, not source reviewer identifiers. The v3 import
-verifies source and staging hashes, record digests, the v1-derived identity
-registry, the v3 artwork decision manifest, and immutable dataset-key ownership
-before any activation. The verifier applies the same exact ownership and digest
-checks to v2 while v3 is active.
+Run `npm.cmd run dataset:profile` before any dataset lifecycle work. For the sealed
+v3 release, `npm.cmd run dataset:prepare` is a no-write reproduction check against
+the existing ignored staging files/report and public aggregate summary; it refuses
+`--base-only` and product/user/core overrides instead of replacing same-key evidence.
+Staged files contain HMAC-pseudonymized reviewer keys, not source reviewer
+identifiers. The v3 import verifies source and staging hashes, record digests, the
+v1-derived identity registry, the v3 artwork decision manifest, and immutable
+dataset-key ownership before any activation. The verifier applies the same exact
+ownership and digest checks to v2 while v3 is active.

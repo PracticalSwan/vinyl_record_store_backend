@@ -29,7 +29,7 @@ npm.cmd run catalog:artwork:download
 npm.cmd run catalog:artwork:verify
 ```
 
-The downloader accepts only reviewed HTTPS Cover Art Archive inputs and validated Cover Art Archive or Internet Archive redirect hosts. It limits redirects, elapsed time, bytes, and decoded pixel count; requires complete JPEG bytes; stages the full result; verifies the complete candidate set before manifest publication; and removes stale dataset artwork only after the new manifest is safely written. Cleanup is bounded to the exact `public/artwork/dataset/` directory and rejects reparse points.
+The downloader accepts only reviewed HTTPS Cover Art Archive inputs and validated Cover Art Archive or Internet Archive redirect hosts. It limits redirects, elapsed time, bytes, and decoded pixel count; requires complete JPEG bytes; stages the full result; verifies the complete candidate set before manifest publication; and removes stale dataset artwork only after the new manifest is safely written. Dataset artwork publication is physically anchored to the repository boundary: it rejects the final dataset directory and any ancestor path that traverses a symlink or Windows junction before writing or pruning files. Cleanup remains bounded to `public/artwork/dataset/` and cannot escape into legacy artwork or another filesystem location.
 
 For the v3 research catalog, rerun the rate-limited enrichment only when intentionally reproducing the committed decision with the required cache/network configuration. An identical run leaves sealed v3 evidence unchanged; a changed result fails closed instead of overwriting it. If the pinned artifact is missing, restore it from Git rather than generating new timestamped bytes under the sealed key. Then publish and verify the accepted set:
 

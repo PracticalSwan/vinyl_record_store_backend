@@ -10,6 +10,7 @@ import {
   assertAmazonIdentityRegistryReproduction,
   assertAmazonReleaseArtifactDigest,
   assertAmazonReleaseArtifactOwnership,
+  assertAmazonSealedStagingReproduction,
   getAmazonDatasetRelease,
   getCurrentAmazonDatasetRelease,
   isCompatibleAmazonArtworkProgress,
@@ -111,6 +112,36 @@ test("mismatched release artifacts and incompatible progress fail closed", () =>
     policyVersion: "policy-v1",
     inputDigest: "input",
   }), false);
+});
+
+test("sealed staging reproduction ignores only generatedAt and rejects changed evidence", () => {
+  const existing = {
+    schemaVersion: 2,
+    datasetKey: AMAZON_CURRENT_DATASET_KEY,
+    generatedAt: "2026-08-08T00:00:00.000Z",
+    configDigest: "config",
+    pseudonymKeyFingerprint: "private-fingerprint",
+    staged: { products: 2, users: 1, ratings: 3, splits: { train: 1, validation: 1, test: 1 } },
+    stagingFiles: {
+      products: { bytes: 10, sha256: "a".repeat(64) },
+      ratings: { bytes: 20, sha256: "b".repeat(64) },
+    },
+  };
+  assert.doesNotThrow(() => assertAmazonSealedStagingReproduction(existing, {
+    ...existing,
+    generatedAt: "2026-08-09T00:00:00.000Z",
+  }));
+  assert.throws(() => assertAmazonSealedStagingReproduction(existing, {
+    ...existing,
+    stagingFiles: {
+      ...existing.stagingFiles,
+      ratings: { bytes: 20, sha256: "c".repeat(64) },
+    },
+  }), /Refusing to rewrite sealed staging/);
+  assert.throws(() => assertAmazonSealedStagingReproduction(existing, {
+    ...existing,
+    pseudonymKeyFingerprint: "different-secret",
+  }), /Refusing to rewrite sealed staging/);
 });
 
 test("sealed artwork reproduction binds both operator input and decision digests", () => {
