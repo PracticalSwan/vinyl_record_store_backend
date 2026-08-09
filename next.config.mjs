@@ -1,4 +1,4 @@
-const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
+const frontendOrigin = (process.env.FRONTEND_ORIGIN || "http://localhost:5173").replace(/\/$/, "");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

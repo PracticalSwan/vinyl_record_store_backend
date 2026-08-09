@@ -1,6 +1,6 @@
 # Amazon Reviews 2023 Dataset Integration
 
-Status: corrected immutable v3 implementation and migration evidence verified on 2026-08-08. The migration/rollback evidence and exact quality/artwork counts below are the release record. This document does not authorize PERS-03 through PERS-09 or any recommender-algorithm change.
+Status: corrected immutable v3 implementation and migration evidence verified on 2026-08-08. The migration/rollback evidence and exact quality/artwork counts below are the release record. This dataset document does not authorize PERS-06 through PERS-09 or any dataset/recommender-algorithm change; the separately opened PERS-03 through PERS-05 code batch remains default-off and data-lifecycle independent.
 
 Audience: backend/frontend maintainers, course assessors, and operators of the classroom `vinyl_record_store` MongoDB database.
 
@@ -23,7 +23,7 @@ V3 supersedes v2 with corrected original-release-year enrichment. V2 remains the
 - explicit research-only browsing with no invented price, currency, stock, condition, cart, or checkout behavior;
 - protected customer state, seed-mode regression coverage, and a reproducible dataset E2E mode.
 
-Historical evidence is data-ready only. No new ranking model was implemented or evaluated. The deployed behavior remains `content-demo-v1`, and the live evaluator remains `insufficient-evidence`.
+Historical evidence is data-ready only: no historical-data ranking model was implemented or evaluated. The separately implemented `preference-profile-v1` live mode remains default-off and has not been quality-evaluated. The deployed default behavior remains `content-demo-v1`, and the live evaluator remains `insufficient-evidence`.
 
 ## Source, Citation, And Redistribution Boundary
 
@@ -242,4 +242,4 @@ Observed on 2026-08-08. This block preserves v2/v1 migration history and does no
 
 ## Recommender Gate
 
-DATA-00 through DATA-15 are closed only for the dataset foundation. PERS-03 through PERS-09, BFP-10 through BFP-16, FFP-10 through FFP-14, collaborative filtering, matrix factorization, SVD, popularity ranking, preference/behavior ranking, hybrid orchestration, and any recommendation-quality claim remain deferred. A separate user-approved task must select an algorithm, use the versioned historical adapter without mixing live identities, run matched leakage-safe baselines, account for positive skew, and preserve `content-demo-v1` as regression behavior.
+DATA-00 through DATA-15 are closed only for the dataset foundation. PERS-03 through PERS-05 are implemented separately behind default-off flags and do not alter this dataset. PERS-06 through PERS-09, collaborative filtering, matrix factorization, SVD, popularity ranking, behavioral ranking, hybrid orchestration, and any recommendation-quality claim remain deferred. Future work must use the versioned historical adapter without mixing live identities, run matched leakage-safe baselines, account for positive skew, and preserve `content-demo-v1` as regression behavior.

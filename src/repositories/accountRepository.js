@@ -1,5 +1,6 @@
 import { Cart } from "../models/Cart.js";
 import { GuestMerge } from "../models/GuestMerge.js";
+import { Feedback } from "../models/Feedback.js";
 import { Interaction } from "../models/Interaction.js";
 import { Rating } from "../models/Rating.js";
 import { RecommendationLog } from "../models/RecommendationLog.js";
@@ -16,6 +17,7 @@ export function createAccountRepository(
     interactionModel = Interaction,
     recommendationLogModel = RecommendationLog,
     guestMergeModel = GuestMerge,
+    feedbackModel = Feedback,
   } = {},
   connect,
 ) {
@@ -37,6 +39,7 @@ export function createAccountRepository(
           { session },
         );
         await guestMergeModel.deleteMany({ userPublicId }, { session });
+        await feedbackModel.deleteMany({ userPublicId }, { session });
         return true;
       }),
     ),

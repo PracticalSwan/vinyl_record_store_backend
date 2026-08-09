@@ -3,6 +3,7 @@ import { assertOnlyKeys } from "../lib/request.js";
 import {
   INTERACTION_TYPES,
   PRODUCT_CONDITIONS,
+  FEEDBACK_KINDS,
   RETENTION_MS,
 } from "../models/constants.js";
 import { productId } from "./catalog.js";
@@ -153,6 +154,14 @@ export function parseRating(body) {
     throw invalid("rating must be an integer from 1 through 5.");
   }
   return body.rating;
+}
+
+export function parseFeedback(body) {
+  assertOnlyKeys(body, ["kind"]);
+  if (!FEEDBACK_KINDS.includes(body.kind)) {
+    throw invalid("kind must be not-interested or already-own.");
+  }
+  return { kind: body.kind };
 }
 
 function boundedId(value, name, maxLength = 128) {

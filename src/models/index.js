@@ -3,6 +3,7 @@ export { Cart } from "./Cart.js";
 export { Counter } from "./Counter.js";
 export { DatasetImport } from "./DatasetImport.js";
 export { DatasetProduct } from "./DatasetProduct.js";
+export { Feedback } from "./Feedback.js";
 export { GuestMerge } from "./GuestMerge.js";
 export { HistoricalAmazonRating } from "./HistoricalAmazonRating.js";
 export { Interaction } from "./Interaction.js";
@@ -18,6 +19,7 @@ import { Cart } from "./Cart.js";
 import { Counter } from "./Counter.js";
 import { DatasetImport } from "./DatasetImport.js";
 import { DatasetProduct } from "./DatasetProduct.js";
+import { Feedback } from "./Feedback.js";
 import { GuestMerge } from "./GuestMerge.js";
 import { HistoricalAmazonRating } from "./HistoricalAmazonRating.js";
 import { Interaction } from "./Interaction.js";
@@ -42,5 +44,6 @@ export const ALL_MODELS = [
   GuestMerge,
   DatasetImport,
   DatasetProduct,
+  Feedback,
   HistoricalAmazonRating,
 ];

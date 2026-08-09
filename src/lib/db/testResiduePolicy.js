@@ -7,6 +7,10 @@ export const TEST_RESIDUE_COLLECTIONS = Object.freeze([
   "guestMerges",
 ]);
 
+export const TEST_USER_SCOPED_RESIDUE_COLLECTIONS = Object.freeze([
+  "feedback",
+]);
+
 export const TEST_CLEANUP_PROTECTED_COLLECTIONS = Object.freeze([
   "vinylRecords",
   "datasetProducts",

@@ -108,6 +108,25 @@ export function createUserStateRepository(
     listRatings: (userPublicId) => run(async () => (
       await ratingModel.find({ userPublicId }).sort({ productPublicId: 1 }).lean().exec()
     ).map(clean)),
+    listRecentInteractions: (userPublicId, limit = 500) => run(async () => {
+      const boundedLimit = Math.max(1, Math.min(500, Number.isInteger(limit) ? limit : 500));
+      return (await interactionModel.find({ userPublicId })
+        .sort({ occurredAt: -1, receivedAt: -1, eventId: 1 })
+        .limit(boundedLimit)
+        .lean()
+        .exec()).map((item) => {
+        const value = clean(item);
+        if (!value) return value;
+        const {
+          userPublicId: _userPublicId,
+          anonymousId: _anonymousId,
+          sessionId: _sessionId,
+          _id: _id,
+          ...safe
+        } = value;
+        return safe;
+      });
+    }),
     setRating: (userPublicId, productPublicId, rating) => run(async () => clean(
       await ratingModel.findOneAndUpdate(
         { userPublicId, productPublicId },

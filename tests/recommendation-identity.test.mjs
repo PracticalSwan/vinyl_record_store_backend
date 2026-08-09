@@ -10,6 +10,9 @@ import {
 import {
   personalizationIdentityStrictEnabled,
   personalizationMeEndpointEnabled,
+  personalizationNegativeFeedbackEnabled,
+  personalizationPreferenceRankingEnabled,
+  personalizationProfileDomainEnabled,
 } from "../src/lib/features.js";
 import { recommendForUser } from "../src/lib/recommender/contentBased.js";
 
@@ -129,9 +132,12 @@ test("PERS-01 product recommendations remain independent of session and profile 
   assert.doesNotMatch(routeSource, /requireSession|getOptionalSession|recommendationSubject|services\/auth/);
 });
 
-test("personalization rollout flags are enabled by default and explicitly reversible", () => {
+test("personalization rollout flags use safe defaults and are explicitly reversible", () => {
   assert.equal(personalizationIdentityStrictEnabled({}), true);
   assert.equal(personalizationMeEndpointEnabled({}), true);
+  assert.equal(personalizationProfileDomainEnabled({}), false);
+  assert.equal(personalizationPreferenceRankingEnabled({}), false);
+  assert.equal(personalizationNegativeFeedbackEnabled({}), false);
   assert.equal(personalizationIdentityStrictEnabled({ PERS_IDENTITY_STRICT: "false" }), false);
   assert.equal(personalizationMeEndpointEnabled({ PERS_ME_ENDPOINT: "off" }), false);
 });

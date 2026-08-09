@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   Cart,
+  Feedback,
   Interaction,
   Order,
   RecommendationLog,
@@ -139,4 +140,23 @@ test("orders require at least one item and remain explicitly demo-only", async (
   });
   await assert.rejects(() => order.validate(), /at least one item/);
   assert.equal(order.demo, true);
+});
+
+test("feedback is durable, unique per customer/product, and strict", async () => {
+  const feedback = new Feedback({
+    userPublicId: "user-1",
+    productPublicId: 1,
+    kind: "not-interested",
+  });
+  await feedback.validate();
+  assert.ok(Feedback.schema.indexes().some(([keys, options]) => (
+    keys.userPublicId === 1 && keys.productPublicId === 1 && options.unique
+  )));
+  assert.equal(Feedback.schema.indexes().some(([keys]) => keys.expiresAt === 1), false);
+  const invalidFeedback = new Feedback({
+    userPublicId: "user-1",
+    productPublicId: 1,
+    kind: "show-fewer-like-this",
+  }).validateSync();
+  assert.match(invalidFeedback?.message || "", /enum/);
 });

@@ -12,7 +12,7 @@ Requirement status reflects the integrated academic demo as of 2026-08-08.
 | BR-004 | Interaction ingestion. | Implemented | Anonymous/authenticated bounded event batches with idempotent event IDs. |
 | BR-005 | Wishlist and cart writes. | Implemented | Session-owned wishlist, absolute cart quantities, totals, warnings, and guest merge. Demo orders remain deferred. |
 | BR-006 | Product-based recommendations. | Implemented | Content similarity endpoint. |
-| BR-007 | User-based recommendations. | Implemented identity boundary | Restricted synthetic showcase, session-owned customer cold-start, or anonymous fallback; preference/behavior ranking remains deferred. |
+| BR-007 | User-based recommendations. | Implemented with default-off preference branch | Restricted synthetic showcase, session-owned customer `preference-profile` when enabled and applicable, `cold-start` fallback, or anonymous fallback; behavioral ranking remains deferred. |
 | BR-008 | Recommendation explanations. | Implemented | Generated from matched metadata. |
 | BR-009 | Recommendation output logging. | Implemented | Exact MongoDB-mode served-list logs with request/list IDs, attribution, opt-out, and TTL. |
 | BR-010 | Admin product management. | Implemented | Role-gated summary, product CRUD, soft-delete/restore, import apply, artwork refresh, optimistic concurrency, and audit summaries; writes require MongoDB mode. |

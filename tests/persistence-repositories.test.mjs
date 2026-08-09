@@ -14,6 +14,7 @@ function chain(value) {
   query.session = () => query;
   query.lean = () => query;
   query.sort = () => query;
+  query.limit = () => query;
   query.exec = async () => value;
   return query;
 }
@@ -161,4 +162,49 @@ test("deleteCustomerAccount skips related cleanup when no customer matches", asy
   const result = await repository.deleteCustomerAccount("user-missing");
   assert.equal(result, false);
   assert.equal(relatedCalls, 0);
+});
+
+test("deleteCustomerAccount removes feedback in the same successful transaction", async () => {
+  const calls = [];
+  const userModel = { deleteOne: async () => ({ deletedCount: 1 }) };
+  const tracker = { deleteMany: async (filter) => { calls.push(filter); } };
+  const repository = createAccountRepository(
+    {
+      userModel,
+      wishlistModel: tracker,
+      cartModel: tracker,
+      ratingModel: tracker,
+      interactionModel: tracker,
+      recommendationLogModel: tracker,
+      guestMergeModel: tracker,
+      feedbackModel: tracker,
+    },
+    transactionConnect,
+  );
+  assert.equal(await repository.deleteCustomerAccount("user-1"), true);
+  assert.ok(calls.some((filter) => filter.userPublicId === "user-1"));
+});
+
+test("recent interactions are bounded, ordered, and owner fields are stripped", async () => {
+  const model = {
+    find: () => chain([
+      {
+        _id: "private",
+        userPublicId: "user-1",
+        sessionId: "secret",
+        anonymousId: "secret",
+        eventId: "event-1",
+        type: "product_view",
+        productPublicId: 1,
+        occurredAt: new Date(),
+        receivedAt: new Date(),
+      },
+    ]),
+  };
+  const repository = createUserStateRepository({ interactionModel: model }, transactionConnect);
+  const result = await repository.listRecentInteractions("user-1", 999);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].userPublicId, undefined);
+  assert.equal(result[0].sessionId, undefined);
+  assert.equal(result[0].eventId, "event-1");
 });

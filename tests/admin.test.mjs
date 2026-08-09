@@ -21,6 +21,7 @@ import {
   updateAdminProduct,
 } from "../src/services/adminCatalog.js";
 import {
+  parseAdminIncludeDeleted,
   parseAdminProductCreate,
   parseAdminProductUpdate,
   parseArtworkApplyInput,
@@ -381,6 +382,17 @@ test("artwork apply without a resolved artwork returns a conflict", async () => 
 });
 
 // ---------- Validation ----------
+
+test("admin products includeDeleted query requires a boolean", () => {
+  const query = new URL("http://localhost:3000/api/admin/products?includeDeleted=garbage").searchParams;
+  assert.equal(parseAdminIncludeDeleted(null), false);
+  assert.equal(parseAdminIncludeDeleted("true"), true);
+  assert.equal(parseAdminIncludeDeleted("false"), false);
+  assert.throws(
+    () => parseAdminIncludeDeleted(query.get("includeDeleted")),
+    /includeDeleted must be true or false/,
+  );
+});
 
 test("create validation accepts a complete product and rejects unknown fields", () => {
   const desired = parseAdminProductCreate({

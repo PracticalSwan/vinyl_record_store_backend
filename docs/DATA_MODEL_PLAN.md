@@ -32,6 +32,7 @@ The recommender contains one code-defined `demo-user` profile with purchased IDs
 | `vinylRecords` | Stable numeric public ID and slug, nullable source-aware store fields, dynamic genres/formats, MusicBrainz identifiers where reviewed, field origins, quality flags, provenance, source/version ownership, stock, and soft deletion. |
 | `interactions` | Unique event identity, optional user or anonymous subject, product/recommendation context, event times, and 90-day expiry. |
 | `wishlists`, `carts`, `ratings` | One list per user, unique cart/list product IDs, and one integer rating per user/product. |
+| `feedback` | Durable exact-item customer feedback (`not-interested` or `already-own`), one current row per user/product, unique compound user/product key, and no TTL. |
 | `guestMerges` | Unique user/merge receipt, stable input hash, and original merge result for retry-safe guest-state migration. |
 | `orders` | Numeric public ID and immutable demo order snapshots; never payment data. |
 | `recommendationLogs` | Unique request/list identity, safe subject, ordered products/scores/ranks/reasons, exclusions, mode, version, surface, and 90-day expiry. |
@@ -47,7 +48,7 @@ Schemas use strict unknown-field rejection, timestamps, bounded fields, enum val
 
 `npm run db:seed` plans creates, updates, unchanged records, and conflicts without writing. `npm run db:seed:apply` first creates the catalog indexes, refuses conflicts, performs only seed-owned creates/updates in a transaction, and never deletes records. `npm run db:indexes` verifies all declared indexes; `npm run db:indexes:ensure` creates declared collections and indexes additively before verification.
 
-Authentication, interaction ingestion, preferences, wishlist/cart state, ratings, guest-merge receipts, recommendation-request logging, catalog import, administrator catalog mutations, offline evaluation outputs, and registered-customer deletion are active. Ratings create safe history events; account deletion transactionally removes the customer and owned state, interactions, logs, and merge receipts. Backend order APIs remain deferred.
+Authentication, interaction ingestion, preferences, wishlist/cart state, ratings, guest-merge receipts, durable feedback, recommendation-request logging, catalog import, administrator catalog mutations, offline evaluation outputs, and registered-customer deletion are active. Ratings create safe history events; account deletion transactionally removes the customer and owned state, interactions, logs, merge receipts, and feedback. Backend order APIs remain deferred.
 
 Catalog import is separate from seed migration. Seed reconciliation manages the committed reviewed MusicBrainz IDs, artwork, and provenance for seed-owned records while preserving immutable public IDs/slugs and soft-delete tombstones. `src/data/localArtworkManifest.js` binds those legacy public IDs to verified files. `src/data/datasetLocalArtworkManifest.js` separately binds only accepted dataset enrichment decisions; ambiguous and unresolved dataset rows, ordinary imports, and administrator-created records use the generic placeholder unless a reviewed local bundle includes them. Import batches validate before planning, preserve source ownership, allocate numeric IDs atomically, and default to all-or-nothing writes.
 
@@ -59,8 +60,8 @@ Do not add real emails, orders, ratings, interaction histories, or identifiers t
 
 ## Planned Models (Personalization Roadmap)
 
-The following are planned in `PERSONALIZATION_IMPLEMENTATION_PLAN.md` (PERS-03 / BFP-10 onward), scheduled after BFP-07, FFP-07, and FFP-08. None is implemented.
+The following are implemented or planned in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`. PERS-03 through PERS-05 are implemented behind default-off flags; PERS-06 onward remains planned.
 
-- `feedback` collection: durable explicit user feedback (`userPublicId`, `productPublicId`, `kind` of `not-interested`/`already-own`/`show-fewer-like-this`, optional `scope`/`reason`, timestamps, `schemaVersion`), unique on `(userPublicId, productPublicId, kind)`, not TTL-limited. It is the authoritative source for suppression and is removed by the existing account-deletion transaction.
-- A recomputed recommendation-profile domain (not persisted): explicit preferences, explicit feedback, strong/weak implicit behavior, and operational state, assembled per request with provenance, polarity, level, weight, confidence, and recency. Passive analytics remain TTL-limited and honor the tracking opt-out; explicit functional actions persist and feed the profile regardless of opt-out.
-- Additive aggregation indexes for popularity ranking (PERS-07). No destructive migration; no schema change to existing collections except the additive `feedback` collection and indexes.
+- `feedback` collection: implemented durable exact-item user feedback (`userPublicId`, `productPublicId`, `kind` of `not-interested`/`already-own`, timestamps, `schemaVersion`), unique on `(userPublicId, productPublicId)`, not TTL-limited. One product has one current feedback intent; writing the other kind replaces it. `show-fewer-like-this`, free-text reason, and broad scope are deferred. This collection is authoritative for exact suppression and is included in account deletion.
+- A recomputed recommendation-profile domain (not persisted): implemented for saved preferences, exact feedback, current ratings/wishlist/cart, and an optional bounded passive-interaction slice. PERS-03 keeps this state server-internal and adds no public profile/source-flag fields. Passive analytics remain TTL-limited and honor tracking opt-out; direct functional state remains usable regardless of analytics opt-out.
+- PERS-07 reuses `historicalAmazonRatings` and its existing dataset-key indexes for aggregate popularity. Add another index only if `explain()` demonstrates a need. No popularity/profile cache collection and no destructive dataset migration are planned.

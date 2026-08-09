@@ -1,6 +1,6 @@
 # Personalization Implementation Plan (Backend)
 
-This roadmap converts the existing deterministic demo recommender into a genuine personalized recommender system for the Vinyl Record Store (CSX4207). PERS-00 through PERS-02 were implemented and verified on 2026-07-10. DATA-00 through DATA-15 were re-verified with the final lifecycle evidence on 2026-08-08. PERS-03 through PERS-09 remain planning-only, were explicitly excluded from the dataset implementation, and authorize no implementation by themselves.
+This roadmap converts the existing deterministic demo recommender into a genuine personalized recommender system for the Vinyl Record Store (CSX4207). PERS-00 through PERS-05 were implemented on the `feat/personalization-pers-03-05` branches on 2026-08-10, with the new personalization flags default-off. DATA-00 through DATA-15 were re-verified with the final lifecycle evidence on 2026-08-08. PERS-06 through PERS-09 remain planning-only, were explicitly excluded from the dataset implementation, and authorize no implementation by themselves.
 
 This plan is scheduled AFTER the entire existing documented roadmap: BFP-07 (admin backend), FFP-07 (admin frontend), FFP-08 (simulated checkout), and any backend support already planned for the simulated checkout. It does not reorder, replace, remove, or silently redefine any existing BFP/FFP plan. BFP-05 (recommender algorithm selection) remains its own on-hold placeholder; PERS-00 records the method decision that resolves BFP-05's open question without reusing the BFP-05 ID.
 
@@ -14,14 +14,27 @@ The active MongoDB catalog is immutable `amazon-reviews-2023-cds-vinyl-5core-v3`
 
 The remaining PERS milestones are revised as follows:
 
-- PERS-03 must expose only allow-listed dataset/version and availability flags. Historical pseudonyms and rating rows never enter the customer profile or API.
+- PERS-03 is server-internal and adds no public profile/source fields. Historical pseudonyms and historical rating rows never enter the live customer profile or API.
 - PERS-04 must handle nullable artist/genre/format/price/stock without inventing preferences or commercial facts. It must name whether ranking uses the active version.
-- PERS-05 and PERS-06 remain live-account features. They must not write into or reinterpret `historicalAmazonRatings`.
-- PERS-07 may evaluate a historical popularity baseline only inside the separately approved offline protocol; the production fallback still requires an explicit implementation decision.
-- PERS-08 must compare components on the same active candidate set and split, preserve leakage controls, and keep historical versus live evidence visible.
-- PERS-09 must verify dataset activation/rollback, exact-three-user preservation, nullable-field UI behavior, and independent live/historical reporting before any rollout.
+- PERS-05 is implemented as a live-account feature; PERS-06 remains planned. Neither may write into or reinterpret `historicalAmazonRatings`.
+- PERS-07 production planning may use aggregate historical ratings only for the exact active dataset; offline evaluation remains a separate train-only code path and must not reuse all-split production counts.
+- PERS-08 must score one shared active candidate set, keep live personalized evidence separate from aggregate historical popularity, and never map historical subjects to app users.
+- PERS-09 verifies v3 active / v2 rollback / v1 identity-base evidence read-only, plus exact-three-user preservation, nullable-field UI behavior, and independent live/historical reporting. It performs no dataset lifecycle write.
 
 Historical-data `ready` status does not satisfy the live evidence threshold and does not authorize Precision@k, Recall@k, MAP@k, NDCG@k, or a personalization claim. Future implementation requires a new explicit user request after this gate is revalidated.
+
+## PERS-04 Through PERS-09 Re-review (2026-08-09)
+
+This revision is authoritative when older wording in this document conflicts with it.
+
+- Keep the existing public product-to-product content similarity route unchanged. Do not add collaborative filtering, SVD, matrix factorization, or another learned model in this roadmap. The historical matrix has only 20,288 ratings across 2,387 subjects × 2,305 products (about 0.37% density) and the live app has only three showcase customers. Item-item CF is technically possible without identity mapping, but it would add a second historical model/artifact/evaluation path for limited project value; user-user CF cannot use historical subjects as live app identities.
+- PERS-04 is a knowledge-based preference scorer, not a hard-filter engine. The current UI says disliked genres are genres the user would "rather avoid"; therefore favorite/disliked genres, favorite artists, and formats are scoring signals. Budget/condition are used only when the active catalog actually exposes commercial fields. Research-only null commercial fields are neutral.
+- PERS-05 is cross-cutting exact-item feedback, not a separate recommender. Initial scope is `not-interested`, `already-own`, and undo. `show-fewer-like-this` is deferred because it requires an additional similarity-policy decision and duplicates the later behavioral-affinity logic.
+- PERS-06 builds one bounded content-affinity score from the customer's current durable state plus weak, opt-in passive events. Wishlist/cart removals remove prior positive state; they are not negative taste. Search text is not stored, so `search_submit` cannot infer artist/genre taste. Under tracking opt-out, direct rating/wishlist/cart/feedback features still work, but analytics mirrors are absent.
+- PERS-07 uses aggregate `historicalAmazonRatings` for the candidate set's exact dataset key as the production popularity fallback in MongoDB research mode. Rank primarily by rating count, then mean rating, then mapped public `product.id`. Historical user keys never leave the repository layer. Seed/legacy mode or missing historical evidence uses the deterministic catalog fallback. Do not build a second live-event popularity pipeline or cache collection unless profiling proves it necessary.
+- PERS-08 has only three possible user-list score components: preference, behavioral affinity, and historical popularity. It blends scores only when preference + behavior are both available; popularity joins that true hybrid when available. Otherwise the response uses the pure lower component. Negative feedback is an exclusion rule, and product-to-product content similarity stays separate.
+- Each component returns a complete deterministic score map already bounded to `[0,1]`; hybrid code must not run a second min-max normalization. Weight renormalization occurs only inside a true hybrid, never to mix popularity into a lower `preference-profile` or `behavior-profile` result.
+- PERS-09 integrates and verifies the above; it does not change or re-import DATA-15, does not create a new dataset version, and does not claim quality metrics. V3 must remain active, v2 rollback and v1 identity-base must remain verifiable, the legacy 116 products and exactly three showcase customers must remain intact.
 
 ## Hard Scope Boundaries
 
@@ -40,7 +53,7 @@ Explicitly excluded from this plan and from every milestone:
 - Any claim of measured recommendation quality.
 - Completing the current evidence threshold (20 eligible subjects with 5 final positive products each).
 - Publishing Precision@k, Recall@k, MAP@k, NDCG@k, or any other quality result without leakage-safe held-out evidence.
-- Collaborative filtering and matrix factorization. The project is not collecting sufficient real-user evidence. They are not added to make the project appear more advanced.
+- Collaborative filtering, SVD/matrix factorization, and learned ranking. User-user CF has no live identity bridge; item-item CF is technically possible from the sparse historical matrix but would require an additional historical model/artifact/evaluation pipeline that is unnecessary for this project scope. They are not added merely to make the project appear more advanced.
 
 The project may use deterministic synthetic fixtures and clearly labelled classroom demo profiles for development and testing. Synthetic data must never be presented as real evaluation evidence.
 
@@ -51,13 +64,13 @@ The existing live evaluator, interaction logging, recommendation logging, algori
 These facts were verified by reading the source, not by trusting doc status tables. Implementation agents must re-verify before editing.
 
 - The legacy route `GET /api/recommendations/user/[userId]` validates the URL but immediately maps it to an explicit demo or generic cold-start descriptor. Only `demo-user` selects the synthetic profile; every other ID produces identical cold-start ranking and cannot read private state. `PERS_IDENTITY_STRICT` defaults on, rejects administrators, and keeps any resolved customer session limited to logging ownership.
-- `GET /api/recommendations/me` is implemented behind the default-on `PERS_ME_ENDPOINT` rollback flag. It derives a verified customer descriptor from the signed session, rejects administrators, and otherwise serves `anonymous-fallback`; the response never exposes a customer ID.
+- `GET /api/recommendations/me` is implemented behind the default-on `PERS_ME_ENDPOINT` rollback flag. It derives a verified customer descriptor from the signed session, rejects administrators, serves the default-off preference branch only when enabled and applicable, and otherwise serves `cold-start` or `anonymous-fallback`; the response never exposes a customer ID.
 - The product-similarity route is `GET /api/recommendations/product/[id]` (`src/app/api/recommendations/product/[id]/route.js:6`). It does not read the session at all.
 - The literal `"demo-user"` is isolated to `legacyRecommendationSubject`; `recommendForUser` accepts only validated subject descriptors. Verified customers still use cold-start item ranking, so PERS-02 changes identity ownership and mode labelling without activating preference or behavioral personalization.
 - The content-based weights are `sameArtist 6, sameGenre 4, sameDecade 2, sameLabel 1, preferredGenre 2` with stock boosts `in 1, low 0.5, out excluded` (`src/lib/recommender/contentBased.js:6-14`). The artist cap is 2 (`diversify`, `contentBased.js:49-62`).
 - The algorithm version label is `content-demo-v1` from `RECOMMENDER_ALGORITHM_VERSION` (`contentBased.js:4`).
 - The hard-coded demo profile is `purchasedIds [1], wishlistIds [2,3,4], favoriteGenres [Jazz, Soul, Electronic, Folk]` (`contentBased.js:16-20`).
-- The User preferences schema has `favoriteGenres, dislikedGenres, favoriteArtists, budget.{min,max}, conditions, formats, completedAt, schemaVersion` (`src/models/User.js:10-33`). These fields are validated and persisted but the ranker never reads them. There are zero references to `user.preferences` anywhere in `src/lib/recommender/` or `src/services/recommendations.js`.
+- The User preferences schema has `favoriteGenres, dislikedGenres, favoriteArtists, budget.{min,max}, conditions, formats, completedAt, schemaVersion` (`src/models/User.js:10-33`). These fields are validated and persisted; the default-off preference branch reads them through the server-internal profile service.
 - The interaction type enum has 16 values (`src/models/constants.js:17-34`): `recommendation_impression, recommendation_click, recommendation_wishlist_add, recommendation_cart_add, recommendation_dismiss, product_view, wishlist_add, wishlist_remove, cart_add, cart_remove, cart_quantity, rating_set, rating_remove, search_submit, search_result_click, demo_checkout_complete`. `recommendation_dismiss` exists but is write-only telemetry; no code reads it back.
 - The recommendation log schema is `requestId, listId, subjectType, subjectId (select:false), mode, algorithmVersion, sourceProductId, excludedProductIds, surface, items[{productPublicId, score, rank, reasons}], servedAt, expiresAt` with a 90-day TTL (`src/models/RecommendationLog.js:15-47`).
 - Ownership for all write routes comes from `requireSession(request)`, never from a body or URL value (`src/lib/auth/requireSession.js`). `resolveSessionSubject` rejects missing, inactive, and role-mismatched subjects (`src/services/auth.js:103-114`).
@@ -65,7 +78,7 @@ These facts were verified by reading the source, not by trusting doc status tabl
 - The tracking opt-out header `x-tracking-enabled: false` suppresses recommendation logging only (`src/services/recommendations.js:24-25`). It does not suppress interaction persistence. This is an open gap that PERS-06 closes.
 - Data source selection never silently falls back from explicit MongoDB to seed (`src/lib/db/dataSource.js:8-22`).
 - The offline evaluator requires 20 subjects with 5 positives, currently reports `insufficient-evidence`, uses random/popularity/content-based baselines with leave-one-out, and is decoupled from the live ranker except for the pure function `rankCatalogFromHistory` (`src/lib/recommender/offlineEvaluation.js`, `evaluationDataset.js`, `scripts/evaluate-recommender.mjs`).
-- Account deletion removes user, wishlist, cart, ratings, interactions, recommendation logs (`subjectType:"user"`), and guest-merges in one transaction (`src/repositories/accountRepository.js:24-42`).
+- Account deletion removes user, wishlist, cart, ratings, interactions, recommendation logs (`subjectType:"user"`), guest-merges, and feedback in one transaction (`src/repositories/accountRepository.js:24-43`).
 
 ## Dependency-Safe Milestone Order And ID Mapping
 
@@ -76,7 +89,7 @@ Each PERS milestone maps to the next unused backend and/or frontend plan IDs. Th
 | PERS-00 | Audit and decision freeze | (decisions BDEC-016, risks BR-020/BR-021) | (decision FDEC-011, risks FR-013/FR-014) |
 | PERS-01 | Proper identity enforcement | BFP-08 | (contract tests only) |
 | PERS-02 | Session-owned signed-in-user endpoint | BFP-09 | FFP-09 |
-| PERS-03 | Unified recommendation profile and feedback domain | BFP-10 | (consumed via API) |
+| PERS-03 | Unified recommendation profile and feedback domain | BFP-10 | (no frontend change) |
 | PERS-04 | Preference-aware ranking | BFP-11 | FFP-10 |
 | PERS-05 | Negative-feedback capture and durable suppression | BFP-12 | FFP-11 |
 | PERS-06 | Behavioral-signal personalization | BFP-13 | FFP-12 |
@@ -84,7 +97,7 @@ Each PERS milestone maps to the next unused backend and/or frontend plan IDs. Th
 | PERS-08 | Hybrid recommendation orchestration | BFP-15 | FFP-13 |
 | PERS-09 | Cross-repository integration, migration, regression protection, documentation closure | BFP-16 | FFP-14 |
 
-Backend uses BFP-08 through BFP-16. Frontend uses FFP-09 through FFP-14. No existing BFP, FFP, task, decision, or risk ID is reused. The next-unused task IDs are B-016 (backend) and F-016 (frontend); decision IDs BDEC-016 / FDEC-011; risk IDs BR-020 / FR-013. Each milestone may also register additional sequential IDs as needed.
+Backend uses BFP-08 through BFP-16. Frontend uses FFP-09 through FFP-14. Do not reuse IDs already allocated by later admin/dataset work. This plan reserves BDEC-027 through BDEC-031 for PERS-03/05/06/07/08 and registers BR-037 for PERS-06. The next unreserved supporting IDs are B-027 / F-025, BDEC-032 / FDEC-018, and BR-038 / FR-030. Existing PERS task/risk IDs stay as already registered; allocate a new ID only for a genuinely new item.
 
 ## Milestone Template
 
@@ -150,18 +163,18 @@ Decisions to freeze (recorded in BDEC-016 and FDEC-011):
 - The old `GET /api/recommendations/user/:userId` route is restricted, not removed. `demo-user` keeps `demo-profile` for the showcase. Every other `userId` returns `cold-start` and must never read private profile data. The route must not become a private-profile endpoint.
 - Anonymous `GET /api/recommendations/me` (no session) returns the anonymous fallback ladder, never a profile.
 - Product similarity `GET /api/recommendations/product/:id` stays public and product-based and must not read user state.
-- Durable account state: preferences, ratings, wishlist, cart, and explicit feedback (`not-interested`, `already-own`, optional `show-fewer-like-this`).
-- TTL-limited analytics (90-day, existing): impressions, views, clicks, searches.
-- Explicit functional actions (ratings, wishlist, cart, not-interested, already-own) are account state AND interaction evidence. Passive analytics (impressions, views, clicks, searches) are TTL-only and honor the tracking opt-out.
-- Tracking opt-out suppresses passive analytics entirely, including persistence. Explicit functional actions remain account state regardless of opt-out because they are user-initiated features, not tracking. This closes the current gap where opt-out suppresses rec-logging but not interaction persistence.
-- Demo and showcase accounts receive deterministic seeded preference profiles (added to `src/data/demoUsers.js`), clearly labelled as demonstrations, never real personalization.
-- The recommendation profile is recomputed on demand per request. No permanently stored derived profile unless PERS-03 proves recomputation is insufficient and defines invalidation rules.
-- Component scores are normalized to `[0,1]` per request via min-max within the candidate set. When a component is unavailable, weights are renormalized over the available components rather than treating the missing component as zero, unless a milestone justifies zero explicitly.
+- Durable account state: preferences, ratings, wishlist, cart, and explicit exact-item feedback (`not-interested`, `already-own`). `show-fewer-like-this` is deferred.
+- TTL-limited analytics (90-day, existing): impressions, views, clicks, and privacy-safe search events.
+- Explicit functional actions remain authoritative in their own repositories. They may also produce analytics events while tracking is enabled, but ranking correctness never depends on those duplicate analytics rows. Passive analytics honor tracking opt-out.
+- Tracking opt-out suppresses passive analytics entirely, including persistence. Rating/wishlist/cart/feedback routes still work because they are user-requested account features, not tracking.
+- Demo and showcase accounts remain clearly labelled demonstrations; do not fabricate behavioral history or historical-user identity links for them.
+- The recommendation profile is recomputed on demand per request. No permanently stored derived profile unless measured cost later justifies it.
+- Preference, behavioral, and popularity components each return deterministic scores bounded to `[0,1]`. BDEC-016's generic weight-renormalization rule is refined by planned BDEC-031: renormalize only inside a true preference+behavior hybrid (popularity optional); lower component modes remain pure. No second min-max pass is allowed.
 - Algorithm version names: keep `content-demo-v1` for regression; add `preference-profile-v1`, `behavior-profile-v1`, `popularity-v1`, `personalized-hybrid-v1`. Cold-start stays a mode, not a version.
 - Algorithm modes: `demo-profile`, `cold-start`, `preference-profile`, `behavior-profile`, `popularity`, `personalized-hybrid`, `content-similarity` (product), `anonymous-fallback`.
-- Candidate filtering excludes soft-deleted, out-of-stock (unless availability preference says otherwise), suppressed, and already-owned exact items per the milestone rules.
+- Candidate eligibility excludes soft-deleted products and exact items suppressed by PERS-05. Stock is an eligibility rule only when the active catalog has a non-null commercial stock field; research-only missing stock is neutral. Preference fields are not silently converted into hard constraints.
 - Explanations remain truthful and are generated from actual score contributions and filters.
-- Account deletion removes all personalization state (it already removes interactions and rec logs; PERS-03/PERS-05 add the feedback collection and any profile cache).
+- Account deletion removes all durable customer personalization state. It already removes interactions and recommendation logs; PERS-03/PERS-05 add feedback cleanup. No derived profile/popularity cache collection is planned initially.
 
 ### Privacy And Security Rules
 
@@ -469,22 +482,19 @@ PERS-03 / BFP-10 — One backend-owned profile-construction service and a unifie
 
 ### Status
 
-Planned. Blocked by PERS-02. No live ranking change yet (profile is built behind a flag and consumed only in PERS-04+).
+Implemented on 2026-08-10 behind `PERS_PROFILE_DOMAIN=false` by default. PERS-03 changes no live ranking; it creates the profile/feedback domain consumed by PERS-04+.
 
 ### Goal
 
-Convert all available data (preferences, explicit feedback, strong/weak implicit behavior, operational state) into one normalized recommendation profile through a single service. Route handlers must not combine repositories or scoring logic directly.
+Build one bounded, server-internal source-state profile from saved preferences, current ratings/wishlist/cart, exact feedback, and optional recent passive interactions. Keep repository reads in one service and keep all scoring rules in PERS-04/PERS-06.
 
 ### Why It Is Required
 
-Personalization needs one authoritative profile. Today preferences are inert, dismissal is write-only, and there is no feedback collection. Without a unified domain, PERS-04 through PERS-08 would each re-read repositories and produce inconsistent profiles.
+Personalization needs one authoritative profile. Before this batch, preferences were inert, dismissal was write-only, and there was no feedback collection. The implemented domain prevents PERS-04 through PERS-08 from independently re-reading repositories and producing inconsistent profiles.
 
 ### Current Implementation Gap
 
-- No profile-construction service.
-- No feedback collection (no not-interested, already-own, show-fewer).
-- Preferences not read by the ranker.
-- Passive analytics and explicit actions are not separated.
+The PERS-03 gap is closed: the profile-construction service, durable exact feedback collection, flag-gated preference reads, and passive-analytics/direct-action split are implemented. `show-fewer-like-this` remains deferred beyond the initial roadmap.
 
 ### Dependencies
 
@@ -499,103 +509,101 @@ Personalization needs one authoritative profile. Today preferences are inert, di
 
 ### Backend Changes
 
-- Add `src/services/recommendationProfile.js` with a pure `buildRecommendationProfile({ subject, preferences, feedback, interactions, catalog, now, opts })` returning a normalized profile object: `{ explicitPreferences, explicitFeedback, strongImplicit, weakImplicit, operational, signals[], completeness, dataSourceFlags }`.
-- Add `src/models/Feedback.js` (durable user feedback collection): fields `userPublicId, productPublicId, kind ("not-interested"|"already-own"|"show-fewer-like-this"), scope, reason, createdAt, updatedAt, schemaVersion`. Unique compound `(userPublicId, productPublicId, kind)`. Not TTL-limited (durable account state).
+- Add `src/lib/recommender/recommendationProfile.js` with pure `buildRecommendationProfile({ subject, preferences, ratings, wishlist, cart, feedback, interactions })`. Return only bounded normalized source state needed later: `{ explicitPreferences, ratings, wishlist, cart, explicitFeedback, passiveInteractions }`. Do not query the catalog, pre-score preferences/behavior, or add public completeness/source-flag fields in PERS-03.
+- Add `src/services/recommendationProfile.js` as the only account-state repository orchestrator. It receives the verified session subject plus `{ trackingAllowed, feedbackAllowed }`; it always reads preferences/ratings/wishlist/cart, reads feedback only when `feedbackAllowed === true`, and calls the pure builder with an empty feedback list otherwise. When `trackingAllowed === true`, also read at most 500 recent interaction rows for that exact `userPublicId`; otherwise do not query interactions. Do not load product/catalog metadata here: PERS-04/PERS-06 must join profile product IDs against the one active candidate set already loaded by the recommendation service.
+- Add `src/models/Feedback.js` (durable user feedback collection): fields `userPublicId, productPublicId, kind ("not-interested"|"already-own"), createdAt, updatedAt, schemaVersion`. Unique compound `(userPublicId, productPublicId)` so one product has one current feedback intent per customer; changing kind replaces the prior kind instead of storing contradictory rows. Not TTL-limited. Do not add `show-fewer-like-this`, free-text reason, or broad scope in the initial schema.
 - Add `src/repositories/feedbackRepository.js` and `src/services/feedback.js` (validation, authorization, idempotent upsert, undo).
+- Extend `src/repositories/userStateRepository.js` with one read-only `listRecentInteractions(userPublicId, limit = 500)` method. Filter by the verified `userPublicId`, sort by `occurredAt DESC` with `receivedAt DESC` as the tie-break, and cap the limit at 500. The existing `{ userPublicId: 1, occurredAt: -1 }` index is the initial query path; add no new index unless `explain()` later proves it necessary.
 - Extend `src/repositories/accountRepository.js` deletion transaction to also remove the feedback collection.
-- Add new interaction types if needed for explicit feedback events (for example `not_interested`, `already_own`, `feedback_undo`) to `src/models/constants.js`, keeping `recommendation_dismiss` for backward compatibility. Explicit functional actions are written both as durable feedback and as interaction evidence.
+- Do not require new interaction types for ranking correctness. The feedback collection is authoritative. If an attributed analytics mirror is retained, reuse/extend interaction enums only under tracking-enabled analytics and make that write best-effort; feedback success must not depend on it.
 
 ### Frontend Changes
 
-Consumed via API in PERS-05 (FFP-11). No frontend change in PERS-03 except reading `profileSummary` (already present) and any new safe data-source flags.
+No frontend change in PERS-03. The profile domain remains server-internal until later ranking milestones consume it; keep the existing recommendation response shape unchanged.
 
 ### API Contract
 
-No new public route in PERS-03. The `/me` response gains safe `profileSummary` and `dataSourceFlags` (for example `["preferences","ratings","wishlist","cart","feedback","behavioral"]`) — no raw signals, no counts that leak private behavior.
+No public API change in PERS-03. Do not expose the unified profile, source flags, raw signals, or source counts. Existing `/me` response fields remain unchanged until a later ranking milestone needs a documented user-facing mode/reason.
 
 ### Data-Model Changes
 
-- New `feedback` collection (durable, no TTL).
-- Optional new interaction enum values for explicit feedback.
-- `accountRepository` deletion extended.
-- Guest-to-account merge extended to carry explicit feedback authored as a guest (decision: explicit guest feedback merges on sign-up only, like other guest state).
+- New `feedback` collection (durable, no TTL) with only the two initial exact-item kinds.
+- Extend `accountRepository` deletion to remove feedback in the existing transaction.
+- Do not add guest feedback, feedback migration, or ranking-required interaction enums in PERS-03. Initial feedback is an authenticated account feature; any analytics mirror is optional and belongs to PERS-05.
 
 ### Algorithm Or Business Rules
 
-Profile signal schema (each signal): `{ key, source (preference|rating|wishlist|cart|feedback|behavioral), polarity (positive|neutral|negative), level (item|artist|genre), target, weight, confidence, recency, firstSeen, lastSeen, provenance }`.
+PERS-03 returns normalized source state, not a universal weighted `signals[]` schema. PERS-04 owns preference weights; PERS-06 owns behavioral polarity/weights/caps. This prevents the profile layer from encoding two algorithms' scoring rules.
 
 Data classification:
 
 - Durable user state: preferences, ratings, wishlist, cart, explicit feedback.
-- Immutable interaction history: all interaction events (90-day TTL).
-- TTL-limited analytics: impressions, views, clicks, searches.
-- Derived profile data: recomputed per request (no persistence).
-- Cached: optional short-lived in-process cache keyed by subject + a profile version, invalidated on any write by that subject.
-- Never persisted: the raw recomputed profile object.
+- Passive interaction analytics: existing 90-day TTL interaction rows; tracking opt-out may make them absent.
+- Derived profile data: recomputed per request and never persisted.
+- No profile cache in the initial implementation. Add one only after measured request cost and explicit invalidation rules justify it.
 
-Deduplication keys: `(subject, productPublicId)` for item signals; `(subject, level, target)` for artist/genre derived signals. Replay protection: idempotent feedback upsert by `(userPublicId, productPublicId, kind)`. Per-session and per-user caps on behavioral signals (PERS-06).
+PERS-03 does not invent a second state machine. Ratings, wishlist, cart, preferences, and feedback are read from their current authoritative repositories. Feedback replay protection is the unique/idempotent `(userPublicId, productPublicId)` upsert; writing the other allowed kind replaces the current intent. Return only a bounded recent passive-interaction slice for PERS-06; PERS-06 owns its event dedup/caps and attribute aggregation.
 
-Clock-skew handling: use `receivedAt` (server-owned, immutable) for ordering; clamp `occurredAt` to the existing `MAX_FUTURE_SKEW_MS`. Missing timestamps fall back to `receivedAt`. Deleted/unknown products are dropped from signals but counted in `dataSourceFlags` as `unknown-products`. Duplicate ratings: newest wins. Rating changes: replace. Wishlist removal: removes the positive signal. Cart quantity changes: re-derive. Conflicting signals: explicit overrides implicit; more recent wins within the same source.
+For passive rows, keep the validated `occurredAt` timestamp for recency and use server-owned `receivedAt` only as a stable tie-break. PERS-03 does not query the catalog or decide whether a product is still active; PERS-04/PERS-06 drop unknown/inactive references when they join this profile to the request's active candidate map. Wishlist/cart removal is represented by absence from current durable state, not by a negative profile signal. PERS-03 does not resolve cross-source conflicts.
 
 ### Privacy And Security Rules
 
-- Passive analytics never feed the profile when opt-out is active.
-- Explicit functional actions feed the profile regardless of opt-out.
-- The profile object never leaves the server; only safe `profileSummary` and flags are public.
+- When `/me` receives `X-Tracking-Enabled: false`, the profile service does not query/use passive interaction rows.
+- Current durable preferences/ratings/wishlist/cart/feedback remain available regardless of analytics opt-out because they are direct account state, not passive tracking.
+- The unified profile object never leaves the server. PERS-03 adds no new public summary/source-flag fields.
 - Feedback is owned by the session subject; cross-user writes are rejected.
 
 ### Edge Cases
 
-- Deleted products referenced by feedback/interactions: dropped from signals, flagged.
-- Unknown product ids: dropped, flagged.
-- Duplicate ratings, rating changes, wishlist removal, cart quantity changes: handled per rules above.
-- Conflicting signals (rating 5 and not-interested on same item): explicit negative feedback wins for suppression; rating still counts as positive taste evidence at artist/genre level per PERS-05 rules.
-- Guest-to-account merge of feedback: sign-up only, idempotent.
-- Seeded-demo reset: showcase accounts reset to canonical profiles on `db:seed:users:apply`.
+- Deleted/unknown products may remain as internal IDs in the source-state profile; PERS-05/PERS-06 must ignore them when joining to the active candidate map. Never expose those IDs/counts publicly.
+- Rating replacement/deletion and current wishlist/cart membership come from their authoritative repositories; PERS-03 does not replay event history to reconstruct them.
+- Rating 5 + not-interested can coexist in source state. PERS-05 owns exact suppression; PERS-06 owns how both affect attribute affinity.
+- Guest feedback does not exist in the initial scope, so guest-state merge has nothing to migrate for feedback.
+- Showcase reset behavior stays whatever `db:seed:users:apply` already defines; PERS-03 does not fabricate additional interaction history.
 
 ### Failure And Recovery Behavior
 
-- Database unavailable: profile build fails over to preferences-only (durable, fast) or cold-start; never silently cross identity.
-- Partial write in feedback upsert: transactional; idempotent retry safe.
+- In explicit MongoDB mode, a required profile repository failure returns `PERSISTENCE_UNAVAILABLE`; preferences are stored in the same persistence boundary, so do not invent a preferences-only fallback when MongoDB is unavailable.
+- Feedback upsert/delete is a single-document atomic operation and idempotent; no transaction is needed for that write. Account deletion remains transactional across all owned collections.
 
 ### Migration Strategy
 
-- Add models/repositories/services behind `PERS_PROFILE_DOMAIN` flag, no live ranking consumption.
-- Additive indexes only; dry-run backfill not needed (feedback is created on demand).
-- Account deletion extension covered by an additive transaction step.
+- Add model/repository/service behind `PERS_PROFILE_DOMAIN`; no live ranking consumption in PERS-03.
+- Create only the feedback uniqueness/lookup indexes required by its schema; no backfill because feedback is created on demand.
+- Extend the existing account-deletion transaction with feedback cleanup and verify rollback on failure.
 
 ### Tests
 
-- `tests/recommendation-profile.test.mjs`: profile construction from each source; polarity/level derivation; dedup; recency; conflicts; opt-out excludes passive; explicit actions included under opt-out; deleted/unknown products flagged.
-- `tests/feedback-repository.test.mjs`: idempotent upsert, undo, cross-user rejection, account deletion cleanup.
+- `tests/recommendation-profile.test.mjs`: pure builder receives preferences/ratings/wishlist/cart/feedback/passive rows; service reads feedback only when `feedbackAllowed` is true; service reads at most 500 interactions for the exact customer and reads none when tracking is off; ordering is `occurredAt` then `receivedAt`; current durable state remains; no catalog query/scoring occurs; output has no algorithm weights or database object IDs.
+- `tests/feedback-repository.test.mjs`: one-row-per-user/product uniqueness, same-kind idempotent upsert, kind replacement, repeated undo, cross-user rejection, account-deletion cleanup/rollback.
 
 ### Documentation Updates
 
-- `DATA_MODEL_PLAN.md`: add `feedback` collection and signal schema.
+- `DATA_MODEL_PLAN.md`: add the one-row-per-user/product feedback collection and document the non-persisted normalized source-state profile; no universal weighted signal schema.
 - `RECOMMENDER_SYSTEM_PLAN.md`: document the profile domain.
-- Both `API_CONTRACT_PLAN.md`: document new safe profile fields.
-- `DECISION_LOG.md`: BDEC-017 (profile recompute-on-demand; explicit-vs-passive opt-out split).
+- Both `API_CONTRACT_PLAN.md`: record that PERS-03 has no public profile-field change; feedback routes are documented only in PERS-05.
+- Decision BDEC-027 (recorded 2026-08-10): recommendation profile is recomputed on demand; durable account state remains usable while passive analytics honor opt-out.
 
 ### Definition Of Done
 
 - One service builds the profile; routes do not combine repositories.
 - Feedback collection exists, idempotent, deleted with the account.
-- Profile never persisted; safe summary only in responses.
-- Opt-out split enforced.
+- Unified profile is recomputed and server-internal; PERS-03 adds no new public profile/source fields.
+- Passive interaction reads are bounded and skipped under opt-out; durable account state remains available.
 
 ### Rollback Criteria
 
-Disable `PERS_PROFILE_DOMAIN`. Ranking reverts to demo/cold-start. Feedback collection remains harmless if left in place; it can be dropped via the additive migration's reverse.
+Disable `PERS_PROFILE_DOMAIN`. All dependent live profile features (preference ranking, exact feedback use, behavioral ranking, and hybrid) must become effectively disabled even if their raw environment flags are accidentally true; popularity may still operate independently. Leave any collected feedback rows intact and ignored; do not make rollback destructive.
 
 ### Risks
 
-- BR-023: profile leaks private behavior in summary. Mitigation: summary allow-list test.
-- BR-024: feedback retention conflicts with TTL. Mitigation: feedback is durable by design; documented.
+- BR-021: once a real profile exists, the legacy arbitrary-user route could become a private-profile leak. Mitigation: keep the PERS-01 identity contract test as a hard gate.
+- BR-028 / FR-017: feedback cleanup is incomplete or the server-internal profile leaks into the public contract. Mitigation: transactional deletion tests plus response-contract tests proving no new profile/source fields are exposed.
 
 ### Decisions Still Requiring Approval
 
-- Whether `show-fewer-like-this` is in the initial scope (proposed: yes, optional, with clear "like this" explanation).
-- Cache TTL for the recomputed profile (proposed: none initially; add only if measured cost justifies).
+- None for feedback shape: initial feedback is fixed to `not-interested` and `already-own`; `show-fewer-like-this` is deferred.
+- Profile cache remains out of scope initially. Add one only if measured request cost later justifies it and invalidation is explicit.
 
 ---
 
@@ -607,20 +615,19 @@ PERS-04 / BFP-11 (backend) + FFP-10 (frontend) — Knowledge-based preference-aw
 
 ### Status
 
-Planned. Blocked by PERS-03. First ranking change; behind a flag; `content-demo-v1` preserved.
+Implemented on 2026-08-10 behind the fail-closed dependency `PERS_PROFILE_DOMAIN && PERS_PREFERENCE_RANKING`; both flags remain off by default and `content-demo-v1` is preserved when disabled.
 
 ### Goal
 
-Rank with the user's stored preferences as hard constraints and soft scores, with truthful explanations, without silently ignoring constraints to fill a list.
+Use the customer's stored preferences as deterministic knowledge-based score signals over the active catalog, with truthful reasons and safe handling of research-only null fields.
 
 ### Why It Is Required
 
-Preferences are persisted but inert. PERS-04 makes them actually drive ranking, the first real personalization surface.
+Preferences were persisted but inert before this batch. PERS-04 is the first live ranking change and uses only preference semantics the current UI actually collects.
 
 ### Current Implementation Gap
 
-- Ranker never reads preferences.
-- No hard/soft constraint separation.
+The PERS-04 gap is closed behind `PERS_PROFILE_DOMAIN && PERS_PREFERENCE_RANKING`: the ranker reads the server-internal profile, uses null-safe soft signals over one active candidate set, and does not score release era or availability fields.
 
 ### Dependencies
 
@@ -633,45 +640,43 @@ Preferences are persisted but inert. PERS-04 makes them actually drive ranking, 
 
 ### Backend Changes
 
-- Add `src/lib/recommender/preferenceRanking.js` with pure functions: `applyHardConstraints(candidates, profile)`, `scoreByPreferences(candidates, profile)`, `relaxConstraints(...)`.
-- Wire into the `/me` service behind `PERS_PREFERENCE_RANKING`. New mode `preference-profile`, version `preference-profile-v1`.
-- Reuse the existing diversify (artist cap 2) and deterministic title tie-break.
+- Add `src/lib/recommender/preferenceRanking.js` with pure `scorePreferenceCandidate(product, preferences, catalogMode)`, `scorePreferenceCandidates(candidates, preferences, opts)`, and `rankByPreferences(candidates, preferences, opts)`. `scorePreferenceCandidates` returns request-level `available` plus a score/reasons entry for every candidate and never truncates/applies diversity; `rankByPreferences` uses that complete score map, then sorts/applies the artist cap for the standalone `preference-profile` mode. No repository or environment access inside this module.
+- Wire it into `src/services/recommendations.js` only for the session-owned `/me` path, behind `PERS_PREFERENCE_RANKING`. Use mode `preference-profile`, version `preference-profile-v1`.
+- Keep `GET /api/recommendations/product/[id]` and `content-demo-v1` unchanged.
+- Reuse the current artist cap of 2 only in the standalone ranked list. Tie-break by mapped public product ID (`product.id`), then title.
 
 ### Frontend Changes (FFP-10)
 
-- Surface `preference-profile` mode label honestly.
-- Preference edits refresh recommendations (wire `savePreferences` to `reloadRecommendations` for authenticated users).
-- Show relaxed-constraint notices when applicable.
+- Surface `preference-profile` honestly.
+- Do not force a recommendation reload from `ProfilePreferencesPage` or onboarding. The current `CatalogProvider` loads recommendations only on `/` and `/recommendations`; those preference routes have no active recommendation resource. When the user later enters a recommendation surface, the existing route/resource-key effect performs a fresh `/me` request with the saved preferences. Do not couple `AuthProvider` to catalog state.
+- Do not add relaxation UI; PERS-04 has no user preference that means "hard filter".
 
 ### API Contract
 
-`/me` may return `mode: "preference-profile"` and reasons such as `Matches your Jazz preference.`, `Falls within your preferred budget.`, `Available in your preferred condition.`, `Matches an artist you selected.`, `Excluded because you marked this genre as unwanted.` Raw weights are never shown as probabilities.
+`/me` may return `mode: "preference-profile"` with reasons such as `Matches your Jazz preference.`, `Matches an artist you selected.`, or `You prefer this format.` Budget/condition reasons are allowed only in `commerce-preview` when the product and preference fields are both non-null. Raw weights are never exposed.
 
 ### Data-Model Changes
 
-None (preferences already exist). `dislikedGenres` becomes a hard constraint by default.
+None. Use the existing User preference schema exactly: `favoriteGenres`, `dislikedGenres`, `favoriteArtists`, `budget`, `conditions`, `formats`.
 
 ### Algorithm Or Business Rules
 
-Hard constraints (exclude):
+1. Read one active-catalog candidate set from the catalog repository. Never mix v1/v2/v3 rows.
+2. Repository soft-delete filtering stays authoritative. If a commercial candidate has `stock === "out"`, exclude it; `stock === null` in research mode is neutral.
+3. Build at most six request-level preference groups: favorite genre, disliked genre, favorite artist, format, budget, condition. Values inside one list are alternatives, not separate denominator entries: a candidate matching any selected favorite genre receives that group's one positive weight, not one weight per selected genre. Compare `product.genre`, `product.artist`, and `product.format` by trimmed, case-insensitive exact value; artist matching is never substring/regex. The current `toPublicProduct` candidate shape exposes the primary `genre` only, not raw `genres[]`, so use that primary genre and do not widen the public product contract. Remove any normalized genre appearing in both favorite/disliked sets from both before deciding whether those groups are active. A disliked-genre group is a bounded negative score, never an exclusion. Budget/condition groups are active only outside research-only mode. Budget matches when non-null `product.price` falls inclusively within the saved bounds (missing min = no lower bound; missing max = no upper bound). Condition matches when non-null `product.condition` is in the selected condition set.
+4. Do not score release era, availability preference, label preference, or any field that the current preference schema does not contain.
+5. Every active preference group contributes its absolute group weight once to the denominator for every candidate. A positive group match contributes `+weight`, a disliked-genre match contributes `-weight`, and a non-match/missing candidate field contributes `0`. This keeps null metadata neutral without making sparse records easier to score highly. Never turn null into zero-price, out-of-stock, or a fabricated category.
+6. If no preference group is active, return `available: false`. Otherwise compute `raw = signedContributionSum / activeAbsoluteWeightSum` (bounded `[-1,1]`), then `score = clamp((raw + 1) / 2, 0, 1)`. After scoring the candidate set, return `available: false` if every candidate had zero signed contribution; preferences that match nothing must not produce a misleading `preference-profile` mode. Keep the six group weights in one versioned constants object.
+7. `scorePreferenceCandidates` keeps all eligible candidates keyed by `product.id`. `rankByPreferences` sorts score DESC, `product.id` ASC, then title and applies artist cap 2 for the standalone mode. Recommendation reasons come only from positive contributions actually used; negative penalties affect score but must not be presented as a positive recommendation reason.
+8. Empty/no-applicable preferences return the existing cold-start path in PERS-04. PERS-07/PERS-08 replace that fallback later; do not reference future components before they exist.
 
-- Out-of-stock (unless availability preference explicitly allows backorders — not in initial scope).
-- Soft-deleted.
-- Explicitly suppressed (not-interested/already-own from PERS-05; until then, none).
-- Already-owned exact item (from PERS-05; until then, none).
-- Explicitly disliked genre (`dislikedGenres`) by default.
-- Unsupported format if configured hard (initial: soft).
-- Absolute budget maximum if configured hard (initial: `budget.max` is hard, `budget.min` is soft).
+### Exact Implementation Order
 
-Soft preferences (score):
-
-- Favorite genre, favorite artist, preferred condition, preferred format, preferred budget range, release era, availability.
-
-Rules: candidate generation from the bounded candidate set; hard-filter; soft-score; weight configuration versioned in a constants file; min-max normalization per request; deterministic tie-break by title; minimum score threshold optional; max 2 per artist; genre diversity.
-
-Handling gaps: missing metadata → neutral score (not zero, not excluded unless hard rule); multi-genre products match on any favorite; unknown year/label → decade/label signal neutral; missing price → budget neutral; imported partial metadata → neutral on missing fields; currency assumed USD (existing); conflicting preferences → favorites win over dislikes only at item level, dislikes remain hard at genre level; empty preferences → fall through to next ladder rung; partial onboarding → use whatever is set; extremely narrow preferences → may yield empty list; no candidates after filtering → explicit empty result with explanation, or user-approved relaxation suggestions, or a clearly separated fallback section stating which constraints were not applied.
-
-Transparent relaxation: when no candidate satisfies all hard constraints, the system does not silently relax. It returns either an empty personalized list with explanation, user-approved relaxation suggestions, or a separate fallback section that states which constraints were relaxed.
+1. Add pure scorer + unit tests.
+2. Add service wiring + mode/version tests.
+3. Update recommendation response validation/logging allow-lists for the new mode/version.
+4. Update frontend mode/copy handling and add a navigation regression proving the next Home/Recommendations load uses the saved preferences; do not add an off-surface reload.
+5. Run backend tests/lint/build, frontend tests/lint/build, then the existing auth/recommendation E2E path. Stop if product-similarity output changes.
 
 ### Privacy And Security Rules
 
@@ -680,21 +685,22 @@ Transparent relaxation: when no candidate satisfies all hard constraints, the sy
 
 ### Edge Cases
 
-- Empty preferences, partial onboarding, conflicting favorite/disliked genres, `budget.min > budget.max` (rejected at validation already), unsupported condition/format, preference edits during ranking (next request picks up new prefs), preference deletion, no matching products, extremely narrow preferences, missing product metadata, multi-genre products, unknown year/label, missing price, imported partial metadata.
+- Empty preferences, partial onboarding, conflicting favorite/disliked genres, `budget.min > budget.max` (rejected at validation already), unsupported condition/format, preference edits during ranking (next request picks up new prefs), preference deletion, no matching products, extremely narrow preferences, missing product metadata, null primary genre, unknown year/label, missing price, imported partial metadata.
 
 ### Failure And Recovery Behavior
 
-- No candidates → empty list + explanation (no silent fill).
-- Database unavailable → preferences unavailable → fall to next ladder rung (behavior-only, popularity, cold-start).
+- No applicable preference signal → return the current cold-start mode at this milestone.
+- MongoDB unavailable in explicit MongoDB mode → return `PERSISTENCE_UNAVAILABLE`; never switch to seed.
 
 ### Migration Strategy
 
 - Behind `PERS_PREFERENCE_RANKING`; default off.
-- No data migration.
+- No schema or data migration.
 
 ### Tests
 
-- `tests/preference-ranking.test.mjs`: hard-filter correctness; soft-score; disliked-genre exclusion; budget hard max; empty preferences; narrow preferences → empty+explanation; relaxation notice; deterministic tie-break; missing metadata neutral; explanation correctness.
+- `tests/preference-ranking.test.mjs`: each list field is one group (multiple selected values do not multiply denominator weight); positive genre/artist/format matches; disliked genre bounded penalty rather than exclusion; favorite+disliked overlap removed before group activation; inclusive min/max budget including one-sided bounds; condition-set membership; research-only budget/condition ignored; null metadata neutral; empty/no-applicable/no-matching preference fallback; complete score map before diversity; `[0,1]` bound; deterministic `product.id` tie-break; standalone artist cap; negative penalties never become recommendation reasons.
+- Extend `/me`, recommendation logging, and frontend tests so the new mode/version is accepted without changing `content-demo-v1` or product similarity.
 
 ### Documentation Updates
 
@@ -704,24 +710,24 @@ Transparent relaxation: when no candidate satisfies all hard constraints, the sy
 
 ### Definition Of Done
 
-- Stored preferences drive ranking for authenticated users.
-- Hard constraints never silently ignored.
-- Explanations match actual filters.
-- `content-demo-v1` unchanged.
+- Stored applicable preferences change authenticated `/me` ordering deterministically.
+- Research-only null commercial fields never exclude or boost a product.
+- Reasons match actual non-zero score contributions.
+- No preference field is treated as a hard constraint unless the UI/API later adds explicit hard semantics.
+- `content-demo-v1` and the product-similarity route are unchanged.
 
 ### Rollback Criteria
 
-Disable `PERS_PREFERENCE_RANKING`; `/me` reverts to cold-start/demo parity.
+Disable `PERS_PREFERENCE_RANKING`; `/me` reverts to the existing cold-start/demo behavior without data rollback.
 
 ### Risks
 
-- BR-025: silent constraint relaxation fills lists with irrelevant items. Mitigation: empty-with-explanation test.
-- BR-026: narrow real preferences yield empty storefront. Mitigation: documented relaxation UX.
+- BR-023: research-only null fields or a missing preference signal distorts scoring. Mitigation: fixed request-level denominator plus null-neutral tests.
+- BR-025 / FR-018: implementation semantics/copy drift from the current soft-preference UI or the frontend adds a useless off-surface reload. Mitigation: disliked-genre semantics, feature-aware copy, and a navigation test proving the next recommendation surface fetch is fresh.
 
 ### Decisions Still Requiring Approval
 
-- Which constraints are hard vs soft by default (proposed defaults above).
-- Whether to show relaxation suggestions automatically or on user action.
+- Initial preference weights. Record them as versioned assumptions; do not call them learned or optimal.
 
 ---
 
@@ -729,15 +735,15 @@ Disable `PERS_PREFERENCE_RANKING`; `/me` reverts to cold-start/demo parity.
 
 ### ID And Title
 
-PERS-05 / BFP-12 (backend) + FFP-11 (frontend) — First-class negative feedback: not-interested, already-own, undo, optional show-fewer-like-this.
+PERS-05 / BFP-12 (backend) + FFP-11 (frontend) — First-class exact-item negative feedback: not-interested, already-own, and undo.
 
 ### Status
 
-Planned. Blocked by PERS-03 (feedback domain) and ideally after PERS-04 so negative signals compose with preference ranking.
+Implemented on 2026-08-10 behind `PERS_PROFILE_DOMAIN && PERS_NEGATIVE_FEEDBACK`; both flags remain off by default. Negative feedback composes with preference ranking when both effective flags are enabled.
 
 ### Goal
 
-Make negative feedback a durable, first-class feature that suppresses and down-weights, not just an analytics event.
+Make exact-item feedback durable and first-class so `/me` can exclude records the customer marked `not-interested` or `already-own`. Broader taste effects belong only to PERS-06.
 
 ### Why It Is Required
 
@@ -745,7 +751,7 @@ Make negative feedback a durable, first-class feature that suppresses and down-w
 
 ### Current Implementation Gap
 
-- No feedback collection; dismissal is write-only; no UI.
+The PERS-05 gap is closed: durable exact-item feedback routes, exclusion wiring, and customer-only pessimistic controls with contextual Undo are implemented behind default-off flags. `recommendation_dismiss` remains analytics-only.
 
 ### Dependencies
 
@@ -755,42 +761,42 @@ Make negative feedback a durable, first-class feature that suppresses and down-w
 ### Non-goals
 
 - Permanent broad genre suppression from a single item unless explicitly chosen.
+- A persistent feedback-management/history API or screen. V1 Undo is contextual to the current confirmed card placeholder; no public feedback-list route is added.
 - Treating already-own as a dislike.
 
 ### Backend Changes
 
 - Feedback routes under `src/app/api/me/feedback/`:
-  - `PUT /api/me/feedback/:productId` body `{ kind, scope?, reason? }` → idempotent upsert.
-  - `DELETE /api/me/feedback/:productId?kind=` → undo (idempotent).
-  - `GET /api/me/feedback` → list (account feature).
-- Wire feedback into `applyHardConstraints` (exact-item suppression for `not-interested` and `already-own`) and into negative feature evidence (configurable, bounded) for matching artist/genre.
-- Retention: durable (no TTL). Account deletion removes it (PERS-03).
-- Undo idempotent; duplicate submission does not double-penalize (compound key).
+  - `PUT /api/me/feedback/:productId` body `{ kind }`, where `kind` is only `not-interested` or `already-own`, → idempotent upsert; if the product already has the other kind, replace it.
+  - `DELETE /api/me/feedback/:productId` → idempotently remove the current exact-item feedback, regardless of its kind.
+- Do not add a public feedback-list route in v1. Ranking reads feedback internally through the repository; the card already knows the product id/kind needed for immediate Undo. A later feedback-management screen can add listing under a separate task if needed.
+- Validate that the product exists in the active catalog before a new feedback write. If a previously valid product is later deleted/inactive, keep the durable row but ignore it during ranking.
+- Add one shared `applyUserExclusions(candidates, feedback)` helper used by PERS-05 onward. Both feedback kinds exclude the exact item from `/me`; neither excludes an artist or genre.
+- Retention is durable/no TTL and account deletion removes it via the PERS-03 transaction.
+- Ranking correctness reads the `feedback` collection directly. An attributed analytics mirror may be emitted only when tracking is enabled; failure to write analytics must not fail the feedback action.
 
 Semantics:
 
-- `not-interested`: suppress exact item; apply configurable negative evidence to matching attributes; avoid permanent broad genre suppression from one item unless the user explicitly chooses a genre-level dislike.
-- `already-own`: suppress exact item from purchase-oriented recommendations; treat artist/genre/style as possible positive taste evidence; not a dislike.
-- `show-fewer-like-this`: reduce similar-item scores; require a clear explanation of what "like this" means; avoid over-penalizing broad genres.
-- Low rating (1-2): strong negative item evidence; controlled negative feature evidence; rating changes update the effective profile (already supported via rating replace).
+- `not-interested`: exact-item suppression. PERS-06 may use it as bounded negative taste evidence, but PERS-05 itself does not propagate the dislike to artist/genre.
+- `already-own`: exact-item suppression and neutral-to-positive taste evidence for PERS-06; it is never a dislike.
+- Ratings remain authoritative in `ratings`; PERS-05 does not duplicate rating semantics.
+- `show-fewer-like-this` is deferred. Do not add its enum, route behavior, UI, test, or explanation in this milestone.
 
-Storage decision: dedicated `feedback` collection is the authoritative state source; interaction events are also written for evidence/audit. Ratings remain in `ratings`. Preferences remain separate. One authoritative source per signal kind.
+Storage decision: the dedicated PERS-03 `feedback` collection is authoritative. Preferences, ratings, wishlist, and cart remain separate authoritative sources.
 
 ### Frontend Changes (FFP-11)
 
-- Add accessible feedback controls on recommendation cards and product detail: "Not interested", "Already own", optional "Show fewer like this", and "Undo".
-- Placement: card footer and detail-page actions; visible keyboard focus; touch-target size; mobile layout verified.
-- Loading/disabled states; prevent double-click (disable while pending).
-- Update strategy: pessimistic for creates (await server confirmation before removing from list) to avoid optimistic removal that a late network failure reverts; undo is optimistic with rollback on error. (Final choice recorded in FDEC-012.)
-- On success: remove or re-rank the item in the current list; announce via live region for screen readers; update explanations.
-- Error/offline: keep the item, show recoverable error; queue nothing (feedback is a functional action, not analytics).
-- Cross-tab consistency: refresh feedback state on focus when authenticated.
+- Add recommendation-card feedback with exactly `Not interested`, `Already own`, and `Undo`. Do not widen to product detail or add `Show fewer like this` in v1.
+- Create is pessimistic: disable while pending. After durable success, replace that card locally with a compact `role="status"` message such as `Removed from recommendations.` plus `Undo`. Keep the same component mounted and move focus to Undo; do not reload merely to remove the card.
+- Undo is pessimistic: after successful DELETE, restore the card locally and restore focus to the feedback control. If create/delete fails, keep the previous visible state/focus and show a recoverable error.
+- Any later normal recommendation load is server-authoritative and will omit stored feedback items. Do not hand-rerank/refill the remaining list in the browser.
+- Functional feedback does not depend on the analytics tracker; an optional tracking event may run only after durable success and only when tracking is enabled.
 
 ### API Contract
 
-- `PUT /api/me/feedback/:productId` → `{ data: { productPublicId, kind, ... } }`; idempotent.
-- `DELETE /api/me/feedback/:productId?kind=` → `{ data: { productPublicId, kind, removed: true } }`; idempotent.
-- `GET /api/me/feedback` → `{ data: { items: [...] } }`.
+- `PUT /api/me/feedback/:productId` → `{ data: { productPublicId, kind } }`; idempotent for the same kind and replaces the other allowed kind for that product.
+- `DELETE /api/me/feedback/:productId` → `{ data: { productPublicId, removed: boolean } }`; always safe to repeat. `removed` reports whether a current row existed; frontend correctness must not depend on it being `true`.
+- No public `GET /api/me/feedback` in v1.
 - Errors: `UNAUTHENTICATED`, `FORBIDDEN`, `INVALID_INPUT`, `NOT_FOUND`, `PERSISTENCE_UNAVAILABLE`.
 - `/me` recommendations respect feedback in exclusions and re-ranking.
 
@@ -800,7 +806,11 @@ Uses PERS-03 `feedback` collection. No additional schema.
 
 ### Algorithm Or Business Rules
 
-Exact-item suppression is a hard constraint. Negative feature evidence is bounded: a single dismiss must not exclude a whole genre; accumulation across multiple items is capped and decays. Conflict resolution (rating 5 + not-interested): suppression wins for the item; positive taste evidence at artist/genre may still apply.
+- Exact-item feedback suppression is the only PERS-05 hard user exclusion.
+- `not-interested` and `already-own` suppress the same exact item from `/me`; they differ only as later taste evidence.
+- There is at most one feedback row per customer/product. Writing the other allowed kind replaces the current kind; `applyUserExclusions` therefore needs only the set of feedback product ids.
+- Conflict `rating 5 + not-interested`: exact item stays suppressed; PERS-06 may still use the rating as positive artist/genre evidence.
+- No genre/artist propagation is implemented here. No recency decay or similarity penalty is needed in PERS-05.
 
 ### Privacy And Security Rules
 
@@ -810,20 +820,18 @@ Exact-item suppression is a hard constraint. Negative feature evidence is bounde
 
 ### Edge Cases
 
-- Duplicate dismiss → one penalty.
+- Rapid duplicate create → one durable row; pending UI prevents duplicate requests.
 - Undo twice → idempotent.
-- Dismiss a since-deleted product → stored, dropped from signals, flagged.
-- Already-owned item becomes unavailable → stays suppressed from purchase recs.
-- Conflict rating 5 vs not-interested → suppression wins for item.
-- Conflict already-own vs low rating → already-own not a dislike; low rating still negative item evidence.
-- Item-level dislike vs genre preference → item suppressed, genre untouched unless explicit genre dislike.
-- Feedback during a refreshing recommendation request → next request reflects it; in-flight request is not mutated.
-- Network failure after optimistic removal → rollback (pessimistic strategy avoids this for creates).
+- Product becomes inactive after feedback was stored → keep the row but ignore the product during ranking.
+- Rating 5 + not-interested → exact item remains excluded; PERS-06 may still use the rating as positive attribute evidence.
+- Already-own + low rating → exact item remains excluded; PERS-06 treats the low rating as negative and already-own as non-negative evidence.
+- Feedback while a recommendation request is in flight → the next request reflects it; existing frontend generation guards reject a stale older response.
 
 ### Failure And Recovery Behavior
 
-- Backend unavailable → create rejected with recoverable error; existing feedback remains; ranking falls back without feedback.
-- Partial write → transactional; idempotent retry.
+- Feedback write/delete failure → return the existing safe API error; do not change visible state optimistically unless rollback is guaranteed.
+- If required feedback state cannot be read in explicit MongoDB mode, return `PERSISTENCE_UNAVAILABLE`; never silently rank as if durable exclusions did not exist.
+- Upsert/delete is idempotent, so retry is safe.
 
 ### Migration Strategy
 
@@ -832,34 +840,42 @@ Exact-item suppression is a hard constraint. Negative feature evidence is bounde
 
 ### Tests
 
-- `tests/feedback.test.mjs`: validation, authorization, idempotency, undo idempotency, replay, conflict handling, unknown/deleted product, account deletion cleanup.
-- `tests/preference-ranking.test.mjs` extended: not-interested suppresses; already-own suppresses without dislike; show-fewer reduces; low rating negative; rating change updates profile.
-- Frontend FFP-11: submission, undo, error recovery, loading/empty states, keyboard, mobile, screen-reader announcements, cross-tab.
+- `tests/feedback.test.mjs`: customer-only authorization, only two allowed kinds, active-product validation, same-kind idempotent upsert, changing kind replaces the prior row, repeated undo returns safely with `removed: false`, since-deleted product ignored by ranking, account-deletion cleanup, analytics-mirror failure does not fail durable feedback.
+- Extend recommendation tests: `not-interested` suppresses exact item; `already-own` suppresses exact item without negative reason; undo makes the item eligible again; `content-demo-v1` product similarity is unchanged.
+- Frontend FFP-11: submission, undo, error recovery, loading/empty states, keyboard/mobile/screen-reader behavior. No `show-fewer-like-this` control.
+
+### Exact Implementation Order
+
+1. Confirm PERS-03 feedback model/repository exists and account deletion covers it.
+2. Add/validate feedback service and routes; keep routes thin.
+3. Add shared exact-item exclusion helper and wire it into `/me` after candidate loading and before scoring.
+4. Add frontend API helpers and two feedback controls plus undo.
+5. Add tests above; run both repos' tests/lint/build and the feedback E2E flow.
 
 ### Documentation Updates
 
 - Both `API_CONTRACT_PLAN.md`: feedback routes.
 - `DATA_MODEL_PLAN.md`: feedback authoritative-source decision.
 - Frontend `UI_UX_PLAN.md`: control placement and states.
-- `DECISION_LOG.md`: BDEC-018 (durable feedback authoritative source; pessimistic vs optimistic).
+- Planned decision BDEC-028: durable exact-item feedback is authoritative; v1 uses only not-interested/already-own with pessimistic creates and idempotent undo. Record it in `DECISION_LOG.md` only when PERS-05 is implemented.
 
 ### Definition Of Done
 
-- All four feedback kinds work; durable; undo idempotent; cross-user denied; account deletion cleans up; ranking respects feedback.
+- `not-interested`, `already-own`, and undo are durable, idempotent, customer-owned, removed on account deletion, and affect only exact-item eligibility in PERS-05.
+- No `show-fewer-like-this` behavior or broad similarity penalty exists.
 
 ### Rollback Criteria
 
-Disable `PERS_NEGATIVE_FEEDBACK`; routes return `NOT_FOUND`; ranking ignores feedback. Collected feedback remains harmless.
+Disable `PERS_NEGATIVE_FEEDBACK`; routes return `NOT_FOUND` and `/me` ignores existing feedback for both exact exclusions and PERS-06 affinity. Existing durable rows remain stored but inert so rollback is non-destructive.
 
 ### Risks
 
-- BR-027: one dismiss suppresses a genre. Mitigation: bounded negative evidence test.
-- FR-016: optimistic removal + network failure strands UI. Mitigation: pessimistic creates.
+- BR-024 / BR-028: feedback broadens beyond exact-item suppression or is not removed with the account. Mitigation: exact-public-id ranking tests plus transactional deletion coverage.
+- FR-019 / FR-020: frontend feedback state diverges after failure or Undo becomes unreachable after suppression. Mitigation: pessimistic writes, keep the card mounted as a compact status+Undo placeholder after success, recovery tests, and keyboard/screen-reader checks.
 
 ### Decisions Still Requiring Approval
 
-- Pessimistic vs optimistic create strategy (proposed pessimistic).
-- Genre-level dislike as an explicit separate control (proposed: optional, off by default).
+None for initial scope. `show-fewer-like-this` is a separately deferred enhancement, not part of PERS-05.
 
 ---
 
@@ -867,7 +883,7 @@ Disable `PERS_NEGATIVE_FEEDBACK`; routes return `NOT_FOUND`; ranking ignores fee
 
 ### ID And Title
 
-PERS-06 / BFP-13 (backend) + FFP-12 (frontend) — Differentiated behavioral personalization from interaction history.
+PERS-06 / BFP-13 (backend) + FFP-12 (frontend) — Behavioral content-affinity personalization from live customer state and opt-in passive events.
 
 ### Status
 
@@ -875,20 +891,22 @@ Planned. Blocked by PERS-03 (profile) and PERS-05 (negative semantics). First us
 
 ### Goal
 
-Use behavioral signals with differentiated strength, recency decay, frequency saturation, dedup, and caps, while preserving exact recommendation attribution and the opt-out boundary.
+Build one deterministic `[0,1]` behavioral content-affinity score from the customer's current durable state plus weak passive interaction evidence that exists only when tracking is enabled.
 
 ### Why It Is Required
 
-Behavior is the largest signal source, but every event is not equally reliable. PERS-06 defines the aggregation rule that PERS-08 hybrid consumes.
+Ratings, wishlist, cart, and explicit feedback already express stronger intent than passive analytics. PERS-06 turns those live-account signals into artist/genre/format affinity without adding collaborative filtering or treating every event as equal.
 
 ### Current Implementation Gap
 
-- Live ranker reads no interactions.
-- Opt-out does not suppress interaction persistence (gap).
+- Live ranking reads none of the customer's ratings, wishlist, cart, feedback, or interaction history.
+- Frontend tracking already stops sending passive events when opted out, but `/api/interactions` has no server-side opt-out defense.
+- Persisted search events contain only query length/rank, not the search text, so they cannot identify artist or genre taste.
 
 ### Dependencies
 
 - PERS-03 profile (behavioral portion).
+- PERS-05 feedback semantics. Read feedback evidence only while effective `PERS_NEGATIVE_FEEDBACK` is enabled; stored rows are inert when that feature is rolled back.
 - Existing interaction repository and recommendation-context attribution.
 
 ### Non-goals
@@ -899,52 +917,61 @@ Behavior is the largest signal source, but every event is not equally reliable. 
 
 ### Backend Changes
 
-- Add `src/lib/recommender/behavioralProfile.js` with the aggregation rule.
+- Add `src/lib/recommender/behavioralProfile.js` with pure `buildBehaviorAffinity(profile, candidates, opts)`, `scoreBehaviorCandidates(candidates, affinity, opts)`, and `rankByBehavior(candidates, affinity, opts)` functions. `scoreBehaviorCandidates` returns request-level `available` plus one score/reasons entry for every candidate and never truncates/applies diversity; `rankByBehavior` uses that complete map and applies standalone sorting/artist cap. No MongoDB calls inside this module.
+- Reuse the PERS-03 profile service to supply current ratings, wishlist, cart, feedback, and recent interaction rows for the verified session subject only.
 - Wire into `/me` behind `PERS_BEHAVIORAL_RANKING`; mode `behavior-profile`, version `behavior-profile-v1`.
-- Fix the opt-out gap: `src/app/api/interactions/route.js` and `src/services/userState.js` suppress persistence of passive analytics events when `x-tracking-enabled: false`. Explicit functional actions (ratings, wishlist, cart, feedback) persist regardless (they are not passive analytics).
-- Preserve exact recommendation attribution (`recommendationContext.requestId/listId/algorithmVersion/mode/rank`) on consumed events.
+- Add defense-in-depth at `POST /api/interactions`: after origin validation, if `X-Tracking-Enabled` is exactly `false`, return the normal success envelope with `{ accepted: 0, duplicates: 0 }` and do not call the interaction repository. The current frontend normally sends no interaction request at all while opted out; this is only a server-side backstop. The header never controls rating/wishlist/cart/feedback routes.
+- Preserve recommendation attribution on passive events that are used (`requestId`, `listId`, `algorithmVersion`, `mode`, `rank`). Do not require attribution for direct durable state.
+- Never read `historicalAmazonRatings` for a live customer's behavioral profile.
 
 ### Frontend Changes (FFP-12)
 
-- Continue sending attributed events; ensure opt-out stops passive capture (already implemented) and that explicit functional actions are still sent (they are user actions, not tracking).
-- Mode label `behavior-profile` rendered honestly.
+- Keep the existing tracker behavior: opt-out sends no passive tracking events.
+- Ratings, wishlist, cart, and feedback continue through their functional APIs even when tracking is disabled; do not route them through `track()` to preserve functionality.
+- Render `behavior-profile` honestly and render only reasons returned by the backend.
 
 ### API Contract
 
-`/me` may return `mode: "behavior-profile"` and reasons derived from behavioral evidence (for example `Popular with records you have saved.`). When opt-out is active, behavioral reasons are not generated (no passive evidence used).
+`/me` may return `mode: "behavior-profile"` with reasons tied to actual live-account evidence, for example `Similar to records you saved.` or `Matches artists you rated highly.` Tracking opt-out removes passive-event evidence only; reasons based on current ratings/wishlist/cart/feedback may still be valid.
 
 ### Data-Model Changes
 
-None to schemas. Opt-out suppression is a route/service change.
+No new collection. Reuse durable account-state repositories and the existing 90-day `interactions` collection. Add an interaction index only if an explain/query plan shows the existing `(userPublicId, occurredAt)` index is insufficient.
 
 ### Algorithm Or Business Rules
 
-Signal polarity and strength:
+Source rules, strongest first:
 
-- Positive: rating 5 (strong), rating 4 (medium), add to cart (strong), add to wishlist (strong), already-own (positive taste), recommendation click (weak), product view (weak), search-result click (weak), repeated artist/genre search (medium).
-- Neutral/ambiguous: rating 3, single product view, impression without action, search without click.
-- Negative: rating 1-2, not-interested, show-fewer-like-this, wishlist removal, rapid cart removal (only if evidence supports).
+- Current rating 5: strong positive item taste; rating 4: medium positive; rating 3: neutral; rating 1-2: strong negative item taste. Rating replacement/deletion uses only the current durable rating state.
+- Current wishlist membership: strong positive. Wishlist removal means "no current wishlist signal"; it is not negative taste.
+- Current cart membership: strong positive only where cart is a valid feature. Cart removal/quantity decrease removes or adjusts the positive signal; it is not negative taste.
+- `already-own`: positive taste evidence for the item's known artist/genre/format, while PERS-05 still excludes that exact item.
+- `not-interested`: bounded negative artist/genre/format evidence from that item, while PERS-05 excludes the exact item. One row must never exclude an attribute.
+- Passive weak positives: `recommendation_click`, `product_view`, and `search_result_click` when a valid product id exists. `recommendation_wishlist_add`/`recommendation_cart_add` are analytics mirrors and must not double-count the authoritative wishlist/cart state.
+- Ignore for taste: `recommendation_impression`, `search_submit` (query text is not persisted), `wishlist_remove`, `cart_remove`, `cart_quantity`, `rating_remove`, and `demo_checkout_complete` except as needed to reconstruct/validate state outside this scorer.
 
-Aggregation rule: `effectiveContribution = baseWeight × confidence × recencyFactor × frequencySaturation`. Initial base weights and decay constants are documented as configurable assumptions in a versioned constants file, not validated optimal values.
+Aggregation:
 
-Confidence: explicit (ratings, wishlist, cart, feedback) > implicit (clicks, views). Recency decay: exponential with a documented half-life. Frequency saturation: diminishing returns after a per-signal cap. Dedup by `(subject, type, productPublicId, day)` for impression-style events. Session cap, daily cap, repeated-refresh handling (a refresh-generated view does not inflate interest). Bot-like/abnormal volume: dropped by the existing cap and by a per-signal sanity ceiling.
+1. Join each signal product id to the same active-catalog candidate metadata. Drop unknown/inactive products; never borrow another dataset version.
+2. Convert product evidence only into the current recommendation-candidate attributes `artist`, primary `genre`, and `format`. Use the same trimmed, case-insensitive exact keys as PERS-04; never use substring/regex artist matching. Do not reach into raw `genres[]` or widen the public product contract. Missing attributes contribute nothing.
+3. Durable current state does not decay in PERS-06. Passive 90-day events use three simple recency bands: 0-7 days `1.0`, 8-30 days `0.5`, 31-90 days `0.25`.
+4. Deduplicate passive events by `(type, productPublicId, UTC day)` and cap passive contribution per product to three events. Apply an absolute cap per artist/genre/format so repeated events cannot dominate.
+5. After caps, the request-level affinity profile is the signed artist/genre/format evidence map. If that map has no non-zero evidence, return `available: false`. Otherwise compute one fixed `profileAbsoluteEvidenceSum` from the capped profile. For each candidate, sum only the profile evidence matching the candidate's known artist/genre/format; missing attributes contribute `0` and do not change the denominator.
+6. Compute `raw = matchedSignedEvidence / profileAbsoluteEvidenceSum` (bounded `[-1,1]`), then `score = clamp((raw + 1) / 2, 0, 1)`. After scoring, return `available: false` if every eligible candidate has zero matched signed evidence; behavioral history that cannot affect the active catalog must not produce a misleading behavior mode. Keep constants in one versioned object and label them assumptions, not learned weights.
+7. `scoreBehaviorCandidates` keeps all eligible candidates keyed by mapped public `product.id`. `rankByBehavior` sorts score DESC, `product.id` ASC, then title and applies artist cap 2 only for the standalone `behavior-profile` list.
+8. Recommendation reasons come only from positive matched evidence actually used for that candidate. Negative affinity lowers the score but is not presented as a positive recommendation reason. Never produce a passive-view/click reason if those events were absent.
 
-Event-order conflicts: order by `receivedAt`. Late delivery and duplicate `eventId`: idempotent. Rating replacement: newest wins. Wishlist add/remove cycles and cart quantity changes: re-derive final state. Search privacy: searches are weak signals and opt-out-gated. Anonymous-session signals: session-only; promoted to the account only on sign-up merge. Authenticated signals: durable to the account. Identity change during queued delivery: generation guard discards stale-identity batches (already implemented in the frontend).
+Privacy/identity protections:
 
-Protections:
-
-- One accidental click cannot dominate (frequency saturation + confidence).
-- One record cannot exclude a whole genre (bounded negative evidence from PERS-05).
-- Refreshes do not inflate interest (dedup + cap).
-- Self-generated demo traffic cannot dominate popularity (PERS-07 demo-account handling).
-- Mixed anonymous/authenticated histories are not combined across identities (merge only on sign-up).
-- Events from recommendations the user never saw are not counted (attribution must reference a served list; PERS-07/PERS-08 validate list id existence and recency).
-- Stale recommendation attribution and events referencing an expired/unknown list id or a different algorithm version are dropped or down-weighted per a documented rule.
+- When tracking is disabled, omit all passive interaction rows but continue using current durable ratings/wishlist/cart/feedback.
+- Do not infer taste from `anonymousId` after sign-in unless an existing, verified guest-merge path explicitly transfers that state; do not create a new anonymous behavioral-profile migration in PERS-06.
+- Duplicate `eventId` and out-of-order passive events are handled by existing ingestion/`receivedAt`; the scorer consumes the deduplicated result.
+- Do not add recommendation-log existence lookups to the behavioral scorer. Consume only interaction rows already accepted for the verified subject; preserve any stored attribution for audit/explanations, but weak-event ranking must not create an extra recommendation-log query path.
 
 ### Privacy And Security Rules
 
-- Passive analytics honored opt-out (no persistence, no profile use).
-- Explicit functional actions persist regardless of opt-out.
+- Passive analytics honor opt-out: no passive `/interactions` persistence and no passive profile use.
+- Direct rating/wishlist/cart/feedback state remains functional and available to the profile regardless of analytics opt-out; optional analytics mirrors may be absent.
 - No PII in behavioral signals; no cross-user inference.
 
 ### Edge Cases
@@ -953,46 +980,58 @@ Protections:
 
 ### Failure And Recovery Behavior
 
-- No behavioral evidence → component unavailable → renormalize (PERS-08).
-- Database unavailable → behavior-only ranking unavailable → next ladder rung.
+- No usable durable or passive evidence → return the lower available mode; before PERS-07 that is `preference-profile` if applicable, otherwise existing cold-start.
+- Explicit MongoDB persistence unavailable → `PERSISTENCE_UNAVAILABLE`; never silently use seed or another customer's history.
+- Passive interaction query failure may be treated as "passive unavailable" only if durable state was read successfully; response reasons must not mention passive evidence.
 
 ### Migration Strategy
 
 - Behind `PERS_BEHAVIORAL_RANKING`; default off.
-- Opt-out fix is a standalone change that can ship independently.
+- No historical-rating migration, no anonymous-history backfill, and no derived-profile collection.
+- The `/api/interactions` opt-out defense may remain enabled even when behavioral ranking is rolled back because it tightens privacy only.
 
 ### Tests
 
-- `tests/behavioral-profile.test.mjs`: aggregation rule, recency decay, dedup, frequency saturation, caps, opt-out excludes passive, explicit actions included under opt-out, attribution preserved, stale/unknown list id dropped, bot-like volume dropped, anonymous-to-auth merge.
-- `tests/interaction-optout.test.mjs`: opt-out suppresses passive persistence; explicit actions persist.
+- `tests/behavioral-profile.test.mjs`: rating strengths/replacement/deletion; current wishlist/cart positive; removals not negative; already-own positive taste + exact exclusion; not-interested bounded negative; passive click/view/search-result-click weak; search-submit/impression ignored; analytics mirrors do not double-count durable state; recency bands; dedup/caps; null metadata; complete score map before diversity; `[0,1]` bound; deterministic `product.id` ordering; standalone artist cap; negative affinity never becomes a recommendation reason; no-evidence and no-matching-active-catalog fallback.
+- `tests/interaction-optout.test.mjs`: header false suppresses passive persistence; functional rating/wishlist/cart/feedback endpoints remain independently usable; opt-out profile still uses those durable states.
+- Extend `/me`/logging/frontend tests for mode/version and truthful reasons; keep `content-demo-v1` and product similarity unchanged.
+
+### Exact Implementation Order
+
+1. Add pure behavioral affinity builder/scorer and unit tests using synthetic live-account fixtures only.
+2. Extend the PERS-03 profile service/repository orchestration to provide durable state plus bounded recent interactions.
+3. Add server-side opt-out defense to interaction ingestion and its tests.
+4. Wire `behavior-profile-v1` into `/me` after exact feedback exclusions.
+5. Update frontend label/reason handling only; do not redesign the tracking queue.
+6. Run backend tests/lint/build, frontend tests/lint/build, and auth/tracking/recommendation E2E. Stop if opt-out causes any functional state API to stop working.
 
 ### Documentation Updates
 
 - `RECOMMENDER_SYSTEM_PLAN.md`: behavioral section, version `behavior-profile-v1`, aggregation formula.
 - `INTERACTION_LOGGING_PLAN.md` (frontend): opt-out boundary update.
 - `EVALUATION_PLAN.md`: note live behavioral ranking is separate from offline baselines.
-- `DECISION_LOG.md`: BDEC-019 (opt-out split between passive and explicit; aggregation assumptions).
+- Planned decision BDEC-029: behavioral affinity uses current durable state plus weak opt-in passive events, with removals treated as loss of positive state rather than negative taste. Record it in `DECISION_LOG.md` only when PERS-06 is implemented.
 
 ### Definition Of Done
 
-- Behavioral signals drive ranking for authenticated users with evidence.
-- Opt-out fully suppresses passive analytics (persistence + use).
-- Attribution preserved; protections in place.
-- No quality claim.
+- Current durable live-account state changes authenticated ranking when usable.
+- Passive clicks/views/search-result-clicks are weak, bounded, opt-in only, and never double-count durable state.
+- Wishlist/cart removal is not treated as negative taste; raw search text is never assumed to exist.
+- Opt-out suppresses passive persistence/use while ratings/wishlist/cart/feedback still function and can drive ranking.
+- Scores stay in `[0,1]`; explanations identify only evidence actually used; no quality claim.
 
 ### Rollback Criteria
 
-Disable `PERS_BEHAVIORAL_RANKING`; behavior component off. Opt-out fix stays (it only tightens privacy).
+Disable `PERS_BEHAVIORAL_RANKING`; behavior component is ignored. Keep the server-side passive opt-out defense.
 
 ### Risks
 
-- BR-028: opt-out gap not fully closed. Mitigation: dedicated opt-out persistence test.
-- BR-029: noisy clicks dominate. Mitigation: saturation/cap tests.
+- BR-022 / FR-021: tracking opt-out accidentally disables direct account actions or passive analytics still persist/use. Mitigation: route-separation and tracking-off E2E tests.
+- BR-037: repeated weak passive events dominate durable intent. Mitigation: direct-state precedence, day dedup, recency bands, per-product cap, and absolute attribute caps.
 
 ### Decisions Still Requiring Approval
 
-- Initial base weights and decay half-life values (documented assumptions).
-- Whether to count search-result clicks toward taste before any other positive signal.
+- Initial source/attribute weights and caps. Keep them simple, versioned, and documented as assumptions; no tuning claim.
 
 ---
 
@@ -1000,146 +1039,149 @@ Disable `PERS_BEHAVIORAL_RANKING`; behavior component off. Opt-out fix stays (it
 
 ### ID And Title
 
-PERS-07 / BFP-14 — A real aggregate-evidence popularity recommender plus the fallback ladder.
+PERS-07 / BFP-14 — Active-dataset historical popularity recommender plus deterministic fallback.
 
 ### Status
 
-Planned. Blocked by PERS-06 (so the anonymous fallback and demo-traffic handling are defined). Also requires the offline popularity baseline to remain separately testable.
+Planned. Scheduled after PERS-06 so the final fallback order is stable. Production popularity uses the already imported historical Amazon ratings; it does not depend on accumulating live interaction volume.
 
 ### Goal
 
-Provide a true popularity recommender built from aggregate interaction evidence, plus a documented fallback ladder, and keep popularity available as a separately testable baseline.
+Rank active research products by aggregate historical rating evidence without exposing historical identities, then fall back to the existing deterministic catalog order when that evidence is unavailable.
 
 ### Why It Is Required
 
-A popularity fallback is needed for anonymous users and empty profiles, and must be a real aggregate signal rather than the current newest-year/stock ordering. It must also avoid feedback loops.
+Anonymous and empty-profile requests need a non-personal fallback. The application already has 20,288 isolated historical ratings for the active research dataset, which is a better scoped popularity signal than inventing a sparse live-event/trending pipeline from three showcase customers.
 
 ### Current Implementation Gap
 
-- No live popularity recommender. Popularity exists only as an offline baseline (`offlineEvaluation.js:124-127`).
+- No live popularity mode exists.
+- The historical rating collection is used for dataset/evaluation readiness but not production fallback ranking.
+- The current anonymous fallback is only deterministic catalog ordering.
 
 ### Dependencies
 
-- Existing interactions and recommendation logs.
-- PERS-06 signal semantics (eligible event types).
+- Active dataset descriptor/version ownership.
+- `historicalAmazonRatings` and active-catalog repository.
+- Existing deterministic fallback ordering from `contentBased.js`/catalog candidates.
+- Offline popularity baseline remains independently testable and leakage-safe.
 
 ### Non-goals
 
-- Replacing the offline popularity baseline.
+- Replacing or weakening the offline popularity baseline.
+- Building trending/recent-live-event popularity from the three app showcase customers.
+- Adding a popularity cache collection, scheduled aggregation job, Bayesian model, exposure-bias correction, or new index without measured need.
 - Quality claims.
 
 ### Backend Changes
 
-- Add `src/lib/recommender/popularity.js` with `rankByPopularity({ from, to, catalog, opts })` returning a deterministic ranked list with per-item evidence counts.
-- Add `src/services/popularityAggregation.js` to compute aggregate scores over a time window with caching and invalidation.
-- Wire as a live component and as the anonymous fallback behind `PERS_POPULARITY`.
-- Add indexes for popularity aggregation: compound `(productPublicId, occurredAt)` exists; add `(type, productPublicId, occurredAt)` if measured necessary.
-- Add a cache (in-process or MongoDB) with explicit invalidation on catalog change and on a configured TTL.
+- Add `src/repositories/historicalPopularityRepository.js` (or the smallest equivalent repository method) that returns aggregate `{ productPublicId, ratingCount, meanRating }` for one requested dataset key. It must never return `userKey`.
+- Add `src/lib/recommender/popularity.js` with pure `scorePopularityCandidates(candidates, aggregates)` and `rankByPopularity(candidates, aggregates, opts)`. The score function returns one score/reasons entry for every candidate before diversity/truncation; `rankByPopularity` uses that complete map for the standalone `popularity` mode and then applies ordering/artist cap.
+- Production MongoDB mode derives the request dataset key from the already loaded recommendation candidates (`candidate.datasetKey`). Assert that all candidates share the same key, then query aggregates for that exact key. Do not perform a second active-dataset-pointer read after candidate loading; that would allow an activation race to mix candidates from one release with ratings from another. A null key (legacy/seed candidate set) means historical Amazon popularity is unavailable.
+- Wire behind `PERS_POPULARITY`; successful aggregate ranking uses mode `popularity`, version `popularity-v1`.
+- Do not query the `interactions` collection for production popularity in PERS-07.
+- Do not add a cache initially. The active dataset is immutable and only 20,288 historical rows; measure first. If later profiling shows a need, an in-process cache keyed by dataset key is sufficient before considering persistence.
+- Do not add an index initially. The existing historical-rating indexes beginning with `datasetKey` are the first implementation target; use `explain()` before proposing another.
 
-Concepts (select one initial production fallback and justify):
+Production ranking definition:
 
-- All-time popularity, recent popularity, trending, highest-rated, most-wishlisted, most-added-to-cart. Proposed initial production fallback: recent popularity (30-day window, Bayesian smoothed), justified as balance of recency and evidence stability.
+1. Read the recommendation candidate set once, verify its non-null `datasetKey` is uniform, and aggregate historical ratings for that exact candidate-owned key. If the key is null or candidates are empty, historical popularity is unavailable.
+2. Join each aggregate by `aggregate.productPublicId === candidate.id`. For each candidate, `ratingCount` is the number of historical rating rows and `meanRating` is the arithmetic mean of ratings 1-5; candidates with no aggregate receive count `0` and mean `null`. Schema uniqueness already prevents one historical subject/product pair from being counted twice.
+3. Standalone popularity order is `ratingCount DESC`, then `meanRating DESC` with null last, then `product.id ASC`, then title. This is intentionally simple and matches the course popularity concept.
+4. `scorePopularityCandidates` returns every eligible candidate with bounded score `ratingCount / maxRatingCount`. If `maxRatingCount === 0`, the component is unavailable. `meanRating` is a standalone tie-break, not a probability and not an extra hybrid score.
+5. `rankByPopularity` applies the shared artist cap 2 only to the standalone popularity list. The complete score map used by PERS-08 must not be capped/truncated first. Do not invent genre-diversity penalties or discovery quotas in the first implementation.
+6. Research-only null stock/price/condition are neutral. Commercial `stock === "out"` may be excluded by the same candidate-eligibility rule used by the other components.
+7. If the active dataset has no historical aggregate evidence, use the existing deterministic catalog fallback and mode `anonymous-fallback`/`cold-start` as appropriate.
+8. Seed mode has no historical Amazon popularity and always uses its deterministic catalog fallback.
 
-Definition:
+Offline-evaluation boundary:
 
-- Eligible event types: positive signals from PERS-06 (rating 4-5, wishlist add, cart add, already-own as positive taste, recommendation click weighted low).
-- Relative weights: explicit > implicit (versioned assumptions).
-- Time window: 30 days default (configurable).
-- Minimum evidence: Bayesian/confidence smoothing with a global prior so one-event items do not dominate.
-- Unique-user counting (not raw event counts) to prevent one user generating many events from dominating.
-- Event dedup by `(subject, type, productPublicId, day)`.
-- Removal/reversal events (wishlist remove, rating remove) subtract.
-- Anonymous activity counts toward popularity (opt-out anonymous activity does not).
-- Demo-account activity excluded from popularity (so self-generated demo traffic cannot dominate — PERS-06 protection).
-- Deleted products excluded; out-of-stock products down-ranked or excluded per availability rule; missing metadata neutral.
-- Low-volume catalog / no interaction data → fall to deterministic recent in-stock catalog.
-- Deterministic tie-break by numeric product id then title.
-- Artist cap 2; genre diversity.
-- Caching with invalidation on catalog mutation and TTL.
+- Production popularity may aggregate all immutable historical rows because it is serving a fallback, not measuring quality.
+- Any offline metric comparison must compute its popularity baseline from the training split only and rank held-out items without leakage. Do not reuse the production all-split aggregate inside evaluation.
 
-Feedback-loop safeguards:
+Fallback ladder after PERS-08 (each response reports the mode actually used):
 
-- Exposure bias: cap items already heavily exposed (deduplicate against recent served lists where feasible).
-- One user dominating counts: unique-user counting.
-- Demo traffic: excluded.
-- New items never surfacing: small discovery allowance / content recency tie-break.
-- Niche suppression: diversity rerank.
-- One artist occupying the list: artist cap.
-
-Fallback ladder (each response identifies the actual mode used):
-
-1. Personalized hybrid (PERS-08).
-2. Preference-only ranking (PERS-04).
-3. Behavior-only ranking (PERS-06).
-4. Popularity ranking (PERS-07).
-5. Deterministic recent in-stock catalog.
+1. `personalized-hybrid` only when both preference and behavioral components are available.
+2. `preference-profile` when only preference personalization is available.
+3. `behavior-profile` when only behavioral personalization is available.
+4. `popularity` when historical aggregate evidence is available.
+5. Existing deterministic catalog fallback (`cold-start` for authenticated, `anonymous-fallback` for anonymous).
 
 ### Frontend Changes
 
-- Render `popularity` and `anonymous-fallback` mode labels honestly.
+- Render `popularity` and `anonymous-fallback` honestly. For `popularity`, use wording tied to research rating aggregates, not "recent activity".
 
 ### API Contract
 
-`/me` anonymous and fallback paths return `mode: "popularity"` or `mode: "anonymous-fallback"` with truthful reasons (for example `Popular recent picks.`). No popularity scores exposed as probabilities; only rank and a safe reason.
+`/me` may return `mode: "popularity"`, `algorithmVersion: "popularity-v1"`, and a safe reason such as `Popular in the research ratings dataset.` Anonymous deterministic catalog fallback remains `mode: "anonymous-fallback"`. Do not expose rating counts, mean ratings, user keys, or a score as a probability.
 
 ### Data-Model Changes
 
-- Additive index for popularity aggregation (no schema change).
-- Optional popularity cache collection (additive).
+None initially. Reuse `historicalAmazonRatings` and its current indexes. No popularity collection or TTL cache is planned.
 
 ### Algorithm Or Business Rules
 
-See Backend Changes. Popularity must remain a separately testable baseline: keep the offline baseline in `offlineEvaluation.js` independent of the live popularity recommender.
+See Backend Changes. Keep production popularity and offline evaluation separate: the production component may use all rows of the active immutable dataset; offline evaluation must use only its training partition when computing the baseline.
 
 ### Privacy And Security Rules
 
-- Aggregate only; no per-user leakage in responses.
-- Opt-out anonymous activity excluded.
+- Aggregate in the repository/database boundary only. Never return or log historical `userKey` values.
+- The production popularity result is non-personal aggregate evidence and is not controlled by the live customer's tracking preference.
+- Never merge historical Amazon subjects with application users.
 
 ### Edge Cases
 
-- No events, one event, one user dominating, synthetic demo traffic, old events, removed ratings, deleted products, out-of-stock products, new catalog products, same artist dominating, cached score stale.
+- Active dataset has no ratings; inactive v2/v1 ratings coexist; product has zero ratings; equal counts; equal count + equal mean; product no longer active; research fields are null; seed mode; aggregate query returns no rows; dataset activation changes between requests.
 
 ### Failure And Recovery Behavior
 
-- No popularity evidence → deterministic recent in-stock catalog.
-- Cache corruption → recompute.
-- Aggregation timeout → serve last good cache or fall through.
+- No historical aggregate evidence for the active dataset → deterministic catalog fallback.
+- Aggregate query failure while MongoDB otherwise remains required → `PERSISTENCE_UNAVAILABLE`; do not silently use another dataset version or seed.
 
 ### Migration Strategy
 
-- Behind `PERS_POPULARITY`; additive indexes; cache optional.
+- Behind `PERS_POPULARITY`; default off.
+- No schema migration, no dataset import, no historical-row rewrite, no new cache collection.
 
 ### Tests
 
-- `tests/popularity.test.mjs`: aggregation, smoothing, unique-user counting, reversal subtraction, demo exclusion, opt-out exclusion, deleted/out-of-stock handling, diversity, deterministic tie-break, cache invalidation, fallback ladder ordering, separate-baseline independence.
+- `tests/popularity.test.mjs`: candidate-owned dataset-key aggregation; mixed-key candidate assertion; v2/v1 isolation; aggregate `productPublicId` joins mapped `candidate.id`; count-first ranking; mean-rating/null then `product.id` tie-break; zero-rating candidates; complete `[0,1]` score map before diversity; standalone artist cap; research null neutrality; seed/no-evidence deterministic fallback; no historical identity in outputs/logs.
+- Evaluation regression: train-only popularity baseline remains independent and leakage-safe.
+
+### Exact Implementation Order
+
+1. Add repository aggregate method and repository tests proving dataset-key isolation and no `userKey` output.
+2. Add pure popularity ranker and deterministic unit tests.
+3. Wire `popularity-v1` into anonymous and lower-fallback `/me` paths behind the flag.
+4. Update response/logging allow-lists and frontend labels.
+5. Verify with v3 active and, read-only, confirm v2 data cannot affect v3 ranking. Run backend/frontend tests/lint/build. Do not activate/rollback/reimport a dataset for this milestone.
 
 ### Documentation Updates
 
 - `RECOMMENDER_SYSTEM_PLAN.md`: popularity section, version `popularity-v1`, fallback ladder.
-- `DATA_MODEL_PLAN.md`: new indexes/cache.
+- `DATA_MODEL_PLAN.md`: document reuse of `historicalAmazonRatings` and existing dataset-key indexes; add no cache collection/new index unless profiling later justifies it.
 - `EVALUATION_PLAN.md`: live popularity vs offline baseline distinction.
+- Record planned BDEC-030 in `DECISION_LOG.md` when PERS-07 is implemented.
 
 ### Definition Of Done
 
-- Live popularity recommender works from aggregate evidence.
-- Anonymous fallback returns popularity then deterministic catalog.
-- Demo traffic excluded; feedback-loop safeguards in place.
-- Offline baseline remains independently testable.
+- Live `popularity-v1` ranks only the active dataset using aggregate historical rating count with documented tie-breaks.
+- Historical user identities never leave the repository boundary.
+- Anonymous/empty-profile requests use popularity when available, then the deterministic catalog fallback.
+- No live-event popularity pipeline, cache collection, or unnecessary index was added.
+- Offline train-only popularity baseline remains independently testable.
 
 ### Rollback Criteria
 
-Disable `PERS_POPULARITY`; anonymous fallback returns deterministic recent in-stock catalog.
+Disable `PERS_POPULARITY`; anonymous/authenticated empty-profile paths return the existing deterministic catalog fallback. Historical data is untouched.
 
 ### Risks
 
-- BR-030: demo/seeded traffic dominates popularity. Mitigation: demo-exclusion test.
-- BR-031: popularity feedback loop. Mitigation: diversity + exposure cap.
+- BR-026: production popularity may mix dataset versions, expose historical identity, or leak held-out rows into offline evaluation. Mitigation: exact active-dataset aggregation, aggregate-only repository output, and a separate train-only evaluation baseline.
 
 ### Decisions Still Requiring Approval
 
-- Initial production fallback variant (proposed recent popularity, 30-day, smoothed).
-- Cache TTL and invalidation granularity.
+None for the initial method. Historical rating-count popularity with mean-rating/id tie-break is the selected simple production fallback.
 
 ---
 
@@ -1147,7 +1189,7 @@ Disable `PERS_POPULARITY`; anonymous fallback returns deterministic recent in-st
 
 ### ID And Title
 
-PERS-08 / BFP-15 (backend) + FFP-13 (frontend) — Hybrid orchestration of preference, content, behavioral, popularity, and availability components with diversity reranking.
+PERS-08 / BFP-15 (backend) + FFP-13 (frontend) — Hybrid orchestration of preference, behavioral affinity, and historical popularity with exact-item feedback exclusions.
 
 ### Status
 
@@ -1155,48 +1197,61 @@ Planned. Blocked by PERS-04, PERS-06, PERS-07 (all component recommenders must h
 
 ### Goal
 
-Combine the component recommenders into one hybrid with documented (assumption) weights, normalized scores, diversity reranking, truthful explanations, and a clear fallback.
+Combine the three user-list components already built for `/me`—preference, behavioral affinity, and historical popularity—without double-counting product content, with deterministic weights, exact feedback exclusions, truthful mode selection, and simple diversity.
 
 ### Why It Is Required
 
-The components are only useful together. PERS-08 defines the final `personalized-hybrid` mode that the storefront surfaces as the authenticated recommendation.
+Preference and behavioral components represent different customer evidence, while popularity provides a non-personal prior/fallback. The existing product-to-product content route remains useful independently and must not be added again as a fourth user component because PERS-06 already maps user history onto the same content attributes.
 
 ### Current Implementation Gap
 
-- No hybrid; only the demo content-based ranker.
+- No score-level hybrid exists.
+- Current `/me` chooses one cold-start/demo path; it does not combine the planned components.
 
 ### Dependencies
 
-- PERS-04 preference, PERS-06 behavioral, PERS-07 popularity, existing content similarity, PERS-05 negative feedback.
+- PERS-04 preference score contract.
+- PERS-05 exact-item exclusions.
+- PERS-06 behavioral affinity score contract.
+- PERS-07 historical popularity score contract.
 
 ### Non-goals
 
-- Collaborative filtering and matrix factorization (excluded).
+- Collaborative filtering, matrix factorization, learned weights, or model training.
+- Adding product-to-product content similarity or availability as separate hybrid components.
 - Quality claims.
 
 ### Backend Changes
 
-- Add `src/lib/recommender/hybrid.js` orchestrating: candidate generation → component scoring → normalization → final weighting → reranking → explanation → fallback.
-- Wire into `/me` behind `PERS_HYBRID`; mode `personalized-hybrid`, version `personalized-hybrid-v1`.
-- Preserve `content-demo-v1` unchanged.
+- Add `src/lib/recommender/hybrid.js` as a pure combiner. It accepts one candidate set plus per-candidate component outputs; it does not read repositories or environment variables.
+- Service orchestration loads the active catalog once, applies PERS-05 exact-item exclusions once, then asks PERS-04/PERS-06/PERS-07 to score that same candidate set.
+- Wire behind `PERS_HYBRID`; mode `personalized-hybrid`, version `personalized-hybrid-v1`.
+- Keep `content-demo-v1` and `GET /api/recommendations/product/[id]` byte-for-behavior compatible for the same inputs.
 
-Architecture:
+Component contract:
 
-- A. Candidate generation: full active catalog or bounded indexed subset; product availability; soft-delete exclusion; known-item exclusion; suppression exclusion; already-owned handling.
-- B. Component scoring: preference score, content score, behavioral score, popularity score, availability score.
-- C. Score normalization: min-max to `[0,1]` per component per request; missing component → renormalize weights over available components (not zero) unless justified.
-- D. Final weighting: documented initial weights as assumptions (proposed: preference 0.35, content 0.25, behavioral 0.25, popularity 0.15). Configuration-controlled; every change increments version.
-- E. Reranking: artist cap 2, genre diversity, minimum relevance threshold, discovery allowance, stable deterministic tie-break, avoid duplicate releases/near-duplicate pressings where applicable.
-- F. Explanation generation: reasons from actual score contributions and filters; do not claim behavioral evidence when passive tracking is disabled; do not claim popularity when aggregate evidence is below the minimum; do not describe a score as a probability; explain fallback mode; limit to useful user-facing reasons; keep internal scoring server-side.
-- G. Fallback: empty/partial profile, no behavioral evidence, no popularity evidence, no candidates, database unavailable, seed mode, external metadata unavailable → documented ladder from PERS-07.
+- PERS-08 consumes the complete pre-diversity score functions (`scorePreferenceCandidates`, `scoreBehaviorCandidates`, `scorePopularityCandidates`), never the standalone ranked/capped lists. Each returns `{ available, scoresByProductId }`. `available` is request-level, not candidate-level. If `available === true`, it must contain one numeric `{ score: 0..1, reasons: [] }` entry for every eligible candidate keyed by mapped public `product.id`; neutral/no-match behavior is defined inside that component.
+- Preference and behavioral components are personalized. Popularity is a non-personal prior.
+- Negative feedback is already applied as exact-item eligibility and has no hybrid score.
+- No second min-max normalization is allowed in `hybrid.js`; component contracts are already bounded.
 
-Algorithm-version migration:
+Combination rules:
 
-- Keep `content-demo-v1` unchanged for regression comparison.
-- Introduce new versions rather than silently changing existing behavior.
-- Preserve historical recommendation logs; never recompute old logs with new weights.
-- Include version in every recommendation and attributed interaction.
-- Rollback behavior: disable flag → previous version serves.
+1. Use one initial versioned weight object: preference `0.45`, behavioral `0.35`, popularity `0.20`. These are classroom assumptions, not learned/optimized values.
+2. Decide the response mode before combining scores. Only form a score-level hybrid when both preference and behavioral components are available. In that case, use preference + behavior + popularity when popularity is available; otherwise use preference + behavior only. Renormalize those selected hybrid weights once for the whole request. Never renormalize per candidate.
+3. For a true hybrid, every selected component must have one score for every eligible candidate; a missing score is a contract error. Compute `finalScore = Σ(requestNormalizedWeight × componentScore)` and clamp defensively to `[0,1]`.
+4. If preference is available but behavior is not, return the pure PERS-04 `preference-profile` ranking/version/reasons; do not blend popularity into that lower mode. If behavior is available but preference is not, return the pure PERS-06 `behavior-profile` ranking/version/reasons; do not blend popularity into that lower mode. If neither personalized component is available, return pure PERS-07 `popularity` when available; otherwise use the deterministic cold-start/anonymous fallback.
+5. This rule keeps algorithm versions truthful: `preference-profile-v1` always means the PERS-04 score, `behavior-profile-v1` always means the PERS-06 score, `popularity-v1` always means the PERS-07 score, and only `personalized-hybrid-v1` contains weighted component blending.
+6. For a true hybrid, sort by final score DESC, mapped public `product.id` ASC, then title and apply the shared artist cap 2 once. Lower modes use their own component ordering/cap behavior unchanged. Do not add a genre-diversity algorithm, discovery quota, relevance threshold, or near-duplicate release detector in v1.
+7. Return at most the existing requested limit. Hybrid reasons are the top two non-empty reasons from the highest weighted positive contributions actually used; lower modes keep their component reasons. Never expose raw weights or component scores.
+8. Tracking opt-out removes only passive-event evidence inside PERS-06. A true hybrid may still use preference, remaining durable behavioral evidence, and popularity; explanations must reflect what actually remained.
+
+Algorithm-version rules:
+
+- Keep old recommendation logs immutable; never recompute historical lists with new weights.
+- Stamp `personalized-hybrid-v1` only on responses actually combined under rule 4. Lower modes keep their own component algorithm version.
+- Any later weight/combination change requires a new algorithm version; do not silently edit v1 semantics.
+- Disable `PERS_HYBRID` to return to the component-mode fallback order without data migration.
 
 ### Frontend Changes (FFP-13)
 
@@ -1205,62 +1260,76 @@ Algorithm-version migration:
 
 ### API Contract
 
-`/me` returns `mode: "personalized-hybrid"`, `algorithmVersion: "personalized-hybrid-v1"`, ranked items with reasons, fallback reason when a lower ladder rung is used, and `profileCompleteness`. No raw component weights in the response.
+`/me` returns `mode: "personalized-hybrid"` and `algorithmVersion: "personalized-hybrid-v1"` only when both personalized components are available. Items keep the existing `reasons[]`; lower fallback modes keep their own mode/version. Do not add profile-completeness/source-flag fields or expose raw weights/component scores.
 
 ### Data-Model Changes
 
-None to schemas; recommendation logs already carry mode/version.
+None. Existing recommendation logs already carry mode/version and the exact served list.
 
 ### Algorithm Or Business Rules
 
-See architecture above.
+See the component contract and combination rules above.
 
 ### Privacy And Security Rules
 
-- Explanations reveal no more than the user's own data and safe aggregates.
-- Behavioral reasons suppressed under opt-out.
+- Explanations reveal only the customer's own saved/account evidence plus safe aggregate popularity wording.
+- Tracking opt-out removes passive-event contributions but does not erase valid reasons based on ratings/wishlist/cart/feedback.
+- Historical popularity contributes only an aggregate score/reason; historical identities never reach hybrid code.
 
 ### Edge Cases
 
-- Missing component score, all component scores equal, negative total score (clamp at 0 then renormalize), one component dominating due to scale (normalization prevents), no candidate after hard filtering, duplicate releases, stable ordering across requests (deterministic tie-break), weight changes (version bump), rollback, historical logs from older versions (never recomputed), explanation does not match actual score (explanation generator reads the same normalized contributions).
+- preference unavailable; behavior unavailable; popularity unavailable; all three unavailable; score exactly 0 or 1; an available component omits one candidate score (contract error); all candidate scores tied; exact feedback exclusion removes a high scorer; research null metadata; deterministic ordering; weight-version change; old recommendation logs; opt-out with durable state still present; no candidates after exact exclusions.
 
 ### Failure And Recovery Behavior
 
-- Any component unavailable → renormalize over available; all unavailable → fallback ladder.
-- Database unavailable → `PERSISTENCE_UNAVAILABLE` in MongoDB mode; cold-start in seed mode.
+- Missing component → follow the mode-selection rules above and renormalize only where a true hybrid is formed.
+- No usable component → deterministic cold-start/anonymous fallback.
+- Explicit MongoDB/catalog failure → `PERSISTENCE_UNAVAILABLE`; a failed required catalog read cannot be hidden by a lower mode.
 
 ### Migration Strategy
 
-- Behind `PERS_HYBRID`; default off; rollback to `content-demo-v1`.
+- Behind `PERS_HYBRID`; default off. No schema/data/dataset migration.
+- Rollback disables only hybrid combination; PERS-04/PERS-06/PERS-07 component modes remain independently reversible.
 
 ### Tests
 
-- `tests/hybrid.test.mjs`: normalization, missing-component renormalization, weighting, reranking (artist cap, diversity), explanation correctness, fallback ladder, deterministic ordering, version stamping, opt-out suppresses behavioral reasons, low-evidence suppresses popularity reasons.
-- Regression: `content-demo-v1` output unchanged by the same inputs.
+- `tests/hybrid.test.mjs`: exact 0.45/0.35/0.20 math with all three components; preference+behavior renormalization when popularity is absent; no second min-max pass; hybrid requires preference+behavior; preference+popularity returns pure preference scores/version; behavior+popularity returns pure behavior scores/version; popularity-only and deterministic fallback; exact-feedback exclusion before scoring; `[0,1]` hybrid bound; artist cap; stable tie-break; top-two hybrid reasons; lower-mode reasons unchanged; opt-out keeps durable reasons but removes passive-only reasons; version stamping.
+- Regression: identical `content-demo-v1` and product-similarity inputs produce unchanged output.
+
+### Exact Implementation Order
+
+1. Freeze/verify PERS-04, PERS-06, and PERS-07 component output contracts with unit tests before editing hybrid code.
+2. Add pure `hybrid.js` and unit tests for weight/mode/fallback rules.
+3. Refactor `/me` service orchestration to load candidates once, apply PERS-05 exclusions once, request component availability/scores, choose the response mode, and call `hybrid.js` only when both personalized components are available.
+4. Extend recommendation logging/response validation for exact mode/version semantics.
+5. Update frontend hybrid label/reasons/version attribution; lower modes must still render independently.
+6. Run both repos' tests/lint/build and end-to-end auth/recommendation/tracking flows. Compare product-similarity and `content-demo-v1` regression fixtures before completion.
 
 ### Documentation Updates
 
 - `RECOMMENDER_SYSTEM_PLAN.md`: hybrid section, version `personalized-hybrid-v1`, weight assumptions.
 - Both `API_CONTRACT_PLAN.md`: hybrid mode/reasons.
 - `EVALUATION_PLAN.md`: note hybrid is not quality-validated.
+- Record planned BDEC-031 in `DECISION_LOG.md` when PERS-08 is implemented.
 
 ### Definition Of Done
 
-- Hybrid orchestrates all components; normalization correct; explanations truthful; fallback works; `content-demo-v1` preserved; version stamped.
+- Hybrid uses exactly preference + behavioral affinity + historical popularity; content similarity and availability are not duplicated as components.
+- Component scores are already bounded; weight renormalization occurs only inside a true hybrid (preference + behavior, with popularity optional).
+- `personalized-hybrid` requires both personalized components; lower modes use their pure component score/version and are labelled truthfully.
+- Exact feedback exclusions happen once before scoring; explanations come from actual contributions; `content-demo-v1` and product similarity are preserved.
 
 ### Rollback Criteria
 
-Disable `PERS_HYBRID`; `/me` reverts to preference/behavior/popularity components individually, then to `content-demo-v1` parity.
+Disable `PERS_HYBRID`; `/me` uses the PERS-04/PERS-06/PERS-07 mode ladder independently. No data rollback.
 
 ### Risks
 
-- BR-032: weight drift undocumented. Mitigation: version-controlled weights + test.
-- BR-033: explanation/score mismatch. Mitigation: explanation generated from normalized contributions.
+- BR-027 / FR-022: hybrid may double-count content, silently change weights, or label a lower mode as hybrid. Mitigation: exactly-three-component contract, versioned weight test, request-level availability matrix, and contribution-derived reasons.
 
 ### Decisions Still Requiring Approval
 
-- Final component weights (proposed assumptions above).
-- Minimum relevance threshold value.
+None for v1 structure. Initial `0.45/0.35/0.20` weights are fixed documented assumptions; changing them later requires a new algorithm version.
 
 ---
 
@@ -1272,23 +1341,25 @@ PERS-09 / BFP-16 (backend) + FFP-14 (frontend) — Full cross-repository integra
 
 ### Status
 
-Planned. Blocked by PERS-01 through PERS-08.
+Planned. PERS-01, PERS-02, and DATA-15 are already complete; PERS-09 is blocked only by implementation/verification of PERS-03 through PERS-08.
 
 ### Goal
 
-Land the personalization system end-to-end with thin route handlers, pure scoring, repository separation, safe public response mapping, exact logging, idempotent feedback, indexes, cache invalidation, account-deletion cleanup, seed/MongoDB parity, safe failure, and full documentation.
+Integrate and verify PERS-03 through PERS-08 as one coherent `/api/recommendations/me` pipeline without changing DATA-15, the public product-similarity route, historical evaluation rules, or the already completed identity/session architecture.
 
 ### Why It Is Required
 
-Each prior milestone is flag-gated. PERS-09 is the integration, hardening, and documentation closure that makes the system coherent and safe to enable.
+Each prior milestone is independently flag-gated. PERS-09 verifies cross-repository contracts, failure/rollback behavior, privacy boundaries, dataset-version isolation, account cleanup, frontend state, and documentation before any separate enablement decision.
 
 ### Current Implementation Gap
 
-- Personalization is fragmented across flag-gated milestones; no end-to-end integration tests or closed documentation yet.
+- PERS-03 through PERS-05 are implemented and individually verified; PERS-06 through PERS-08 are not implemented yet and remain planned for a later approved batch.
+- `/api/recommendations/me` and its auth-restoration/frontend resource-key behavior already exist from PERS-02; PERS-09 must verify them, not redesign or switch endpoints again.
 
 ### Dependencies
 
-- All PERS-01 through PERS-08.
+- PERS-03 through PERS-08 implemented and individually verified.
+- PERS-01/PERS-02 identity and `/me` contracts remain regression gates, not unfinished dependencies.
 
 ### Non-goals
 
@@ -1297,32 +1368,28 @@ Each prior milestone is flag-gated. PERS-09 is the integration, hardening, and d
 
 ### Backend Changes
 
-- Enforce thin route handlers (validate + authorize + call service + map safe response).
-- Pure scoring functions in `src/lib/recommender/`; no MongoDB calls inside scoring.
-- Repository separation maintained; services orchestrate repositories.
-- Safe public response mapping (strip internal exclusions, object ids, raw signals).
-- Exact recommendation logging (already present; verified across all new modes/versions).
-- Algorithm versioning across every mode.
-- Idempotent feedback writes (PERS-05).
-- Indexes for popularity and profile reads.
-- Cache invalidation on catalog change and subject writes.
-- Account deletion cleanup includes feedback and any profile cache.
-- Seed/MongoDB parity wherever supported; no silent fallback from explicit MongoDB to seed.
-- No private state in public product routes.
+- Review the final `/me` route: it must remain thin (`require/optional session` → validate limit/surface → call recommendation service → safe response). Do not move scoring/repository reads into routes.
+- Verify pure modules in `src/lib/recommender/` contain no MongoDB/network calls: preference, behavioral affinity, popularity ranker, and hybrid combiner.
+- Verify service orchestration reads one active candidate set, applies exact feedback exclusions once, and keeps live customer state separate from historical popularity aggregates.
+- Verify safe response mapping strips object ids, raw profile signals, historical aggregates/user keys, internal exclusions, and component weights.
+- Verify recommendation logging records exactly the final served list/mode/version/reasons and that opt-out behavior still matches the privacy contract.
+- Verify every new mode/version is recognized by validators/loggers/frontend contracts. Keep `content-demo-v1` and product `content-similarity` unchanged.
+- Verify feedback upsert/undo is idempotent and account deletion removes feedback. No derived profile/cache collection should exist unless a prior milestone explicitly justified one.
+- Do not add popularity/profile indexes at closure unless an actual query plan from PERS-06/PERS-07 demonstrated a need.
+- Explicit MongoDB mode never silently falls back to seed. Seed mode uses only features supported by seed data and deterministic fallback behavior.
+- Run DATA-15 verification read-only: v3 remains active; v2 remains immediate rollback; v1 remains identity base; 116 legacy products and exactly three showcase customers remain intact. Do not import, activate, rollback, or create v4 in PERS-09.
 
 ### Frontend Changes (FFP-14)
 
-- Authenticated users use `/api/recommendations/me`; anonymous visitors use the documented fallback.
-- Recommendation loading does not start before auth restoration resolves.
-- Sign-in changes the recommendation resource key; sign-out clears personalized recommendations.
-- In-flight requests aborted on identity changes; stale responses cannot overwrite new-user results.
-- Tracking queues flushed or discarded before identity changes.
-- Recommendation attribution remains attached to cards and detail navigation.
-- Preferences update and refresh recommendations safely.
-- Negative feedback updates the displayed list.
-- Distinct loading/empty/retry/partial/fallback states.
-- Demo-profile language removed from true personalized surfaces; synthetic showcase accounts remain clearly labelled as demonstrations.
-- Accessibility and responsive behavior covered.
+- Re-verify the PERS-02 behavior already in production: auth restoration gates recommendation loading; authenticated requests use `/api/recommendations/me`; identity changes abort/stale-guard old requests; sign-out clears personalized resource state.
+- Verify preference save does not add an off-surface recommendation reload. After save, navigating to `/` or `/recommendations` must trigger the existing fresh route/resource-key request and use the persisted preferences.
+- Verify feedback create/undo keeps the recommendation card mounted as a compact confirmed status+Undo placeholder, uses pessimistic writes, and relies on the next normal recommendation load for server-authoritative suppression.
+- Verify `preference-profile`, `behavior-profile`, `popularity`, `personalized-hybrid`, `cold-start`, and `anonymous-fallback` labels/reasons are distinct and truthful.
+- Verify tracking opt-out clears/stops passive analytics while functional rating/wishlist/cart/feedback actions still work.
+- Preserve request/list/version/rank attribution from rendered recommendation cards into supported passive interactions.
+- Keep loading, empty, retry, and fallback states accessible. Do not create a separate "partial hybrid" UI; lower component modes already express partial availability.
+- Keep legacy `demo-profile` wording only on the restricted synthetic showcase path; do not label registered-user results as demo personalization.
+- Re-run keyboard, visible-focus, screen-reader announcement, and responsive/mobile checks for new feedback/recommendation states.
 
 ### API Contract
 
@@ -1330,43 +1397,64 @@ Final consolidated contract for `/api/recommendations/me`, feedback routes, and 
 
 ### Data-Model Changes
 
-- Consolidated additive indexes.
-- Feedback collection live.
-- Account deletion transaction final.
+No new PERS-09 schema. Verify the PERS-03 feedback collection/index, existing interaction/recommendation TTL indexes, existing historical-rating indexes, and account-deletion transaction. Do not add a profile/popularity cache collection merely for closure.
 
 ### Algorithm Or Business Rules
 
-All modes and versions live; fallback ladder documented; `content-demo-v1` retained for regression.
+- Final user-list approaches are: preference scoring, behavioral content affinity, historical popularity, and the hybrid. PERS-05 feedback is an exclusion/signal rule, not another recommender.
+- Effective flag dependencies must fail closed: `profile = PERS_PROFILE_DOMAIN`; `preference = profile && PERS_PREFERENCE_RANKING`; `feedback = profile && PERS_NEGATIVE_FEEDBACK`; `behavior = profile && PERS_BEHAVIORAL_RANKING`; `popularity = PERS_POPULARITY`; `hybrid = preference && behavior && PERS_HYBRID`. A disabled feedback flag also removes stored feedback from behavioral evidence.
+- Public product-to-product content similarity remains separate and unchanged.
+- All new component/hybrid flags may remain default-off at PERS-09 completion. Integration completeness does not authorize production enablement; a separate explicit task decides defaults.
+- The fallback/mode matrix in PERS-08 is the single source of truth. Blend scores only for a true hybrid; lower modes use their pure component score/version.
 
 ### Privacy And Security Rules
 
-- Full opt-out boundary enforced end-to-end.
-- No PII in interactions; no private raw events in responses; no cross-user inference.
-- Account deletion removes all personalization state.
-- Recommendation logs and feedback retention documented (90-day logs; durable feedback).
+- Session identity is the only live customer identity source; historical Amazon `userKey` never becomes an app subject.
+- Tracking opt-out suppresses passive analytics persistence/use; direct account actions remain functional.
+- No raw profile signals, interaction rows, historical aggregates/identities, MongoDB ids, or component weights in public responses.
+- Account deletion removes all durable customer personalization state including feedback; 90-day interactions/recommendation logs are included in the existing deletion transaction.
+- Synthetic showcase data stays clearly labelled and must not be reported as real-user quality evidence.
 
 ### Edge Cases
 
-Consolidated edge-case coverage from every milestone (see appendix). Notably:
+Consolidate only implemented cases from PERS-03 through PERS-08. Minimum final matrix:
 
-- Identity and authorization: anonymous, expired, tampered, disabled, deleted, admin, seeded, MongoDB demo, registered, cross-user attempt, auth transition, multiple tabs, concurrent login/logout.
-- Persistence and availability: MongoDB unavailable, seed mode, missing env vars, transaction failure, partial write, retry after timeout, cache corruption, migration interrupted, index missing, account deleted during ranking, product changed during ranking.
-- Privacy: tracking opt-out, no PII, no raw events in response, no cross-user inference, account deletion, TTL expiration, durable suppression vs expiring analytics, recommendation-log and feedback retention, synthetic data clearly labelled.
+- identity: anonymous, registered, showcase, admin rejection, expired/tampered/disabled/deleted session, sign-in/sign-out during in-flight request, cross-user attempt;
+- catalog/data: research-only null commercial fields, seed mode, v3 active with v2/v1 coexistence, deleted/unknown product, dataset-key mismatch, zero historical popularity evidence;
+- preferences/feedback: empty preferences, disliked genre as soft penalty, successful/failed preference save, duplicate feedback, double undo, feedback for later-deleted product, rating-5 plus not-interested conflict;
+- behavior/privacy: opt-out with durable state still present, passive events absent, duplicate/out-of-order passive events, wishlist/cart removals not negative, search-submit not used as content taste;
+- hybrid: each component availability combination, all tied scores, exact feedback exclusion, deterministic ordering, old algorithm logs, flag rollback;
+- failure: MongoDB unavailable, repository query failure, account deleted during ranking. Required persistence failure returns an error; it is not disguised as a lower recommendation mode.
 
 ### Failure And Recovery Behavior
 
-Every mode fails safe to the next ladder rung; explicit MongoDB mode never silently serves seed; seed mode serves cold-start/anonymous fallback.
+- Algorithm evidence unavailable → use the documented lower mode.
+- Required catalog/session/persistence unavailable in explicit MongoDB mode → safe error such as `PERSISTENCE_UNAVAILABLE`; never silently serve seed.
+- Seed mode uses only seed-supported deterministic behavior; it never pretends historical popularity exists.
 
 ### Migration Strategy
 
-Follow the release pattern in the appendix. Cross-repository release order: backend models/repositories first, then identity, then endpoint, then profile, then preference, then feedback, then behavioral, then popularity, then hybrid, then frontend switch-over, then restrict legacy paths last.
+There is no DATA-15 or recommendation-data migration in PERS-09. Implement PERS-03 through PERS-08 in dependency order, then perform integration-only closure. Do not rerun imports/activation/rollback. Frontend already uses `/me`; verify it after backend contracts are stable rather than performing another endpoint switch.
 
 ### Tests
 
-- Backend integration: session-owned identity, cross-user denial, route validation, preference filtering/scoring, feedback persistence/undo, behavioral aggregation/recency/dedup/saturation, popularity aggregation/smoothing/diversity, hybrid normalization/missing-component/tie-break, explanation correctness, fallback ladder, algorithm versioning, recommendation logging, account-deletion cleanup, seed/MongoDB parity, database failure paths, migration/index verification.
-- Frontend integration: auth restoration before load, authenticated endpoint selection, anonymous fallback, sign-in refresh, sign-out cleanup, stale-response prevention, preference-edit refresh, feedback submission/undo, error recovery, loading/empty states, fallback labels, reason rendering, accessibility, keyboard, mobile, attribution, tracking opt-out, cross-tab/storage behavior.
-- End-to-end (both repos running together): registered account with preferences; showcase demo accounts with distinct deterministic profiles; rating changes recommendation input; wishlist/cart affect profile per rules; not-interested removes and suppresses; already-own excludes without implying dislike; anonymous user receives popularity/catalog fallback; one account cannot access another's profile-derived results; historical `content-demo-v1` behavior remains testable; admin and checkout functionality do not regress.
-- Synthetic fixture tests are never called recommendation-quality evaluation.
+- Backend integration: session-owned identity/cross-user denial; fail-closed feature dependency matrix; active-catalog single-candidate-set orchestration; PERS-04 complete null-safe preference score map; PERS-05 exact feedback/undo + inert stored rows when disabled; PERS-06 complete durable + opt-in passive affinity score map; PERS-07 candidate-owned dataset-key popularity/v2-v3 isolation; PERS-08 complete pre-diversity score-map contract and exact pure-lower/hybrid mode matrix; safe explanations; algorithm versions; exact served-list logging; account-deletion cleanup; seed behavior; explicit MongoDB failure paths.
+- Frontend integration: existing auth-restoration/resource-key/stale-response guards; preference save adds no off-surface reload and the next recommendation-surface navigation fetches fresh persisted preferences; two feedback kinds use a confirmed status+Undo placeholder without immediate reranking; all mode labels/reasons; loading/empty/retry/fallback states; attribution; opt-out with direct functional actions; accessibility/keyboard/mobile.
+- End-to-end with both repos: registered account preferences change order; rating/wishlist can change behavioral affinity; not-interested excludes exact item; already-own excludes exact item without dislike wording; anonymous MongoDB user receives historical popularity when available; seed anonymous user receives deterministic fallback; opt-out removes passive capture but direct state remains functional; one account cannot read another's profile; admin remains rejected; product similarity and legacy demo route remain unchanged.
+- DATA-15 read-only verification: v3 active; v2 rollback verifiable while v3 active; v1 identity-base evidence intact where supported; 2,305 v3 products / 20,288 ratings / 2,387 subjects / expected splits; 116 legacy products; exactly three showcase customers. PERS-09 performs no write rehearsal.
+- Synthetic fixture tests are functional/regression evidence only, never recommendation-quality evaluation.
+
+### Exact Implementation Order
+
+1. Confirm PERS-03 through PERS-08 Definition of Done and feature-flag rollback tests individually; do not repair unrelated features in PERS-09.
+2. Audit backend call graph: route → recommendation service → repositories + pure scorers → safe mapper/logger. Remove duplicate candidate/profile reads only when directly caused by PERS work.
+3. Run focused backend integration tests, then full backend test/lint/build.
+4. Audit frontend current provider/resource flow and all new modes/feedback controls; run focused frontend tests, then full frontend test/lint/build.
+5. Run cross-repo E2E for authenticated, anonymous, opt-out, feedback, identity transition, and seed/MongoDB failure boundaries.
+6. Run read-only dataset/artwork/index verification required by current project instructions. No dataset apply/activation/rollback.
+7. Perform a defect-first semantic diff review. Fix P0-P2 and directly coupled P3 defects; avoid unrelated refactors.
+8. Synchronize the planning/status/contract/data-model/recommender/risk/backlog docs. Follow the root append-only memory rule for any session that changes these plans; the later implementation session appends its own separate entry.
+9. Leave PERS-04 through PERS-08 flags default-off unless the user separately authorizes enablement.
 
 ### Documentation Updates
 
@@ -1382,24 +1470,30 @@ Follow the release pattern in the appendix. Cross-repository release order: back
 - `PRESENTATION_NOTES.md`: honest updated wording (still no quality claim).
 - Both `README.md`: register the new plan doc.
 - `CLAUDE.md`/`AGENTS.md`: only if project instructions genuinely need updating.
-- `implementation_plan_order.txt`: PERS sequence appended.
+- `implementation_plan_order.txt`: verify the existing PERS sequence/status is still correct; update only if implementation status changed.
 
 ### Definition Of Done
 
-- All milestones integrated behind coherent flags; end-to-end tests pass; documentation closed and consistent; honesty constraints hold; no quality claim made; `content-demo-v1` and old route retained and restricted.
+- PERS-03 through PERS-08 integrate through the existing session-owned `/me` endpoint with coherent independent flags and the single PERS-08 mode matrix.
+- Backend/frontend focused + full tests, lint, builds, required cross-repo E2E, and read-only dataset verification pass.
+- v3/v2/v1 boundaries, 116 legacy products, exactly three showcase customers, product similarity, and `content-demo-v1` regression behavior are preserved.
+- Documentation consistently treats hard preference relaxation, `show-fewer-like-this`, live-event popularity, and duplicate content hybrid scoring as excluded/deferred rather than planned behavior, and makes no recommendation-quality claim.
+- New PERS-04 through PERS-08 flags remain default-off pending separate enablement authorization.
 
 ### Rollback Criteria
 
-- Each flag disables independently; full rollback returns the storefront to `content-demo-v1` demo behavior; no destructive data migration was performed, so rollback needs no data restore.
+- Each new algorithm flag disables independently. Full algorithm rollback returns `/me` to its pre-PERS-04 cold-start/anonymous behavior while leaving privacy tightening and durable feedback data harmless.
+- No DATA-15 content changed, so rollback never requires dataset restore/import/activation.
 
 ### Risks
 
-- BR-034 / FR-017: Integration exposes a cross-repo contract gap. Mitigation: shared contract tests in both repos.
-- BR-035: Documentation drift after integration. Mitigation: documentation-closure checklist in Definition of Done.
+- BR-027 / FR-022 / FR-023: cross-repo mode/version/reason/copy contracts drift from the selected approach. Mitigation: exact response fixtures, full mode-matrix E2E, and final stale-term review.
+- BR-021 / BR-028 / FR-014: integration regresses identity isolation, stale-response protection, or account-deletion cleanup. Mitigation: existing identity guards plus deletion/in-flight-request regression tests.
+- BR-034: integration accidentally enters the sealed dataset write lifecycle. Mitigation: PERS-09 performs read-only dataset verification only; no import/apply/activation/rollback command is part of this milestone.
 
 ### Decisions Still Requiring Approval
 
-- Whether to enable any PERS flag by default at PERS-09 closure, or leave all off pending a separate enablement decision (proposed: leave off; enable in a separate explicit step).
+- Production enablement of PERS-04 through PERS-08. Default for implementation/closure is off; enablement is a separate explicit task.
 
 ---
 
@@ -1410,10 +1504,10 @@ Every case below is covered by at least one milestone's tests.
 - Identity and authorization: anonymous request; expired session; tampered session; disabled account; deleted account; admin account; seeded environment account; MongoDB demo account; registered account; cross-user request attempt; auth transition during request; multiple tabs; concurrent login/logout.
 - Preferences: empty preferences; partial onboarding; conflicting favorite and disliked genres; minimum budget greater than maximum budget (rejected at validation); unsupported condition; unsupported format; preference edits during ranking; preference deletion; no matching products; extremely narrow preferences; missing product metadata.
 - Behavior: duplicate events; out-of-order events; clock skew; replayed events; refresh-generated views; bot-like event volume; add/remove cycles; rating changes; rating deletion; passive tracking disabled; anonymous-to-authenticated transition; guest-state merge retry; interaction references deleted product; interaction references unknown recommendation list.
-- Negative feedback: duplicate dismiss; undo twice; dismiss already-deleted product; already-owned item becomes unavailable; conflict between rating 5 and not-interested; conflict between already-own and low rating; item-level dislike versus genre preference; feedback submitted while request is refreshing; network failure after optimistic removal.
-- Popularity: no events; one event; one user dominating counts; synthetic demo traffic; old events; removed ratings; deleted products; out-of-stock products; new catalog products; same artist dominating; cached score becoming stale.
-- Hybrid: missing component score; all component scores equal; negative total score; one component dominating due to scale; no candidate after hard filtering; duplicate releases; stable ordering; weight changes; rollback; historical logs from older versions; explanation does not match actual score.
-- Persistence and availability: MongoDB unavailable; seed mode; missing environment variables; transaction failure; partial write; retry after timeout; cache corruption; migration interrupted; index missing; account deleted during ranking; product changed during ranking.
+- Negative feedback: duplicate create; undo twice; feedback product later deleted; rating-5 plus not-interested; already-own plus low rating; exact suppression versus positive genre preference; card becomes status+Undo after confirmed create; undo failure leaves the confirmed placeholder; next normal load enforces stored suppression.
+- Popularity: active v3 with v2/v1 rows present; no active-dataset ratings; zero-rating candidate; equal count; equal count/mean; deleted product; seed mode; dataset activation changes between requests; no historical identity exposed.
+- Hybrid: preference+behavior+popularity hybrid; preference+behavior hybrid with popularity absent; preference+popularity returns pure preference; behavior+popularity returns pure behavior; popularity-only; all unavailable; all scores tied; exact feedback exclusion; weight-version change; `content-demo-v1`/product-similarity regression; deterministic tie-break; explanation/item mismatch.
+- Persistence and availability: MongoDB unavailable; seed mode; missing environment variables; transaction failure; retry after timeout; account deleted during ranking; product changed during ranking; required repository failure is not disguised as an algorithm fallback.
 - Privacy: tracking opt-out; no PII in interactions; no private raw events in recommendation response; no cross-user inference; account deletion; TTL expiration; durable suppression versus expiring analytics; recommendation logs and feedback retention; synthetic data clearly labelled.
 
 ## Test And Verification Plan
@@ -1442,7 +1536,7 @@ Each stage is reversible. Recommended release pattern:
 10. Retain rollback to `content-demo-v1`.
 11. Keep the legacy route restricted and never private.
 
-Rules: schema migrations additive and dry-run-verified; no destructive migration without export; feature flags per milestone; algorithm-version flags; route rollout behind flags; frontend switch-over after endpoint stability; backward compatibility maintained; old route deprecation documented; cache invalidation on writes; rollback procedure per milestone; seed-mode and MongoDB-mode verification; cross-repository release order backend-first.
+Rules: PERS-03 feedback schema is the only planned new personalization collection; PERS-04 through PERS-09 add no destructive migration; feature flags and algorithm versions are explicit; the frontend already uses `/me` from PERS-02; backward compatibility and the restricted legacy route remain; no profile/popularity cache is added without measured need; explicit MongoDB never falls back silently to seed; DATA-15 verification is read-only during PERS work; cross-repository implementation remains backend-contract-first.
 
 ## Decision Register (Recorded Or Proposed)
 
@@ -1450,13 +1544,17 @@ Recorded at PERS-00:
 
 - BDEC-016 / FDEC-011 — Personalization architecture freeze (endpoint, durable-vs-TTL, opt-out split, version/mode names, profile recompute-on-demand, normalization, hybrid weight assumptions, demo account labelling).
 
-Recorded across milestones:
+Planned decisions for later milestones (not yet recorded in `DECISION_LOG.md`):
 
-- BDEC-017 — Profile recompute-on-demand; explicit-vs-passive opt-out split.
-- BDEC-018 — Durable feedback authoritative source; pessimistic vs optimistic create.
-- BDEC-019 — Opt-out split between passive and explicit; behavioral aggregation assumptions.
+- Planned BDEC-027 — Profile recompute-on-demand; direct durable state versus opt-in passive analytics split. Record during PERS-03 implementation.
+- Planned BDEC-028 — Durable exact-item feedback authoritative; `not-interested`/`already-own` only; pessimistic creates; show-fewer deferred. Record during PERS-05 implementation.
+- Planned BDEC-029 — Behavioral affinity uses current durable state plus weak opt-in passive events; removals are not negative taste; raw search text is unavailable. Record during PERS-06 implementation.
+- Planned BDEC-030 — Production popularity uses active-dataset historical rating count, mean-rating/id tie-break; offline evaluation remains train-only. Record during PERS-07 implementation.
+- Planned BDEC-031 — Hybrid blending requires preference + behavioral affinity, adds popularity when available, uses the `0.45/0.35/0.20` v1 assumption, and performs no second min-max normalization. If either personalized component is absent, return the pure lower component mode/version. Product similarity remains separate. Record during PERS-08 implementation.
 
-PERS-00 through PERS-02 resolved opening personalization after FFP-08, the `/api/recommendations/me` name, the explicit-functional-action versus passive-tracking opt-out model, administrator rejection, limit 12, auth gating/provider order, and default-on reversible identity/endpoint flags. Decisions still requiring approval belong to later milestones: hard-vs-soft preference defaults, pessimistic feedback creates, initial popularity variant/window, initial hybrid weights, and final closure defaults.
+PERS-00 through PERS-02 resolved identity/session architecture. This 2026-08-09 plan review resolves the PERS-04 through PERS-08 method shape above. Remaining approval is limited to the initial PERS-04/PERS-06 component weight constants and, at PERS-09 closure, production enablement of the new ranking flags. All weights remain documented assumptions, not learned or validated-optimal values.
+
+Implementation update (2026-08-10): BDEC-027 and BDEC-028 are now recorded in `DECISION_LOG.md`. PERS-03 recomputes the profile on demand, keeps it server-internal, and separates durable account state from opt-in passive analytics. PERS-05 stores only durable exact-item `not-interested`/`already-own` feedback with pessimistic creates and idempotent undo. PERS-04 uses equal absolute group weights as a documented v1 assumption; no quality or optimality claim is made. PERS-06 through PERS-09 remain planned.
 
 ## Honesty Contract
 
