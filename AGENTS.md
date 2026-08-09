@@ -86,7 +86,7 @@ npm run build
 
 Use live endpoint and cross-origin checks when the environment permits them.
 
-After any E2E or auth-write run that exercised MongoDB mode, remove the test-generated documents from Atlas with `npm run db:clean:test:apply` (dry-run: `npm run db:clean:test`). This is the standalone form of the root `CLAUDE.md`/`AGENTS.md` "Post-test Atlas cleanup" rule; the frontend Playwright suite also runs it automatically via its global teardown. The tool deletes only `e2e_`-prefixed users and the test-residue collections (`interactions`, `recommendationLogs`, `carts`, `wishlists`, `ratings`, `guestMerges`, `feedback`), never `vinylRecords`, the demo users, `counters`, `orders`, or `auditLogs`.
+After any E2E or auth-write run that exercised MongoDB mode, remove the test-generated documents from Atlas with `npm run db:clean:test:apply` (dry-run: `npm run db:clean:test`). This is the standalone form of the root `CLAUDE.md`/`AGENTS.md` "Post-test Atlas cleanup" rule; the frontend Playwright suite also runs it automatically via its global teardown. The tool deletes only `e2e_`-prefixed users, the existing full-wipe test-residue collections (`interactions`, `recommendationLogs`, `carts`, `wishlists`, `ratings`, `guestMerges`), and `feedback` rows owned by those matched `e2e_` users. It never collection-wipes durable feedback and never touches `vinylRecords`, the demo users, `counters`, `orders`, or `auditLogs`.
 
 ## Documentation Synchronization
 

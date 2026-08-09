@@ -92,6 +92,15 @@ function parseImageUrl(value) {
   return boundedLiteral(value, { name: "imageUrl", maxLength: 2_000 });
 }
 
+export function parseAdminIncludeDeleted(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return false;
+  if (normalized !== "true" && normalized !== "false") {
+    throw invalid("includeDeleted must be true or false.");
+  }
+  return normalized === "true";
+}
+
 // Validate the shared mutable fields and return a patch object containing only
 // the fields that should be written. `required` controls whether create-only
 // required fields (title, artist, price, stock, condition, format) must be set.

@@ -5,6 +5,9 @@ export const TEST_RESIDUE_COLLECTIONS = Object.freeze([
   "wishlists",
   "ratings",
   "guestMerges",
+]);
+
+export const TEST_USER_SCOPED_RESIDUE_COLLECTIONS = Object.freeze([
   "feedback",
 ]);
 

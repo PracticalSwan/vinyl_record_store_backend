@@ -23,7 +23,7 @@ V3 supersedes v2 with corrected original-release-year enrichment. V2 remains the
 - explicit research-only browsing with no invented price, currency, stock, condition, cart, or checkout behavior;
 - protected customer state, seed-mode regression coverage, and a reproducible dataset E2E mode.
 
-Historical evidence is data-ready only. No new ranking model was implemented or evaluated. The deployed behavior remains `content-demo-v1`, and the live evaluator remains `insufficient-evidence`.
+Historical evidence is data-ready only: no historical-data ranking model was implemented or evaluated. The separately implemented `preference-profile-v1` live mode remains default-off and has not been quality-evaluated. The deployed default behavior remains `content-demo-v1`, and the live evaluator remains `insufficient-evidence`.
 
 ## Source, Citation, And Redistribution Boundary
 

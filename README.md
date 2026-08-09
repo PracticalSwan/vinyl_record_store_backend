@@ -32,9 +32,12 @@ Three things worth knowing up front:
 | `GET`, `DELETE` | `/api/me` | Read the profile or delete the account. |
 | `PATCH` | `/api/me/preferences` | Replace onboarding preferences. |
 | `POST` | `/api/interactions` | Ingest a bounded analytics batch. |
-| `GET`, `PUT`, `DELETE` | `/api/wishlist` | Read or mutate the wishlist. |
-| `GET`, `PUT`, `DELETE` | `/api/cart` | Read or mutate cart quantities. |
-| `GET`, `PUT`, `DELETE` | `/api/ratings` | Read or mutate ratings. |
+| `GET` | `/api/wishlist` | Read the signed-in customer's wishlist. |
+| `PUT`, `DELETE` | `/api/wishlist/:productId` | Add or remove one wishlist product. |
+| `GET` | `/api/cart` | Read the signed-in customer's cart. |
+| `PUT`, `DELETE` | `/api/cart/:productId` | Set or remove one cart product. |
+| `GET` | `/api/ratings` | Read the signed-in customer's ratings. |
+| `PUT`, `DELETE` | `/api/ratings/:productId` | Set or remove one product rating. |
 | `PUT`, `DELETE` | `/api/me/feedback/:productId` | Optional exact-item `not-interested`/`already-own` feedback and idempotent undo. |
 | `POST` | `/api/me/merge-guest-state` | Merge guest wishlist, cart, and ratings. |
 
