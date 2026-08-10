@@ -7,8 +7,10 @@ Read this file before every backend session.
 - The backend is an implemented Next.js catalog, recommender, authentication, and customer-state API, not a starter or planning-only scaffold.
 - The reviewed combined seed remains the default catalog. Explicit `CATALOG_DATA_SOURCE=mongodb` selection uses the Atlas catalog repository; never describe MongoDB as an automatic fallback.
 - Strict Mongoose models, repositories, signed sessions, customer write routes, an idempotent seed migration, and index verification exist.
-- The recommender is deterministic `content-demo-v1` logic for product similarity, a restricted synthetic `demo-user`, session-owned customer cold-start, and anonymous fallback.
+- The recommender preserves deterministic `content-demo-v1` logic for product similarity, a restricted synthetic `demo-user`, session-owned customer cold-start, and anonymous fallback; default-off PERS-04 through PERS-08 add pure preference/behavior/popularity and true-hybrid modes.
 - Recommendation routes return server-generated request/list IDs. In MongoDB mode they log exactly what was served unless the usage-data header opts out; seed mode remains non-persistent.
+- PERS-06 through PERS-08 require one loaded candidate set, one exact-exclusion pass, complete pre-diversity maps, candidate-owned popularity dataset keys, and pure lower-mode versions. PERS-09 remains deferred.
+- Keep production `popularity-v1` distinct from the train-only `offline-popularity-train-v1`, and force the request tracking decision into behavior scoring so an injected passive profile cannot bypass opt-out.
 - Behavior tests prove implementation rules, not offline recommendation quality.
 - Catalog ingestion, backend-approved artwork, and the offline evaluation pipeline are implemented. The current evaluation output remains an evidence-bound non-conclusion.
 

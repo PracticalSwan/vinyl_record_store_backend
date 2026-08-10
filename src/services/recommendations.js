@@ -6,7 +6,10 @@ import {
   recommendForUser,
 } from "../lib/recommender/contentBased.js";
 import {
+  personalizationBehavioralRankingEnabled,
+  personalizationHybridEnabled,
   personalizationNegativeFeedbackEnabled,
+  personalizationPopularityEnabled,
   personalizationPreferenceRankingEnabled,
   personalizationProfileDomainEnabled,
 } from "../lib/features.js";
@@ -73,8 +76,14 @@ export async function serveUserRecommendations(subject, limit, context, options 
     && personalizationPreferenceRankingEnabled(environment);
   const feedbackEnabled = profileEnabled
     && personalizationNegativeFeedbackEnabled(environment);
+  const behaviorRankingEnabled = profileEnabled
+    && personalizationBehavioralRankingEnabled(environment);
+  const popularityEnabled = personalizationPopularityEnabled(environment);
+  const hybridEnabled = preferenceRankingEnabled
+    && behaviorRankingEnabled
+    && personalizationHybridEnabled(environment);
   const profile = options.profile || (
-    subject.kind === "registered" && (preferenceRankingEnabled || feedbackEnabled)
+    subject.kind === "registered" && (preferenceRankingEnabled || feedbackEnabled || behaviorRankingEnabled)
       ? await buildUserRecommendationProfile(subject, {
           trackingAllowed: context.trackingAllowed !== false,
           feedbackAllowed: feedbackEnabled,
@@ -89,6 +98,10 @@ export async function serveUserRecommendations(subject, limit, context, options 
     profile,
     preferenceRankingEnabled,
     feedbackEnabled,
+    behaviorRankingEnabled,
+    popularityEnabled,
+    hybridEnabled,
+    trackingEnabled: context.trackingAllowed !== false,
   });
   return record(result, {
     subjectType: actor.kind === "registered" ? "user" : "anonymous",

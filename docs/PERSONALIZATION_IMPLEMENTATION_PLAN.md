@@ -1,6 +1,6 @@
 # Personalization Implementation Plan (Backend)
 
-This roadmap converts the existing deterministic demo recommender into a genuine personalized recommender system for the Vinyl Record Store (CSX4207). PERS-00 through PERS-05 were implemented on the `feat/personalization-pers-03-05` branches on 2026-08-10, with the new personalization flags default-off. DATA-00 through DATA-15 were re-verified with the final lifecycle evidence on 2026-08-08. PERS-06 through PERS-09 remain planning-only, were explicitly excluded from the dataset implementation, and authorize no implementation by themselves.
+This roadmap converts the existing deterministic demo recommender into a genuine personalized recommender system for the Vinyl Record Store (CSX4207). PERS-00 through PERS-05 were implemented on the `feat/personalization-pers-03-05` branches on 2026-08-10, and PERS-06 through PERS-08 were implemented on the `feat/personalization-pers-06-08` branches on 2026-08-10; all new personalization flags remain default-off. DATA-00 through DATA-15 were re-verified with the final lifecycle evidence on 2026-08-08. PERS-09 remains deferred and was not implemented or used to authorize dataset changes.
 
 This plan is scheduled AFTER the entire existing documented roadmap: BFP-07 (admin backend), FFP-07 (admin frontend), FFP-08 (simulated checkout), and any backend support already planned for the simulated checkout. It does not reorder, replace, remove, or silently redefine any existing BFP/FFP plan. BFP-05 (recommender algorithm selection) remains its own on-hold placeholder; PERS-00 records the method decision that resolves BFP-05's open question without reusing the BFP-05 ID.
 
@@ -16,10 +16,10 @@ The remaining PERS milestones are revised as follows:
 
 - PERS-03 is server-internal and adds no public profile/source fields. Historical pseudonyms and historical rating rows never enter the live customer profile or API.
 - PERS-04 must handle nullable artist/genre/format/price/stock without inventing preferences or commercial facts. It must name whether ranking uses the active version.
-- PERS-05 is implemented as a live-account feature; PERS-06 remains planned. Neither may write into or reinterpret `historicalAmazonRatings`.
+- PERS-05 through PERS-06 are implemented as live-account features; neither writes into or reinterprets `historicalAmazonRatings`.
 - PERS-07 production planning may use aggregate historical ratings only for the exact active dataset; offline evaluation remains a separate train-only code path and must not reuse all-split production counts.
 - PERS-08 must score one shared active candidate set, keep live personalized evidence separate from aggregate historical popularity, and never map historical subjects to app users.
-- PERS-09 verifies v3 active / v2 rollback / v1 identity-base evidence read-only, plus exact-three-user preservation, nullable-field UI behavior, and independent live/historical reporting. It performs no dataset lifecycle write.
+- PERS-09 remains a separately deferred integration/closure milestone. This batch performs no dataset lifecycle write and does not claim its verification work.
 
 Historical-data `ready` status does not satisfy the live evidence threshold and does not authorize Precision@k, Recall@k, MAP@k, NDCG@k, or a personalization claim. Future implementation requires a new explicit user request after this gate is revalidated.
 
@@ -887,7 +887,7 @@ PERS-06 / BFP-13 (backend) + FFP-12 (frontend) — Behavioral content-affinity p
 
 ### Status
 
-Planned. Blocked by PERS-03 (profile) and PERS-05 (negative semantics). First use of interaction history in live ranking.
+Implemented 2026-08-10 on `feat/personalization-pers-06-08`, behind default-off `PERS_BEHAVIORAL_RANKING`. The server opt-out backstop, pure scorer, `/me` wiring, and focused regression tests are complete; no quality claim is made.
 
 ### Goal
 
@@ -899,9 +899,9 @@ Ratings, wishlist, cart, and explicit feedback already express stronger intent t
 
 ### Current Implementation Gap
 
-- Live ranking reads none of the customer's ratings, wishlist, cart, feedback, or interaction history.
-- Frontend tracking already stops sending passive events when opted out, but `/api/interactions` has no server-side opt-out defense.
-- Persisted search events contain only query length/rank, not the search text, so they cannot identify artist or genre taste.
+- Closed for the PERS-06 scope: live `/me` ranking can consume the bounded server profile when the flag is enabled.
+- The interaction route now has a server-side exact `X-Tracking-Enabled: false` backstop; direct durable account actions remain separate.
+- Persisted search events still contain only query length/rank, not search text, so `search_submit` remains excluded from taste evidence.
 
 ### Dependencies
 
@@ -1010,7 +1010,7 @@ Privacy/identity protections:
 - `RECOMMENDER_SYSTEM_PLAN.md`: behavioral section, version `behavior-profile-v1`, aggregation formula.
 - `INTERACTION_LOGGING_PLAN.md` (frontend): opt-out boundary update.
 - `EVALUATION_PLAN.md`: note live behavioral ranking is separate from offline baselines.
-- Planned decision BDEC-029: behavioral affinity uses current durable state plus weak opt-in passive events, with removals treated as loss of positive state rather than negative taste. Record it in `DECISION_LOG.md` only when PERS-06 is implemented.
+- Decision BDEC-029 recorded: behavioral affinity uses current durable state plus weak opt-in passive events, with removals treated as loss of positive state rather than negative taste.
 
 ### Definition Of Done
 
@@ -1031,7 +1031,7 @@ Disable `PERS_BEHAVIORAL_RANKING`; behavior component is ignored. Keep the serve
 
 ### Decisions Still Requiring Approval
 
-- Initial source/attribute weights and caps. Keep them simple, versioned, and documented as assumptions; no tuning claim.
+None for the implemented v1 assumptions. Any future weight or cap change requires a new algorithm version.
 
 ---
 
@@ -1043,7 +1043,7 @@ PERS-07 / BFP-14 — Active-dataset historical popularity recommender plus deter
 
 ### Status
 
-Planned. Scheduled after PERS-06 so the final fallback order is stable. Production popularity uses the already imported historical Amazon ratings; it does not depend on accumulating live interaction volume.
+Implemented 2026-08-10 on `feat/personalization-pers-06-08`, behind default-off `PERS_POPULARITY`. Production popularity uses the already imported historical Amazon ratings; it does not depend on accumulating live interaction volume.
 
 ### Goal
 
@@ -1055,9 +1055,9 @@ Anonymous and empty-profile requests need a non-personal fallback. The applicati
 
 ### Current Implementation Gap
 
-- No live popularity mode exists.
-- The historical rating collection is used for dataset/evaluation readiness but not production fallback ranking.
-- The current anonymous fallback is only deterministic catalog ordering.
+- Closed for the PERS-07 scope: the live popularity component and repository aggregate are available behind the flag.
+- Historical rating rows remain aggregate-only at the repository boundary and are still separate from offline train-only evaluation.
+- Seed/null/no-evidence candidate sets continue to use the deterministic fallback.
 
 ### Dependencies
 
@@ -1161,7 +1161,7 @@ See Backend Changes. Keep production popularity and offline evaluation separate:
 - `RECOMMENDER_SYSTEM_PLAN.md`: popularity section, version `popularity-v1`, fallback ladder.
 - `DATA_MODEL_PLAN.md`: document reuse of `historicalAmazonRatings` and existing dataset-key indexes; add no cache collection/new index unless profiling later justifies it.
 - `EVALUATION_PLAN.md`: live popularity vs offline baseline distinction.
-- Record planned BDEC-030 in `DECISION_LOG.md` when PERS-07 is implemented.
+- Decision BDEC-030 recorded: production popularity is a candidate-owned dataset-key aggregate with count/mean/id tie-breaks and no historical identity output.
 
 ### Definition Of Done
 
@@ -1193,7 +1193,7 @@ PERS-08 / BFP-15 (backend) + FFP-13 (frontend) — Hybrid orchestration of prefe
 
 ### Status
 
-Planned. Blocked by PERS-04, PERS-06, PERS-07 (all component recommenders must have stable contracts).
+Implemented 2026-08-10 on `feat/personalization-pers-06-08`, behind default-off `PERS_HYBRID`. The component matrix, one-candidate-set orchestration, exact exclusion pass, frontend labels/reasons, and focused regression tests are complete; no quality claim is made.
 
 ### Goal
 
@@ -1205,8 +1205,8 @@ Preference and behavioral components represent different customer evidence, whil
 
 ### Current Implementation Gap
 
-- No score-level hybrid exists.
-- Current `/me` chooses one cold-start/demo path; it does not combine the planned components.
+- Closed for the PERS-08 scope: the pure hybrid combiner and `/me` mode matrix are implemented.
+- Product-to-product content similarity remains a separate route and is not duplicated in user-list scoring.
 
 ### Dependencies
 
@@ -1310,7 +1310,7 @@ See the component contract and combination rules above.
 - `RECOMMENDER_SYSTEM_PLAN.md`: hybrid section, version `personalized-hybrid-v1`, weight assumptions.
 - Both `API_CONTRACT_PLAN.md`: hybrid mode/reasons.
 - `EVALUATION_PLAN.md`: note hybrid is not quality-validated.
-- Record planned BDEC-031 in `DECISION_LOG.md` when PERS-08 is implemented.
+- Decision BDEC-031 recorded: preference/behavior/popularity use fixed v1 weights only in a true personalized hybrid; lower modes stay pure.
 
 ### Definition Of Done
 
@@ -1341,7 +1341,7 @@ PERS-09 / BFP-16 (backend) + FFP-14 (frontend) — Full cross-repository integra
 
 ### Status
 
-Planned. PERS-01, PERS-02, and DATA-15 are already complete; PERS-09 is blocked only by implementation/verification of PERS-03 through PERS-08.
+Deferred and explicitly outside the PERS-06 through PERS-08 batch. No PERS-09 integration/closure implementation or dataset lifecycle work was performed.
 
 ### Goal
 
@@ -1353,7 +1353,7 @@ Each prior milestone is independently flag-gated. PERS-09 verifies cross-reposit
 
 ### Current Implementation Gap
 
-- PERS-03 through PERS-05 are implemented and individually verified; PERS-06 through PERS-08 are not implemented yet and remain planned for a later approved batch.
+- PERS-03 through PERS-08 are implemented and individually verified; PERS-09 remains a later integration/closure task.
 - `/api/recommendations/me` and its auth-restoration/frontend resource-key behavior already exist from PERS-02; PERS-09 must verify them, not redesign or switch endpoints again.
 
 ### Dependencies
@@ -1546,15 +1546,15 @@ Recorded at PERS-00:
 
 Planned decisions for later milestones (not yet recorded in `DECISION_LOG.md`):
 
-- Planned BDEC-027 — Profile recompute-on-demand; direct durable state versus opt-in passive analytics split. Record during PERS-03 implementation.
-- Planned BDEC-028 — Durable exact-item feedback authoritative; `not-interested`/`already-own` only; pessimistic creates; show-fewer deferred. Record during PERS-05 implementation.
-- Planned BDEC-029 — Behavioral affinity uses current durable state plus weak opt-in passive events; removals are not negative taste; raw search text is unavailable. Record during PERS-06 implementation.
-- Planned BDEC-030 — Production popularity uses active-dataset historical rating count, mean-rating/id tie-break; offline evaluation remains train-only. Record during PERS-07 implementation.
-- Planned BDEC-031 — Hybrid blending requires preference + behavioral affinity, adds popularity when available, uses the `0.45/0.35/0.20` v1 assumption, and performs no second min-max normalization. If either personalized component is absent, return the pure lower component mode/version. Product similarity remains separate. Record during PERS-08 implementation.
+- BDEC-027 — Profile recompute-on-demand; direct durable state versus opt-in passive analytics split. Recorded during PERS-03.
+- BDEC-028 — Durable exact-item feedback authoritative; `not-interested`/`already-own` only; pessimistic creates; show-fewer deferred. Recorded during PERS-05.
+- BDEC-029 — Behavioral affinity uses current durable state plus weak opt-in passive events; removals are not negative taste; raw search text is unavailable. Recorded during PERS-06.
+- BDEC-030 — Production popularity uses active-dataset historical rating count, mean-rating/id tie-break; offline evaluation remains train-only. Recorded during PERS-07.
+- BDEC-031 — Hybrid blending requires preference + behavioral affinity, adds popularity when available, uses the `0.45/0.35/0.20` v1 assumption, and performs no second min-max normalization. If either personalized component is absent, return the pure lower component mode/version. Product similarity remains separate. Recorded during PERS-08.
 
-PERS-00 through PERS-02 resolved identity/session architecture. This 2026-08-09 plan review resolves the PERS-04 through PERS-08 method shape above. Remaining approval is limited to the initial PERS-04/PERS-06 component weight constants and, at PERS-09 closure, production enablement of the new ranking flags. All weights remain documented assumptions, not learned or validated-optimal values.
+PERS-00 through PERS-02 resolved identity/session architecture. The 2026-08-09/10 plan review and PERS-06 through PERS-08 implementation resolve the method shape above. Remaining approval is limited to production enablement of the new ranking flags and any later PERS-09 closure. All weights remain documented assumptions, not learned or validated-optimal values.
 
-Implementation update (2026-08-10): BDEC-027 and BDEC-028 are now recorded in `DECISION_LOG.md`. PERS-03 recomputes the profile on demand, keeps it server-internal, and separates durable account state from opt-in passive analytics. PERS-05 stores only durable exact-item `not-interested`/`already-own` feedback with pessimistic creates and idempotent undo. PERS-04 uses equal absolute group weights as a documented v1 assumption; no quality or optimality claim is made. PERS-06 through PERS-09 remain planned.
+Implementation update (2026-08-10): BDEC-027 through BDEC-031 are recorded in `DECISION_LOG.md`. PERS-03 recomputes the profile on demand; PERS-04 uses equal absolute group weights; PERS-05 stores only durable exact-item feedback; PERS-06 adds bounded behavior and the server opt-out backstop; PERS-07 adds candidate-owned historical popularity; and PERS-08 adds the true hybrid/mode matrix. All remain default-off and no quality or optimality claim is made. PERS-09 remains deferred.
 
 ## Honesty Contract
 

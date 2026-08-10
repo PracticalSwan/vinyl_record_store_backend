@@ -206,7 +206,7 @@ Decision: Represent source reviewers only as keyed HMAC-SHA-256 values in `histo
 
 Rationale: Historical research evidence has different provenance, retention, consent, and evaluation semantics from live Groovehaus activity. Isolation prevents identity conflation and leakage while leaving a separately approvable future evaluation path.
 
-Status: Implemented in DATA-05 through DATA-13. PERS-03 through PERS-05 were subsequently implemented as a separate default-off batch; PERS-06 through PERS-09 remain deferred.
+Status: Implemented in DATA-05 through DATA-13. PERS-03 through PERS-08 were subsequently implemented as separate default-off batches; PERS-09 remains deferred.
 
 ## BDEC-024: Seal V2 Rows And Enrich Artwork Conservatively
 
@@ -222,7 +222,7 @@ Status: Implemented and verified in the corrected v2 dataset closure. The storef
 
 Date: 2026-08-08
 
-Decision: Treat the corrected v2 dataset as publishable only after normal enriched preparation is deterministic, the sealed inactive import is verified while v1 remains active, activation and exact repeated import are safe, rollback to v1 preserves v2 evidence/legacy IDs/customer state without deletion, reactivation restores v2, and post-E2E cleanup leaves protected collections unchanged. Keep historical readiness aggregate-only; the separately implemented PERS-03 through PERS-05 batch does not alter this dataset, while PERS-06 through PERS-09 remain deferred.
+Decision: Treat the corrected v2 dataset as publishable only after normal enriched preparation is deterministic, the sealed inactive import is verified while v1 remains active, activation and exact repeated import are safe, rollback to v1 preserves v2 evidence/legacy IDs/customer state without deletion, reactivation restores v2, and post-E2E cleanup leaves protected collections unchanged. Keep historical readiness aggregate-only; the separately implemented PERS-03 through PERS-08 batches do not alter this dataset, while PERS-09 remains deferred.
 
 Rationale: A final active pointer and green unit tests do not prove the transition path or customer-state boundary. The bounded rehearsal records the operational evidence required for the classroom database without introducing event sourcing, state migration, or recommendation work.
 
@@ -257,3 +257,33 @@ Decision: The MusicBrainz release search endpoint omits release-group.first-rele
 Rationale: The original-release year powers decade filtering and the content-based era feature. The search endpoint field is structurally absent, not merely sparse, so a release-group detail fetch is the minimal reliable correction. Creating v3 preserves the published v2 evidence and follows the immutable-version rule.
 
 Status: Implemented and verified. V3 is active with 2,305 products, 20,288 ratings, 2,387 historical subjects, 208 original-release years (versus zero in v2), 208 accepted local artwork files, exactly three showcase customers, and all dataset/index/privacy checks passing. Rollback to v2 and reactivation were rehearsed successfully.
+
+## BDEC-029: Bound Behavioral Affinity To Current Account State And Opt-In Passive Evidence
+
+Date: 2026-08-10
+
+Decision: Implement `behavior-profile-v1` as a pure artist/primary-genre/format affinity scorer over current ratings, wishlist, cart, feedback, and optional recent click/view/search-result-click events. Durable state does not decay; passive evidence uses UTC-day deduplication, 0-7/8-30/31-90-day bands, per-product/per-attribute caps, and positive reasons only. Exact feedback remains an item exclusion before scoring. An exact `X-Tracking-Enabled: false` interaction batch is accepted with zero writes after origin validation; direct account actions remain independent.
+
+Rationale: This keeps stronger account-authored signals separate from weaker opt-in analytics, makes removals absence rather than negative taste, and closes the server-side privacy backstop without requiring a new data collection or profile cache.
+
+Status: Implemented behind default-off `PERS_BEHAVIORAL_RANKING`; no quality claim or historical-user join was added.
+
+## BDEC-030: Scope Production Popularity To The Loaded Candidate Dataset
+
+Date: 2026-08-10
+
+Decision: Implement `popularity-v1` with one historical aggregate read keyed by the uniform `datasetKey` already present on the loaded recommendation candidates. Return only public product aggregates (`ratingCount`, `meanRating`), order count/mean/id/title, and keep the offline evaluator's popularity baseline training-only. Null/seed/zero-evidence sets remain deterministic fallback.
+
+Rationale: Candidate-owned dataset scoping prevents activation races and v2/v3 mixing while preserving the immutable research-data boundary and avoiding a cache/index/schema migration.
+
+Status: Implemented behind default-off `PERS_POPULARITY`; historical identities never reach the service or public response.
+
+## BDEC-031: Use A Versioned True Hybrid And Keep Lower Modes Pure
+
+Date: 2026-08-10
+
+Decision: Implement `personalized-hybrid-v1` with fixed classroom assumptions preference `0.45`, behavior `0.35`, and popularity `0.20`. Form a true hybrid only when preference and behavior are available; popularity joins when available and weights renormalize once per request. Preference-only, behavior-only, and popularity-only responses retain their pure component versions. Apply exact exclusions once, use complete pre-diversity maps, derive at most two contribution reasons, and keep product similarity separate.
+
+Rationale: A single candidate/exclusion pass prevents score drift and double-counting while truthful mode/version labels make rollback and frontend attribution auditable. The weights are assumptions, not learned quality parameters.
+
+Status: Implemented behind default-off `PERS_HYBRID`; PERS-09 integration closure and production enablement remain deferred.

@@ -2,12 +2,16 @@ import { getOptionalSession } from "@/lib/auth/requireSession";
 import { assertInteractionCap } from "@/lib/interactionCap";
 import { failure, success } from "@/lib/http";
 import { assertMutationOrigin, readJsonBody } from "@/lib/request";
+import { trackingOptedOut } from "@/lib/trackingOptOut";
 import { ingestInteractions } from "@/services/userState";
 import { parseInteractionBatch } from "@/validation/writes";
 
 export async function POST(request) {
   try {
     assertMutationOrigin(request);
+    if (trackingOptedOut(request)) {
+      return success({ accepted: 0, duplicates: 0 });
+    }
     const user = await getOptionalSession(request);
     const events = parseInteractionBatch(await readJsonBody(request), {
       authenticated: Boolean(user),
