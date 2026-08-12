@@ -7,12 +7,12 @@ test("catalog data source defaults to seed", () => {
   assert.equal(getCatalogRepository({}).source, "seed");
 });
 
-test("catalog data source defaults to MongoDB when Atlas is configured", () => {
+test("catalog data source remains seed when Atlas is configured without an explicit selector", () => {
   const environment = {
     MONGODB_URI: "mongodb://localhost:27017",
     MONGODB_DB_NAME: "vinyl_record_store",
   };
-  assert.equal(getCatalogDataSource(environment), "mongodb");
+  assert.equal(getCatalogDataSource(environment), "seed");
 });
 
 test("catalog data source rejects unsupported values", () => {

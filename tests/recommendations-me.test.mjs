@@ -130,3 +130,24 @@ test("PERS-02 rejects a missing or malformed logging actor before catalog access
   );
   assert.equal(catalogReads, 0);
 });
+
+test("PERS-09 rejects a registered subject owned by another session before catalog access", async () => {
+  let catalogReads = 0;
+  await assert.rejects(
+    () => serveUserRecommendations(
+      { kind: "registered", publicId: "user-a" },
+      12,
+      { actor: { kind: "registered", publicId: "user-b" }, surface: "recommendations" },
+      {
+        repository: {
+          listRecommendationCandidates: async () => {
+            catalogReads += 1;
+            return [];
+          },
+        },
+      },
+    ),
+    (error) => error.code === "FORBIDDEN" && error.status === 403,
+  );
+  assert.equal(catalogReads, 0);
+});

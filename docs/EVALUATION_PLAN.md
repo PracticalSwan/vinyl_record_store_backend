@@ -4,7 +4,7 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 
 ## Current Automated Evidence
 
-| Check | Current evidence through 2026-08-10 |
+| Check | Current evidence through 2026-08-13 |
 | --- | --- |
 | Literal search, repeated facets, sorting, pagination, and validation | Passing Node tests. |
 | Public product shape | Passing Node test. |
@@ -20,15 +20,15 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 | Frontend CORS origin rule | Passing Node test. |
 | Authentication, signed/tampered cookies, roles, registration, and the interaction cap | Passing Node tests plus browser session flows. |
 | Write validation, ownership, interaction/merge idempotency, transactions, and account cleanup | Passing Node tests plus live Atlas browser flows. |
-| Exact recommendation request logging, opt-out, ordered reasons, and attribution context | Passing Node tests plus frontend desktop/mobile analytics flows. |
-| PERS-03 profile, PERS-04 preference ranking, PERS-05 exact-item feedback/Undo, PERS-06 behavior, PERS-07 popularity, and PERS-08 hybrid contracts | Passing Node tests; all ranking flags remain default-off and the new modes are exercised with deterministic synthetic fixtures. |
+| Exact recommendation request logging, opt-out, ordered reasons, attribution context, logger failure propagation, and deletion-race ownership | Passing Node transaction/service tests plus frontend desktop/mobile analytics flows and live Atlas cleanup. |
+| PERS-03 profile through PERS-09 integration closure | Passing Node tests cover every independent flag dependency, pure and hybrid mode/version/reason selection, one candidate read, one exclusion pass, later feedback suppression, opt-out, failure propagation, actor/subject isolation, and privacy-safe responses. All ranking flags remain default-off and modes use deterministic fixtures. |
 | Catalog import validation, deduplication, ownership, transactions, external-client limits, and artwork provenance | Passing Node tests plus a live no-write Atlas preview. |
 | Exact 116-file local artwork parity, hashes, JPEG dimensions, orphan detection, redirect security, canonical-ID route mapping, immutable headers, and browser decoding | Passing verifier, Node tests, live HTTP enumeration, and frontend Playwright coverage on 2026-07-21. |
 | Dataset relevance, minimum evidence, temporal split, leakage checks, deterministic baselines, and aggregate-only output | Passing Node tests plus a live report generation. |
-| Amazon source/staging/config/identity/artwork ownership, deterministic record digests, explicit v3-current/v2-rollback/v1-base semantics, stable public IDs, pseudonym format, historical indexes/no-TTL, exact accepted/local artwork coverage, legacy preservation, and exact three-customer preservation | Passing DATA integration tests plus live `dataset:artwork:verify`, v3 verification while active, full v2 rollback-target verification while v3 is active, `dataset:evaluation:readiness`, and Atlas index verification. A rollback write rehearsal is required only when lifecycle transaction behavior changes. |
-| Full backend behavior suite | 267 Node tests completed on 2026-08-10: 266 passed, 0 failed, and 1 intentional Windows symlink-permission skip, including immutable evidence ownership, cleanup policy, lifecycle predicates, PERS-03 through PERS-08, and feedback cleanup. |
-| ESLint | Passed on 2026-08-10. |
-| Next.js production build | Passed on 2026-08-10 with all catalog, recommendation, authentication, customer-state, dataset, and artwork routes. |
+| Amazon source/staging/config/identity/artwork ownership, deterministic record digests, explicit v3-current/v2-rollback/v1-base semantics, stable public IDs, pseudonym format, historical indexes/no-TTL, exact accepted/local artwork coverage, legacy preservation, and exact three-customer preservation | Passing DATA integration tests plus live read-only `dataset:artwork:verify`, v3 verification while active, full v2 and v1 rollback-target verification while v3 is active, `dataset:evaluation:readiness`, and Atlas index verification on 2026-08-13. No import, activation, or rollback write was run because PERS-09 did not change lifecycle behavior. |
+| Full backend behavior suite | 286 Node tests completed on 2026-08-13: 285 passed, 0 failed, and 1 intentional Windows symlink-permission skip, including transactional lifecycle fencing, single-pass component preparation, legacy-route isolation, exact logging, all personalization modes/flags/failures, privacy, and DATA-15 regression coverage. |
+| ESLint | Passed on 2026-08-13. |
+| Next.js production build | Passed on 2026-08-13 with all catalog, recommendation, authentication, customer-state, dataset, and artwork routes. |
 
 Run:
 

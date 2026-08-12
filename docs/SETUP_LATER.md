@@ -10,7 +10,7 @@ The approved design and dependency gates are documented in `FUTURE_IMPLEMENTATIO
 - Add password recovery or other identity features only if a later requirement explicitly accepts their privacy/security cost.
 - Add deployment configuration and observability. Administrator routes are implemented.
 - Re-run `npm run recommender:evaluate` when the retained dataset materially changes; do not add quality claims while its status is `insufficient-evidence`.
-- PERS-09 integration/closure remains deferred. PERS-00 through PERS-08 are complete behind default-off flags. Do not enable the new ranking flags or start PERS-09 without a separate explicit task; do not add collaborative filtering, matrix factorization, or any quality claim.
+- PERS-00 through PERS-09 are complete. Keep the PERS-04 through PERS-08 ranking flags default-off unless a separate rollout is authorized; do not add collaborative filtering, matrix factorization, or any quality claim through setup work.
 - Run a separately approved recommender experiment against the versioned historical dataset only after the algorithm, baselines, metrics, and leakage controls are reviewed. `dataset:evaluation:readiness` alone is not that experiment.
 
 Do not install packages or begin these changes solely because they appear here. Recheck current dependency versions and update decisions before future setup work.

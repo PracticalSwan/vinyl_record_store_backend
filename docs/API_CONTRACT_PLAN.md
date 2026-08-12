@@ -51,7 +51,7 @@ Response data: `{ sourceProductId, mode, recommendations, algorithmVersion, requ
 
 ### `GET /api/recommendations/me`
 
-Optional authentication. A verified customer session receives `mode: "preference-profile"` only when the effective profile and preference flags are enabled and an applicable saved preference signal exists; otherwise it receives `mode: "cold-start"`. No, expired, tampered, disabled, or deleted customer session receives `mode: "anonymous-fallback"`; a verified administrator receives `403 FORBIDDEN`. Optional `limit` defaults to 12 and is capped at 20. Optional `surface` is controlled.
+Optional authentication. A verified customer session receives the effective `preference-profile`, `behavior-profile`, or `personalized-hybrid` mode when the corresponding default-off flags and evidence permit it; aggregate `popularity` is independent of the profile flag; otherwise it receives `cold-start`. No, expired, tampered, disabled, or deleted customer session receives `popularity` when enabled evidence exists or `anonymous-fallback`; a verified administrator receives `403 FORBIDDEN`. Optional `limit` defaults to 12 and is capped at 20. Optional `surface` is controlled.
 
 The client never sends a customer ID. Authenticated logging ownership is the verified public ID, and `X-Anonymous-Id` is accepted only when no customer session resolves. The response is `{ mode, algorithmVersion, requestId, listId, recommendationLogged, profileSummary, recommendations }` and never exposes `userId`, raw events, internal exclusions, or database IDs. With flags disabled, PERS-03 through PERS-08 preserve the `content-demo-v1`/cold-start behavior. Enabled modes use `preference-profile-v1`, `behavior-profile-v1`, `popularity-v1`, or `personalized-hybrid-v1`; hybrid requires preference plus behavior and may include popularity. Items retain safe server-owned `reasons[]` and no raw component scores/weights.
 
@@ -59,7 +59,7 @@ The client never sends a customer ID. Authenticated logging ownership is the ver
 
 User IDs allow letters, numbers, underscores, and hyphens. Optional `limit` defaults to 8 and is capped at 20.
 
-- `demo-user` returns `mode: "demo-profile"` and a synthetic profile summary.
+- `demo-user` returns `mode: "demo-profile"` and a synthetic profile summary when its reviewed legacy source records are available. Against the isolated research-only catalog, those legacy IDs are not remapped, so it returns the documented `cold-start`/`content-demo-v1` response instead of consuming historical popularity.
 - Other valid IDs return `mode: "cold-start"` without claiming user history.
 
 This is a restricted legacy showcase route, not a private-profile endpoint. Non-`demo-user` IDs never read customer preferences, interactions, or feedback. With `PERS_IDENTITY_STRICT` enabled (the default), a valid administrator session is rejected.
@@ -127,12 +127,12 @@ Dataset-managed products are read-only in the Admin API: update/delete/restore/a
 
 Demo-order and payment routes are not implemented (the storefront ships a client-only simulated checkout in FFP-08). Recommendation-request logging is an internal side effect of the implemented recommendation GET routes, not a public mutation route.
 
-## Planned Routes (Remaining Personalization Roadmap)
+## Personalization Routes And Response Extensions
 
-The following describe the completed PERS-05 route and the implemented PERS-06 through PERS-08 response extensions. PERS-00 through PERS-08 are complete behind default-off flags; PERS-09 remains deferred and does not authorize implementation by itself.
+PERS-00 through PERS-09 are complete. The PERS-04 through PERS-08 ranking flags remain default-off; closure does not authorize enabling them.
 
 - `PUT /api/me/feedback/:productId` and `DELETE /api/me/feedback/:productId` (PERS-05 / BFP-12, implemented behind `PERS_PROFILE_DOMAIN && PERS_NEGATIVE_FEEDBACK`): durable exact-item feedback. `PUT` accepts only `{ kind: "not-interested" | "already-own" }` and returns `{ productPublicId, kind }`; one current row exists per customer/product, so changing kind replaces the prior kind. `DELETE` idempotently removes the current row and returns `{ productPublicId, removed: boolean }`. Disabled flags return `404 NOT_FOUND` and retain rows inert. No public feedback-list route is added in v1. `show-fewer-like-this`, free-text reason, and broad scope are deferred.
-- `/api/recommendations/me` now supports the `mode` values (`preference-profile`, `behavior-profile`, `popularity`, `personalized-hybrid`) and corresponding algorithm versions while preserving the existing item/reason envelope. `personalized-hybrid` requires both preference and behavioral components and may also include popularity; if either personalized component is unavailable, the response uses the pure lower component's own score/version rather than blending popularity under a misleading lower-mode label. Do not add `dataSourceFlags`, `profileCompleteness`, raw interaction rows, historical user keys/aggregates, MongoDB object IDs, internal exclusions, component scores, or raw component weights.
+- `/api/recommendations/me` now supports the `mode` values (`preference-profile`, `behavior-profile`, `popularity`, `personalized-hybrid`) and corresponding algorithm versions while preserving the existing item/reason envelope. PERS-09 closes its integrated contract and failure/privacy regression coverage. `personalized-hybrid` requires both preference and behavioral components and may also include popularity; if either personalized component is unavailable, the response uses the pure lower component's own score/version rather than blending popularity under a misleading lower-mode label. Do not add `dataSourceFlags`, `profileCompleteness`, raw interaction rows, historical user keys/aggregates, MongoDB object IDs, internal exclusions, component scores, or raw component weights.
 
 ## CORS
 

@@ -23,7 +23,7 @@ Three things worth knowing up front:
 | `GET` | `/api/artwork?u=` | Primary artwork proxy: validates every redirect hop, bounds time/size, and disk-caches approved Cover Art Archive bytes. |
 | `GET` | `/api/artwork/local/:publicId` | Redirects a canonical bundled-record ID to its immutable, content-addressed local JPEG; malformed IDs return 400 and unmapped IDs return 404. |
 | `GET` | `/api/recommendations/product/:id` | Similar records with explanations. |
-| `GET` | `/api/recommendations/me` | Session-owned customer `cold-start`, optional `preference-profile`, or anonymous fallback list. |
+| `GET` | `/api/recommendations/me` | Session-owned customer preference/behavior/hybrid or cold-start list, plus aggregate popularity or anonymous fallback when applicable; ranking flags remain default-off. |
 | `GET` | `/api/recommendations/user/:userId` | Restricted legacy showcase: `demo-user` or generic cold-start only. |
 | `POST` | `/api/auth/register` | Create a customer account and session. |
 | `POST` | `/api/auth/login` | Sign in a registered or demo identity. |

@@ -309,12 +309,14 @@ test("dataset-backed catalog filtering and public nullability remain explicit", 
 });
 
 test("legacy showcase IDs are not remapped onto active dataset products", async () => {
-  const repository = {
-    listRecommendationCandidates: async () => [
-      { id: 100_001, title: "Dataset Album", artist: null, genre: null, year: null, stock: null },
-    ],
-  };
-  const result = await recommendForUser({ kind: "demo", responseUserId: "demo-user" }, 8, { repository });
+  const candidates = [
+    { id: 100_001, title: "Dataset Album", artist: null, genre: null, year: null, stock: null },
+  ];
+  const result = await recommendForUser(
+    { kind: "demo", responseUserId: "demo-user" },
+    8,
+    { candidates },
+  );
   assert.equal(result.mode, "cold-start");
   assert.match(result.profileSummary[0], /legacy showcase profile/i);
   assert.equal(result.recommendations[0].score, 0);

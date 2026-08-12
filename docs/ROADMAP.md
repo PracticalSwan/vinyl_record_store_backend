@@ -18,11 +18,12 @@ This file records current completion and deferred scope. It does not authorize c
 - Backend tests, lint, production build, Atlas connectivity, and all declared index groups verified.
 - BFP-07 administrator catalog APIs and the matching FFP-07 administrator workspace; FFP-08 client-only simulated checkout.
 - DATA-00 through DATA-15 corrected v3 external-dataset integration: pinned Amazon source, controlled taxonomy/year semantics, authoritative original-year hydration for 208 accepted matches, stable cross-version identities, immutable sealed storage, exact local fallbacks, 2,305 active research products, 20,288 isolated ratings, v2 immediate rollback, v1/legacy preservation, exact-three-user verification, separate seed/dataset browser coverage, and a readiness-only evaluation adapter. The 2026-08-08 v2 migration record remains historical evidence.
+- PERS-03 through PERS-09 / BFP-10 through BFP-16: on-demand account profile, default-off preference/behavior/popularity/hybrid ranking, exact feedback, pure scoring below service-owned reads, lifecycle-safe exact-list logging, failure/privacy/data regression coverage, and documentation closure.
 
 ## Deferred And Not Started
 
 - A ranking-quality conclusion: live evidence remains `insufficient-evidence`, while historical Amazon evidence is data-ready but has not been used to run an approved recommender experiment.
 - Backend order APIs, real payments, scraping, and deployment automation.
-- PERS-09 integration/closure remains deferred. PERS-06 through PERS-08 / BFP-13 through BFP-15 are implemented behind default-off flags; BFP-05 remains on hold as a historical placeholder whose open method decision was resolved by PERS-00. No quality claim is made; collaborative filtering and matrix factorization are excluded.
+- Ranking-flag production enablement, collaborative filtering, matrix factorization/SVD, and learned ranking remain separate decisions. BFP-05 is only a historical placeholder whose open method question was resolved by PERS-00.
 
 Detailed plans and the cross-repository order are in `FUTURE_IMPLEMENTATION_PLAN.md`. Deferred items require a separate explicit task.

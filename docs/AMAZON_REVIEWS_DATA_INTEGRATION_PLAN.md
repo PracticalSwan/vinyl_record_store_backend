@@ -1,6 +1,6 @@
 # Amazon Reviews 2023 Dataset Integration
 
-Status: corrected immutable v3 implementation and migration evidence verified on 2026-08-08. The migration/rollback evidence and exact quality/artwork counts below are the release record. This dataset document does not authorize PERS-06 through PERS-08 or any dataset/recommender-algorithm change; the separately opened PERS-03 through PERS-08 code batches remain default-off and data-lifecycle independent.
+Status: corrected immutable v3 implementation and migration evidence verified on 2026-08-08, with read-only PERS-09 regression verification on 2026-08-13. The migration/rollback evidence and exact quality/artwork counts below are the release record. Dataset completion did not authorize personalization; the separately implemented PERS-03 through PERS-09 work remains data-lifecycle independent, and the PERS-04 through PERS-08 ranking flags remain default-off.
 
 Audience: backend/frontend maintainers, course assessors, and operators of the classroom `vinyl_record_store` MongoDB database.
 
@@ -242,4 +242,4 @@ Observed on 2026-08-08. This block preserves v2/v1 migration history and does no
 
 ## Recommender Gate
 
-DATA-00 through DATA-15 are closed only for the dataset foundation. PERS-03 through PERS-08 are implemented separately behind default-off flags and do not alter this dataset. PERS-09, collaborative filtering, matrix factorization, SVD, and any recommendation-quality claim remain deferred. The implemented popularity/behavior/hybrid paths use the versioned historical adapter without mixing live identities; offline baselines remain leakage-safe and train-only, and `content-demo-v1` remains regression behavior.
+DATA-00 through DATA-15 are closed only for the dataset foundation. PERS-03 through PERS-09 were implemented separately and do not alter this dataset; the PERS-04 through PERS-08 ranking flags remain default-off. Collaborative filtering, matrix factorization, SVD, and any recommendation-quality claim remain deferred. The implemented popularity/behavior/hybrid paths use the versioned historical adapter without mixing live identities; offline baselines remain leakage-safe and train-only, and `content-demo-v1` remains regression behavior.
