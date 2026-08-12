@@ -256,7 +256,13 @@ export async function recommendForUser(
     if (scoreResult.available) components.behavior = scoreResult;
   }
 
-  if (popularityEnabled && candidates.length > 0) {
+  const shouldLoadPopularity = popularityEnabled
+    && candidates.length > 0
+    && (
+      (!components.preference.available && !components.behavior.available)
+      || (hybridEnabled && components.preference.available && components.behavior.available)
+    );
+  if (shouldLoadPopularity) {
     const datasetKey = getCandidateDatasetKey(candidates);
     if (datasetKey) {
       const aggregates = await popularityRepository.listByDatasetKey(datasetKey);
@@ -366,8 +372,8 @@ export async function recommendForUser(
       ...baseResponse,
       mode: "cold-start",
       profileSummary: [
-        "No matching saved preference signals are available yet.",
-        "Results use the current eligible catalog.",
+        "No enabled personalized ranking signal is applicable for this profile.",
+        "Results use the current eligible catalog fallback.",
       ],
       recommendations: genericRecommendations(recordsForFallback, limit),
       algorithmVersion: ALGORITHM_VERSION,

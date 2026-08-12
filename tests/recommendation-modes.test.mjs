@@ -138,3 +138,49 @@ test("anonymous popularity uses one candidate-owned dataset key read and never f
   assert.equal(result.algorithmVersion, "popularity-v1");
   assert.ok(result.recommendations.every((item) => !JSON.stringify(item).includes("userKey")));
 });
+
+test("pure preference mode does not depend on an unused popularity read", async () => {
+  let popularityReads = 0;
+  const result = await serveUserRecommendations(actor, 3, context, {
+    repository,
+    profile: { explicitPreferences: { favoriteGenres: ["Jazz"] } },
+    popularityRepository: {
+      listByDatasetKey: async () => {
+        popularityReads += 1;
+        throw new Error("unused popularity should not be queried");
+      },
+    },
+    environment: {
+      CATALOG_DATA_SOURCE: "seed",
+      PERS_PROFILE_DOMAIN: "true",
+      PERS_PREFERENCE_RANKING: "true",
+      PERS_POPULARITY: "true",
+    },
+  });
+  assert.equal(popularityReads, 0);
+  assert.equal(result.mode, "preference-profile");
+  assert.equal(result.algorithmVersion, "preference-profile-v1");
+});
+
+test("pure behavior mode does not depend on an unused popularity read", async () => {
+  let popularityReads = 0;
+  const result = await serveUserRecommendations(actor, 3, context, {
+    repository,
+    profile: { ratings: [{ productPublicId: 1, rating: 5 }] },
+    popularityRepository: {
+      listByDatasetKey: async () => {
+        popularityReads += 1;
+        throw new Error("unused popularity should not be queried");
+      },
+    },
+    environment: {
+      CATALOG_DATA_SOURCE: "seed",
+      PERS_PROFILE_DOMAIN: "true",
+      PERS_BEHAVIORAL_RANKING: "true",
+      PERS_POPULARITY: "true",
+    },
+  });
+  assert.equal(popularityReads, 0);
+  assert.equal(result.mode, "behavior-profile");
+  assert.equal(result.algorithmVersion, "behavior-profile-v1");
+});

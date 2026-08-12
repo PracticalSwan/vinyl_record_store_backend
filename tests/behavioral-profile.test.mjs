@@ -105,6 +105,15 @@ test("passive evidence honors allowed types, recency bands, UTC-day deduplicatio
     { now: NOW, trackingEnabled: false },
   );
   assert.equal(trackingOff.available, false);
+
+  const receivedOnly = buildBehaviorAffinity({
+    passiveInteractions: [{
+      type: "recommendation_click",
+      productPublicId: 1,
+      receivedAt: "2026-08-10T11:00:00Z",
+    }],
+  }, catalog, { now: NOW });
+  assert.equal(receivedOnly.available, false);
 });
 
 test("attribute caps prevent repeated weak or durable evidence from dominating", () => {

@@ -126,7 +126,8 @@ function passiveEvidence(interactions, catalogById, now) {
   const deduplicated = new Map();
   for (const interaction of interactions) {
     const productPublicId = signalProductId(interaction?.productPublicId);
-    const occurredAt = dateValue(interaction?.occurredAt) || dateValue(interaction?.receivedAt);
+    const occurredAt = dateValue(interaction?.occurredAt);
+    const receivedAt = dateValue(interaction?.receivedAt);
     const baseWeight = passiveWeight(interaction?.type);
     if (!productPublicId || !occurredAt || baseWeight === 0 || !catalogById.has(productPublicId)) continue;
     const multiplier = recencyMultiplier(occurredAt, now);
@@ -137,10 +138,18 @@ function passiveEvidence(interactions, catalogById, now) {
       productPublicId,
       type: interaction.type,
       occurredAt,
+      receivedAt,
       amount: baseWeight * multiplier,
     };
     const current = deduplicated.get(deduplicationKey);
-    if (!current || evidence.occurredAt.getTime() > current.occurredAt.getTime()) {
+    if (
+      !current
+      || evidence.occurredAt.getTime() > current.occurredAt.getTime()
+      || (
+        evidence.occurredAt.getTime() === current.occurredAt.getTime()
+        && (evidence.receivedAt?.getTime() || 0) > (current.receivedAt?.getTime() || 0)
+      )
+    ) {
       deduplicated.set(deduplicationKey, evidence);
     }
   }
@@ -155,6 +164,7 @@ function passiveEvidence(interactions, catalogById, now) {
     evidence.sort((a, b) => (
       b.amount - a.amount
       || b.occurredAt.getTime() - a.occurredAt.getTime()
+      || (b.receivedAt?.getTime() || 0) - (a.receivedAt?.getTime() || 0)
       || a.type.localeCompare(b.type)
     ));
     selected.push(...evidence.slice(0, BEHAVIOR_AFFINITY_ASSUMPTIONS.caps.passiveEventsPerProduct));
@@ -163,6 +173,7 @@ function passiveEvidence(interactions, catalogById, now) {
     a.productPublicId - b.productPublicId
     || a.type.localeCompare(b.type)
     || b.occurredAt.getTime() - a.occurredAt.getTime()
+    || (b.receivedAt?.getTime() || 0) - (a.receivedAt?.getTime() || 0)
   ));
 }
 
