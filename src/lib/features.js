@@ -24,3 +24,15 @@ export function personalizationPreferenceRankingEnabled(environment = process.en
 export function personalizationNegativeFeedbackEnabled(environment = process.env) {
   return booleanFeature(environment.PERS_NEGATIVE_FEEDBACK, false);
 }
+
+export function personalizationBehavioralRankingEnabled(environment = process.env) {
+  return booleanFeature(environment.PERS_BEHAVIORAL_RANKING, false);
+}
+
+export function personalizationPopularityEnabled(environment = process.env) {
+  return booleanFeature(environment.PERS_POPULARITY, false);
+}
+
+export function personalizationHybridEnabled(environment = process.env) {
+  return booleanFeature(environment.PERS_HYBRID, false);
+}

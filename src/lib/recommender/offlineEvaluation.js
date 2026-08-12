@@ -121,7 +121,7 @@ export function evaluateOffline(dataset, products, { k = 10, randomSeed = "groov
     },
     {
       name: "popularity",
-      algorithmVersion: "popularity-v1",
+      algorithmVersion: "offline-popularity-train-v1",
       rank: (_subject, candidates) => [...candidates]
         .sort((left, right) => (popularity.get(right) || 0) - (popularity.get(left) || 0) || left - right)
         .slice(0, k),

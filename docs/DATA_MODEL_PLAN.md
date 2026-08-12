@@ -60,8 +60,8 @@ Do not add real emails, orders, ratings, interaction histories, or identifiers t
 
 ## Planned Models (Personalization Roadmap)
 
-The following are implemented or planned in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`. PERS-03 through PERS-05 are implemented behind default-off flags; PERS-06 onward remains planned.
+The following are implemented or planned in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`. PERS-03 through PERS-08 are implemented behind default-off flags; PERS-09 remains deferred.
 
 - `feedback` collection: implemented durable exact-item user feedback (`userPublicId`, `productPublicId`, `kind` of `not-interested`/`already-own`, timestamps, `schemaVersion`), unique on `(userPublicId, productPublicId)`, not TTL-limited. One product has one current feedback intent; writing the other kind replaces it. `show-fewer-like-this`, free-text reason, and broad scope are deferred. This collection is authoritative for exact suppression and is included in account deletion.
 - A recomputed recommendation-profile domain (not persisted): implemented for saved preferences, exact feedback, current ratings/wishlist/cart, and an optional bounded passive-interaction slice. PERS-03 keeps this state server-internal and adds no public profile/source-flag fields. Passive analytics remain TTL-limited and honor tracking opt-out; direct functional state remains usable regardless of analytics opt-out.
-- PERS-07 reuses `historicalAmazonRatings` and its existing dataset-key indexes for aggregate popularity. Add another index only if `explain()` demonstrates a need. No popularity/profile cache collection and no destructive dataset migration are planned.
+- PERS-07 reuses `historicalAmazonRatings` and its existing dataset-key indexes for aggregate popularity. The repository returns only candidate-keyed count/mean aggregates; add another index only if `explain()` demonstrates a need. No popularity/profile cache collection and no destructive dataset migration were added.

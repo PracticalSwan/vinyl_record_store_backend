@@ -1,6 +1,23 @@
 import { getCatalogRepository } from "../db/dataSource.js";
 import { getProductRecord } from "../../services/catalog.js";
+import { historicalPopularityRepository } from "../../repositories/historicalPopularityRepository.js";
 import { applyUserExclusions } from "./exclusions.js";
+import {
+  BEHAVIOR_RANKING_VERSION,
+  buildBehaviorAffinity,
+  rankByBehavior,
+  scoreBehaviorCandidates,
+} from "./behavioralProfile.js";
+import {
+  HYBRID_RANKING_VERSION,
+  rankHybrid,
+} from "./hybrid.js";
+import {
+  POPULARITY_RANKING_VERSION,
+  getCandidateDatasetKey,
+  rankByPopularity,
+  scorePopularityCandidates,
+} from "./popularity.js";
 import {
   PREFERENCE_RANKING_VERSION,
   rankByPreferences,
@@ -138,6 +155,12 @@ export async function recommendForUser(
     profile = null,
     preferenceRankingEnabled = false,
     feedbackEnabled = false,
+    behaviorRankingEnabled = false,
+    popularityEnabled = false,
+    hybridEnabled = false,
+    popularityRepository = historicalPopularityRepository,
+    trackingEnabled = true,
+    now = new Date(),
   } = {},
 ) {
   if (
@@ -147,7 +170,184 @@ export async function recommendForUser(
     throw new TypeError("A valid recommendation subject descriptor is required.");
   }
   const records = providedCandidates || await repository.listRecommendationCandidates();
-  if (["anonymous", "cold-start"].includes(subject?.kind)) {
+  const feedbackResult = feedbackEnabled
+    ? applyUserExclusions(records, profile?.explicitFeedback || [])
+    : { candidates: records, excludedProductIds: [] };
+  const eligibleRecords = feedbackResult.candidates;
+
+  if (subject.kind === "demo") {
+    const sourceIds = [...DEMO_PROFILE.purchasedIds, ...DEMO_PROFILE.wishlistIds];
+    const sources = records.filter((record) => sourceIds.includes(record.id));
+    if (sources.length !== sourceIds.length) {
+      return {
+        userId: subject.responseUserId || "demo-user",
+        excludedProductIds: [],
+        mode: "cold-start",
+        profileSummary: [
+          "The legacy showcase profile belongs to the reviewed 116-record catalog.",
+          "Results use the active dataset catalog without remapping those source records.",
+        ],
+        recommendations: genericRecommendations(records, limit),
+        algorithmVersion: ALGORITHM_VERSION,
+      };
+    }
+    const excluded = new Set(sourceIds);
+    const scored = records
+      .filter((candidate) => !excluded.has(candidate.id) && candidate.stock !== "out")
+      .map((candidate) => {
+        let score = 0;
+        const reasons = new Set();
+        for (const source of sources) {
+          const match = compareProducts(source, candidate);
+          score += match.score;
+          match.reasons.forEach((reason) => reasons.add(reason));
+        }
+        if (DEMO_PROFILE.favoriteGenres.includes(candidate.genre)) {
+          score += SCORE.preferredGenre;
+          reasons.add(`Matches this profile's ${candidate.genre} preference.`);
+        }
+        return {
+          product: candidate,
+          score,
+          reasons: [...reasons].slice(0, 2),
+          algorithmVersion: ALGORITHM_VERSION,
+        };
+      })
+      .sort((a, b) => b.score - a.score || a.product.title.localeCompare(b.product.title));
+
+    return {
+      userId: subject.responseUserId || "demo-user",
+      excludedProductIds: sourceIds,
+      mode: "demo-profile",
+      profileSummary: [
+        "Purchased: Kind of Blue",
+        "Wishlist: Innervisions, Blue, and Homework",
+        "Preferred genres: Jazz, Soul, Electronic, and Folk",
+      ],
+      recommendations: diversify(scored, limit),
+      algorithmVersion: ALGORITHM_VERSION,
+    };
+  }
+
+  const candidates = eligibleRecords.filter((candidate) => candidate.stock !== "out");
+  const components = {
+    preference: { available: false },
+    behavior: { available: false },
+    popularity: { available: false },
+  };
+
+  if (subject.kind === "registered" && preferenceRankingEnabled && profile) {
+    const catalogMode = candidates[0]?.catalogMode || eligibleRecords[0]?.catalogMode || "commerce-preview";
+    const scoreResult = scorePreferenceCandidates(
+      candidates,
+      profile.explicitPreferences,
+      { catalogMode },
+    );
+    if (scoreResult.available) components.preference = scoreResult;
+  }
+
+  if (subject.kind === "registered" && behaviorRankingEnabled && profile) {
+    const affinity = buildBehaviorAffinity(profile, records, {
+      now,
+      trackingEnabled,
+      feedbackEnabled,
+    });
+    const scoreResult = scoreBehaviorCandidates(candidates, affinity);
+    if (scoreResult.available) components.behavior = scoreResult;
+  }
+
+  const shouldLoadPopularity = popularityEnabled
+    && candidates.length > 0
+    && (
+      (!components.preference.available && !components.behavior.available)
+      || (hybridEnabled && components.preference.available && components.behavior.available)
+    );
+  if (shouldLoadPopularity) {
+    const datasetKey = getCandidateDatasetKey(candidates);
+    if (datasetKey) {
+      const aggregates = await popularityRepository.listByDatasetKey(datasetKey);
+      const scoreResult = scorePopularityCandidates(candidates, aggregates);
+      if (scoreResult.available) components.popularity = scoreResult;
+    }
+  }
+
+  const baseResponse = {
+    ...(subject.responseUserId ? { userId: subject.responseUserId } : {}),
+    excludedProductIds: feedbackResult.excludedProductIds,
+  };
+  const pureProfileSummary = {
+    "preference-profile": [
+      "Results use the preferences saved for this account.",
+      ...(feedbackEnabled ? ["Negative feedback removes only the exact products you marked."] : []),
+    ],
+    "behavior-profile": [
+      "Results use the account signals enabled for this profile, including saved ratings, wishlist, and cart state.",
+      ...(feedbackEnabled ? ["Negative feedback removes only the exact products you marked."] : []),
+    ],
+    popularity: [
+      "Results use aggregate ratings from the active research dataset.",
+    ],
+    "personalized-hybrid": [
+      "Results combine saved preferences with behavioral evidence.",
+      ...(components.popularity.available ? ["Aggregate research ratings provide a bounded third signal."] : []),
+      ...(feedbackEnabled ? ["Negative feedback removes only the exact products you marked."] : []),
+    ],
+  };
+
+  if (
+    subject.kind === "registered"
+    && hybridEnabled
+    && components.preference.available
+    && components.behavior.available
+  ) {
+    const ranked = rankHybrid(candidates, {
+      preference: components.preference,
+      behavior: components.behavior,
+      popularity: popularityEnabled ? components.popularity : { available: false },
+    }, { limit });
+    return {
+      ...baseResponse,
+      mode: "personalized-hybrid",
+      profileSummary: pureProfileSummary["personalized-hybrid"],
+      recommendations: ranked.recommendations,
+      algorithmVersion: HYBRID_RANKING_VERSION,
+    };
+  }
+
+  if (subject.kind === "registered" && components.preference.available) {
+    const ranked = rankByPreferences(candidates, components.preference, { limit });
+    return {
+      ...baseResponse,
+      mode: "preference-profile",
+      profileSummary: pureProfileSummary["preference-profile"],
+      recommendations: ranked.recommendations,
+      algorithmVersion: PREFERENCE_RANKING_VERSION,
+    };
+  }
+
+  if (subject.kind === "registered" && components.behavior.available) {
+    const ranked = rankByBehavior(candidates, components.behavior, { limit });
+    return {
+      ...baseResponse,
+      mode: "behavior-profile",
+      profileSummary: pureProfileSummary["behavior-profile"],
+      recommendations: ranked.recommendations,
+      algorithmVersion: BEHAVIOR_RANKING_VERSION,
+    };
+  }
+
+  if (components.popularity.available) {
+    const ranked = rankByPopularity(candidates, components.popularity, { limit });
+    return {
+      ...baseResponse,
+      mode: "popularity",
+      profileSummary: pureProfileSummary.popularity,
+      recommendations: ranked.recommendations,
+      algorithmVersion: POPULARITY_RANKING_VERSION,
+    };
+  }
+
+  if (["anonymous", "cold-start"].includes(subject.kind)) {
     const profileSummary = subject.kind === "anonymous"
       ? [
           "No signed-in customer session is available.",
@@ -158,106 +358,27 @@ export async function recommendForUser(
           "Results use the current eligible catalog.",
         ];
     return {
-      ...(subject.responseUserId ? { userId: subject.responseUserId } : {}),
-      excludedProductIds: [],
+      ...baseResponse,
       mode: subject.kind === "anonymous" ? "anonymous-fallback" : "cold-start",
       profileSummary,
-      recommendations: genericRecommendations(records, limit),
+      recommendations: genericRecommendations(eligibleRecords, limit),
       algorithmVersion: ALGORITHM_VERSION,
     };
   }
 
-  const feedbackResult = feedbackEnabled
-    ? applyUserExclusions(records, profile?.explicitFeedback || [])
-    : { candidates: records, excludedProductIds: [] };
-  const eligibleRecords = feedbackResult.candidates;
-  if (subject.kind === "registered" && preferenceRankingEnabled && profile) {
-    const candidates = eligibleRecords.filter((candidate) => candidate.stock !== "out");
-    const catalogMode = candidates[0]?.catalogMode || eligibleRecords[0]?.catalogMode || "commerce-preview";
-    const scoreResult = scorePreferenceCandidates(
-      candidates,
-      profile.explicitPreferences,
-      { catalogMode },
-    );
-    if (scoreResult.available) {
-      const ranked = rankByPreferences(candidates, scoreResult, { limit });
-      return {
-        ...(subject.responseUserId ? { userId: subject.responseUserId } : {}),
-        excludedProductIds: feedbackResult.excludedProductIds,
-        mode: "preference-profile",
-        profileSummary: [
-          "Results use the preferences saved for this account.",
-          ...(feedbackEnabled ? ["Negative feedback removes only the exact products you marked."] : []),
-        ],
-        recommendations: ranked.recommendations,
-        algorithmVersion: PREFERENCE_RANKING_VERSION,
-      };
-    }
-  }
   const recordsForFallback = eligibleRecords;
   if (subject.kind === "registered") {
     return {
-      ...(subject.responseUserId ? { userId: subject.responseUserId } : {}),
-      excludedProductIds: feedbackResult.excludedProductIds,
+      ...baseResponse,
       mode: "cold-start",
       profileSummary: [
-        "No matching saved preference signals are available yet.",
-        "Results use the current eligible catalog.",
+        "No enabled personalized ranking signal is applicable for this profile.",
+        "Results use the current eligible catalog fallback.",
       ],
       recommendations: genericRecommendations(recordsForFallback, limit),
       algorithmVersion: ALGORITHM_VERSION,
     };
   }
 
-  const sourceIds = [...DEMO_PROFILE.purchasedIds, ...DEMO_PROFILE.wishlistIds];
-  const sources = records.filter((record) => sourceIds.includes(record.id));
-  if (sources.length !== sourceIds.length) {
-    return {
-      userId: subject.responseUserId || "demo-user",
-      excludedProductIds: [],
-      mode: "cold-start",
-      profileSummary: [
-        "The legacy showcase profile belongs to the reviewed 116-record catalog.",
-        "Results use the active dataset catalog without remapping those source records.",
-      ],
-      recommendations: genericRecommendations(records, limit),
-      algorithmVersion: ALGORITHM_VERSION,
-    };
-  }
-  const excluded = new Set(sourceIds);
-  const scored = records
-    .filter((candidate) => !excluded.has(candidate.id) && candidate.stock !== "out")
-    .map((candidate) => {
-      let score = 0;
-      const reasons = new Set();
-      for (const source of sources) {
-        const match = compareProducts(source, candidate);
-        score += match.score;
-        match.reasons.forEach((reason) => reasons.add(reason));
-      }
-      if (DEMO_PROFILE.favoriteGenres.includes(candidate.genre)) {
-        score += SCORE.preferredGenre;
-        reasons.add(`Matches this profile's ${candidate.genre} preference.`);
-      }
-      return {
-        product: candidate,
-        score,
-        reasons: [...reasons].slice(0, 2),
-        algorithmVersion: ALGORITHM_VERSION,
-      };
-    })
-    .sort((a, b) => b.score - a.score || a.product.title.localeCompare(b.product.title));
-
-  return {
-    userId: subject.responseUserId || "demo-user",
-    excludedProductIds: sourceIds,
-    mode: "demo-profile",
-    profileSummary: [
-      "Purchased: Kind of Blue",
-      "Wishlist: Innervisions, Blue, and Homework",
-      "Preferred genres: Jazz, Soul, Electronic, and Folk",
-    ],
-    recommendations: diversify(scored, limit),
-    algorithmVersion: ALGORITHM_VERSION,
-  };
+  throw new TypeError("Unsupported recommendation subject descriptor.");
 }

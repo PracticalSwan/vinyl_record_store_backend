@@ -1,6 +1,6 @@
 # Backend Recommender System
 
-This document specifies the current deterministic demo algorithm.
+This document specifies the current deterministic demo algorithm and the implemented default-off PERS-04 through PERS-08 component modes. No mode in this document is a measured-quality result.
 
 ## Implemented Method
 
@@ -27,9 +27,9 @@ Out-of-stock candidates are excluded. Product recommendations exclude the source
 
 - Restricted legacy `demo-user`: aggregate similarity to one synthetic purchase, three synthetic wishlist items, and documented favorite genres.
 - Other legacy IDs: identical `cold-start` mode without any private profile read.
-- `GET /api/recommendations/me`: verified customers receive `preference-profile` only when the default-off profile and preference flags are enabled and applicable signals exist; otherwise they receive the existing `cold-start`; requests without a valid customer session receive `anonymous-fallback`; administrators are rejected.
+- `GET /api/recommendations/me`: verified customers receive the effective pure preference/behavior/popularity mode or `personalized-hybrid` only when its default-off flags and evidence contract allow it; otherwise they receive `cold-start`; requests without a valid customer session receive `popularity` when aggregate evidence is enabled and available, otherwise `anonymous-fallback`; administrators are rejected.
 
-PERS-03 through PERS-05 add a server-internal profile, exact feedback suppression, and an optional knowledge-based preference branch. All new flags default off, so the disabled path still does not use saved preferences or feedback and makes no recommendation-quality claim.
+PERS-03 through PERS-08 add the server-internal profile, exact feedback suppression, preference/behavior/popularity components, and the hybrid mode. All new flags default off, so the disabled path preserves `content-demo-v1`/cold-start behavior and makes no recommendation-quality claim.
 
 ## Algorithm Version
 
@@ -47,10 +47,22 @@ When `PERS_PROFILE_DOMAIN` and `PERS_PREFERENCE_RANKING` are both enabled for a 
 
 The recomputed profile reads preferences, ratings, wishlist, cart, exact feedback, and at most 500 recent interactions only when their effective gates allow it. `not-interested` and `already-own` are durable exact-item exclusions only; they never propagate to an artist or genre. `PUT` is idempotent and replaces the current kind; `DELETE` is an idempotent undo. Account deletion removes feedback in the same transaction. No `show-fewer-like-this` or public feedback-list route exists.
 
+## Behavioral Affinity (PERS-06, implemented default-off)
+
+`behavior-profile-v1` is a pure, bounded artist/primary-genre/format scorer over current durable ratings, wishlist, cart, feedback, and optional opted-in passive click/view/search-result-click events. Passive evidence uses UTC-day deduplication, 0-7/8-30/31-90-day bands, per-product and attribute caps, and no raw search text. Exact feedback exclusions happen before scoring; negative affinity lowers scores without becoming a positive reason. The interaction route rejects an exact `X-Tracking-Enabled: false` batch after origin validation, while direct account actions remain functional.
+
+## Historical Popularity (PERS-07, implemented default-off)
+
+`popularity-v1` aggregates `historicalAmazonRatings` only for the uniform `datasetKey` already present on the one loaded candidate set. The repository returns `{ productPublicId, ratingCount, meanRating }` only; historical identities never leave that boundary. Count DESC, mean DESC/null-last, public ID/title ties and the standalone artist cap are deterministic. Seed/null/zero-evidence requests use the existing fallback. Production all-row aggregation remains separate from the offline evaluator's train-only baseline.
+
+## Personalized Hybrid (PERS-08, implemented default-off)
+
+`personalized-hybrid-v1` combines complete pre-diversity maps with fixed classroom assumptions preference `0.45`, behavior `0.35`, and popularity `0.20`. A true hybrid requires preference and behavior; popularity joins when available and weights renormalize once at request level. Preference-only, behavior-only, and popularity-only responses keep their pure modes/versions. Exact exclusions and the artist cap are applied once; product-to-product similarity remains separate.
+
 ## Deferred Methods
 
 Collaborative filtering, SVD/matrix factorization, learned ranking, and learned weights remain excluded from the planned project scope. The live app has only three showcase customers and the historical matrix is about 0.37% dense. User-user CF cannot treat historical subjects as app users; item-item CF is technically possible from historical co-ratings but is intentionally omitted because it would add a separate model/artifact/evaluation pipeline for limited project benefit. Interaction ingestion, request logging, frontend capture, and the evidence-gated offline evaluator remain active. No quality metric is authorized by this plan.
 
 ## Personalization Roadmap
 
-PERS-00 through PERS-05 are complete behind default-off gates. PERS-06 through PERS-09 remain planning-only. The 2026-08-09/10 plan review selects the remaining approaches: live behavioral content-affinity (`behavior-profile-v1`), active-dataset historical rating-count popularity (`popularity-v1`), and `personalized-hybrid-v1`. Score blending happens only when preference and behavior are both available; popularity joins that hybrid when available. If either personalized component is missing, the response uses the pure lower component score/version rather than blending under that lower label. Exact negative feedback is an exclusion/signal rule, not a separate recommender. The existing public product-to-product content similarity remains separate and unchanged; it is not duplicated inside the user hybrid. `content-demo-v1` remains the regression behavior. No quality claim is made.
+PERS-00 through PERS-08 are complete behind default-off gates; PERS-09 remains deferred. The 2026-08-10 implementation uses the live behavioral content-affinity, active-dataset historical rating-count popularity, and `personalized-hybrid-v1` approaches described above. Score blending happens only when preference and behavior are both available; popularity joins that hybrid when available. If either personalized component is missing, the response uses the pure lower component score/version rather than blending under that lower label. Exact negative feedback is an exclusion/signal rule, not a separate recommender. The existing public product-to-product content similarity remains separate and unchanged; it is not duplicated inside the user hybrid. `content-demo-v1` remains the regression behavior. No quality claim is made.

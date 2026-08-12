@@ -1,6 +1,6 @@
 # Backend Future Implementation Plan
 
-Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, DATA-00 through DATA-15, and PERS-00 through PERS-05 are complete. BFP-05 remains a historical on-hold placeholder whose open method decision was frozen by PERS-00; PERS-06 through PERS-09 remain future work and were not implemented with the dataset.
+Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, DATA-00 through DATA-15, and PERS-00 through PERS-08 are complete behind default-off flags. BFP-05 remains a historical on-hold placeholder whose open method decision was frozen by PERS-00; PERS-09 remains future work and was not implemented with the dataset.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
@@ -17,7 +17,7 @@ Any remaining recommender milestone must now:
 - treat `dataset:evaluation:readiness` as input validation, not model quality;
 - keep nullable commercial fields and exclude unavailable products according to the public catalog contract;
 - preserve `content-demo-v1`, the three showcase users, and a non-destructive rollback path;
-- require a new explicit implementation request for PERS-06 through PERS-09. The completed PERS-03 through PERS-05 batch was implemented separately behind default-off flags and does not change the dataset lifecycle.
+- keep the implemented PERS-03 through PERS-08 batch behind default-off flags and request a separate task for PERS-09 only. The batch does not change the dataset lifecycle.
 
 ## User Decisions Recorded On 2026-07-03
 
@@ -549,7 +549,7 @@ Database phases additionally require the relevant smoke, migration dry-run, pari
 
 ## Personalization Roadmap (PERS-00 - PERS-09)
 
-This section records the dependency-safe personalization roadmap. PERS-00 through PERS-05 were completed on 2026-08-10 after BFP-07, FFP-07, and FFP-08; PERS-06 through PERS-09 remain planned and default-off. The sequence does not reorder, replace, remove, or silently redefine any existing plan. Full detail lives in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`.
+This section records the dependency-safe personalization roadmap. PERS-00 through PERS-08 were completed on 2026-08-10 after BFP-07, FFP-07, and FFP-08; PERS-09 remains deferred and default-off. The sequence does not reorder, replace, remove, or silently redefine any existing plan. Full detail lives in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`.
 
 BFP-05 remains its own on-hold placeholder; completed PERS-00 records the method decision that resolves its open question under new IDs and does not reuse the BFP-05 ID.
 
@@ -565,10 +565,10 @@ Collaborative filtering, SVD/matrix factorization, learned ranking, and another 
 | PERS-03 / BFP-10 | Unified profile and feedback domain | Completed 2026-08-10 | One backend-owned profile service; durable feedback collection; default-off `PERS_PROFILE_DOMAIN`. |
 | PERS-04 / BFP-11 | Preference-aware ranking | Completed 2026-08-10 | Knowledge-based soft scoring over actual stored preferences; research-null fields neutral; default-off `PERS_PREFERENCE_RANKING`. |
 | PERS-05 / BFP-12 | Negative feedback | Completed 2026-08-10 | Exact-item not-interested/already-own plus undo; show-fewer deferred; default-off `PERS_NEGATIVE_FEEDBACK`. |
-| PERS-06 / BFP-13 | Behavioral-signal personalization | Planned | Durable live-account state + bounded opt-in passive content affinity. |
-| PERS-07 / BFP-14 | Popularity baseline and fallback | Planned | Active-dataset historical rating-count popularity; deterministic fallback. |
-| PERS-08 / BFP-15 | Hybrid recommendation orchestration | Planned | Blend only when preference + behavior are both available; popularity is optional inside that hybrid; lower modes stay pure. |
-| PERS-09 / BFP-16 | Integration, hardening, documentation closure | Planned | End-to-end integration; regression protection; documentation closure. |
+| PERS-06 / BFP-13 | Behavioral-signal personalization | Completed 2026-08-10 | Durable live-account state + bounded opt-in passive content affinity; default-off `PERS_BEHAVIORAL_RANKING`. |
+| PERS-07 / BFP-14 | Popularity baseline and fallback | Completed 2026-08-10 | Active-dataset historical rating-count popularity; deterministic fallback; default-off `PERS_POPULARITY`. |
+| PERS-08 / BFP-15 | Hybrid recommendation orchestration | Completed 2026-08-10 | Blend only when preference + behavior are both available; popularity is optional inside that hybrid; default-off `PERS_HYBRID`. |
+| PERS-09 / BFP-16 | Integration, hardening, documentation closure | Deferred | Not part of the PERS-06 through PERS-08 implementation batch. |
 
 ### Dependency-Safe Personalization Order (Appended After FFP-08)
 
@@ -585,4 +585,4 @@ Collaborative filtering, SVD/matrix factorization, learned ranking, and another 
 | 23 | PERS-08 / BFP-15 + FFP-13: hybrid orchestration | Combine only preference + behavior (plus popularity when available) into `personalized-hybrid`; otherwise return the pure lower component mode. |
 | 24 | PERS-09 / BFP-16 + FFP-14: integration and hardening | Read-only DATA-15 regression protection, cross-repo integration, documentation closure; new ranking flags stay off pending authorization. |
 
-Each milestone ships behind a feature flag, preserves `content-demo-v1` for regression, and is independently reversible. PERS-03 through PERS-05 were opened and completed on 2026-08-10; PERS-06 through PERS-09 still require a separate explicit task.
+Each milestone ships behind a feature flag, preserves `content-demo-v1` for regression, and is independently reversible. PERS-03 through PERS-08 were opened and completed on 2026-08-10; PERS-09 still requires a separate explicit task.

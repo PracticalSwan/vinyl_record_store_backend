@@ -60,6 +60,7 @@ test("offline benchmark uses one split, candidate policy, k, and user set for al
   assert.equal(first.usersEvaluated, 20);
   assert.equal(first.k, 10);
   assert.deepEqual(first.models.map((model) => model.model), ["random", "popularity", "content-based"]);
+  assert.equal(first.models.find((model) => model.model === "popularity").algorithmVersion, "offline-popularity-train-v1");
   for (const model of first.models) {
     for (const key of ["ndcg@10", "map@10", "hitRate@10", "coverage"]) {
       assert.ok(model.metrics[key] >= 0 && model.metrics[key] <= 1, `${model.model} ${key}`);

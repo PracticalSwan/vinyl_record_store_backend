@@ -8,9 +8,12 @@ import {
   requireRecommendationSubject,
 } from "../src/lib/auth/recommendationSubject.js";
 import {
+  personalizationBehavioralRankingEnabled,
+  personalizationHybridEnabled,
   personalizationIdentityStrictEnabled,
   personalizationMeEndpointEnabled,
   personalizationNegativeFeedbackEnabled,
+  personalizationPopularityEnabled,
   personalizationPreferenceRankingEnabled,
   personalizationProfileDomainEnabled,
 } from "../src/lib/features.js";
@@ -138,6 +141,9 @@ test("personalization rollout flags use safe defaults and are explicitly reversi
   assert.equal(personalizationProfileDomainEnabled({}), false);
   assert.equal(personalizationPreferenceRankingEnabled({}), false);
   assert.equal(personalizationNegativeFeedbackEnabled({}), false);
+  assert.equal(personalizationBehavioralRankingEnabled({}), false);
+  assert.equal(personalizationPopularityEnabled({}), false);
+  assert.equal(personalizationHybridEnabled({}), false);
   assert.equal(personalizationIdentityStrictEnabled({ PERS_IDENTITY_STRICT: "false" }), false);
   assert.equal(personalizationMeEndpointEnabled({ PERS_ME_ENDPOINT: "off" }), false);
 });
