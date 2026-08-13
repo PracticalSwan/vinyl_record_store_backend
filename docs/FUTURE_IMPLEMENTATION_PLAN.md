@@ -1,6 +1,6 @@
 # Backend Future Implementation Plan
 
-Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, DATA-00 through DATA-15, and PERS-00 through PERS-09 are complete. PERS-04 through PERS-08 remain behind default-off ranking flags. BFP-05 remains a historical on-hold placeholder whose open method decision was frozen by PERS-00; PERS-09 completed without changing the dataset lifecycle.
+Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, DATA-00 through DATA-15, PERS-00 through PERS-09, and post-PERS NEXT-01 are complete. PERS-04 through PERS-08 remain behind default-off ranking flags. BFP-05 remains a historical on-hold placeholder; the separately authorized NEXT-02 gate may approve at most one offline-academic experiment and does not reopen live PERS architecture or dataset lifecycle work.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
@@ -405,11 +405,11 @@ All required BFP-04 checks below passed on 2026-07-04. At that milestone the rol
 
 ## BFP-05: Recommender Algorithm Selection
 
-Status: historical on-hold placeholder; its method-selection question is resolved by PERS-00 and the 2026-08-09/10 PERS re-review. Do not implement BFP-05 as a separate algorithm task.
+Status: historical on-hold placeholder; its live method-selection question is resolved by PERS-00 and the 2026-08-09/10 PERS re-review. Do not implement BFP-05 as a separate algorithm task.
 
-The deterministic `content-demo-v1` implementation remains the default while the implemented PERS-04 through PERS-08 ranking flags are disabled. When explicitly enabled, the selected paths are knowledge-based preference scoring, behavioral content affinity, active-dataset historical popularity, and a true hybrid only when preference + behavior are both available. Collaborative filtering, matrix factorization/SVD, learned ranking, and learned weights remain excluded from this project scope.
+The deterministic `content-demo-v1` implementation remains the default while the implemented PERS-04 through PERS-08 ranking flags are disabled. When explicitly enabled, the selected paths are knowledge-based preference scoring, behavioral content affinity, active-dataset historical popularity, and a true hybrid only when preference + behavior are both available. Collaborative filtering, matrix factorization/SVD, learned ranking, and learned weights remain excluded from the live application.
 
-Preserve the existing leakage-safe evaluation/logging infrastructure and honest current mode labels. Reopen algorithm selection only if the user explicitly asks to replace the PERS method choices; otherwise PERS-03 through PERS-09 are the sole implementation path.
+Preserve the existing leakage-safe evaluation/logging infrastructure and honest current mode labels. The user explicitly authorized NEXT-01 through NEXT-05 as a separate finalization sequence on 2026-08-13. NEXT-01 now provides sealed historical validation evidence; NEXT-02 may authorize one bounded offline-academic experiment, with no production integration, identity mapping, ranking-default change, or BFP-05 reuse.
 
 ## BFP-06: Catalog Ingestion And Metadata Quality
 
@@ -553,7 +553,7 @@ This section records the dependency-safe personalization roadmap. PERS-00 throug
 
 BFP-05 remains its own on-hold placeholder; completed PERS-00 records the method decision that resolves its open question under new IDs and does not reuse the BFP-05 ID.
 
-Collaborative filtering, SVD/matrix factorization, learned ranking, and another model-training pipeline remain excluded. The live app has only three showcase customers; the historical matrix is only about 0.37% dense (20,288 ratings across 2,387 × 2,305 subject-product positions). User-user CF cannot treat historical subjects as app users; item-item CF is technically possible but would add another historical model/artifact/evaluation path without enough project benefit. The selected roadmap is intentionally smaller: knowledge-based preference scoring, live behavioral content-affinity, active-dataset historical popularity, and a weighted hybrid. The existing offline evaluator, logging/versioning, and privacy boundaries remain; "evaluation with sufficient evidence" is not part of this roadmap and `insufficient-evidence` remains unchanged.
+Collaborative filtering, SVD/matrix factorization, learned ranking, and another model-training pipeline remain excluded from the live personalization roadmap. The separate post-PERS sequence may evaluate one evidence-gated offline-academic model without attaching historical subjects to application customers. The selected live roadmap remains knowledge-based preference scoring, live behavioral content-affinity, active-dataset historical popularity, and a weighted hybrid. The live evaluator, logging/versioning, and privacy boundaries remain; its `insufficient-evidence` status is unchanged by historical validation.
 
 ### Plan Status Summary (Personalization)
 

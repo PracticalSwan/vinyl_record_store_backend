@@ -1,0 +1,232 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "sha256",
+  "digest": "4c30c32699d6d3d70116f86901b4470b48cf5f3f607d3dd7b02d523acf977e4b",
+  "payload": {
+    "protocol": {
+      "schemaVersion": 1,
+      "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v3",
+      "relevanceThreshold": 4,
+      "minimumTrainingRatings": 3,
+      "k": 10,
+      "randomSeed": "groovehaus-historical-v1",
+      "evaluatorVersion": "historical-offline-evaluation-v1",
+      "implementationFiles": [
+        "src/lib/recommender/contentBased.js",
+        "src/lib/recommender/evaluate.js",
+        "src/lib/recommender/historicalOfflineEvaluation.js"
+      ],
+      "implementationDigest": "9e7d34476408ac850992ae437bb4d18635281d2fbfd305cd3d6de2e55ccd7e11",
+      "baselineVersions": {
+        "random": "historical-random-v1:groovehaus-historical-v1",
+        "popularity": "historical-popularity-positive-v1",
+        "content": "historical-content-profile-v1:content-demo-v1"
+      },
+      "candidatePolicy": "full pinned dataset catalog excluding all allowed-history observations",
+      "popularityEvidence": "positive allowed-history ratings from all history subjects",
+      "contentEvidence": "positive allowed-history ratings for the evaluated subject",
+      "noveltyEvidence": "all allowed-history ratings from all history subjects",
+      "noveltyZeroSupportFloor": "1 / (allowed-history subjects + 1)",
+      "validation": {
+        "evidenceSplits": [
+          "train"
+        ],
+        "targetSplit": "validation"
+      },
+      "test": {
+        "evidenceSplits": [
+          "train",
+          "validation"
+        ],
+        "targetSplit": "test"
+      },
+      "finalTestRule": "run once after NEXT-02 and any approved NEXT-03 validation tuning are frozen"
+    },
+    "dataset": {
+      "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v3",
+      "sourceVersion": "2023-cds-vinyl-5core-v3",
+      "productCollection": "datasetProducts",
+      "counts": {
+        "products": 2305,
+        "users": 2387,
+        "ratings": 20288
+      },
+      "configDigest": "6b7d56f957c663c49d2d1d79a7074fac4665dc531f1cf07396ee7639aae3d648",
+      "identityRegistryDigest": "316f58bd8eac7d9e687a7c99328450452842e47c936ce5092fa31dbecb63a7ad",
+      "sealedAt": "2026-08-08T16:39:04.397Z"
+    },
+    "validationResult": {
+      "schemaVersion": 1,
+      "status": "evaluated",
+      "evidenceSource": "historical-amazon-ratings",
+      "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v3",
+      "stage": "validation",
+      "availableSplits": [
+        "train"
+      ],
+      "targetSplit": "validation",
+      "relevance": "rating >= 4",
+      "candidatePolicy": "full pinned dataset catalog excluding every item observed in allowed history",
+      "contentSeedPolicy": "positive allowed-history ratings only",
+      "popularityPolicy": "positive allowed-history support across all history subjects",
+      "noveltyPolicy": "all-rating observed support across all allowed-history subjects",
+      "k": 10,
+      "randomSeed": "groovehaus-historical-v1",
+      "idealNdcg": 1,
+      "cohort": {
+        "sourceSubjects": 2387,
+        "evaluatedSubjects": 1823,
+        "excluded": {
+          "insufficientTraining": 0,
+          "noRelevantTarget": 564,
+          "noCandidate": 0
+        }
+      },
+      "statistics": {
+        "userRatings": {
+          "minimum": 3,
+          "p25": 3,
+          "median": 4,
+          "p75": 7,
+          "p90": 13,
+          "maximum": 89,
+          "mean": 6.799232
+        },
+        "userPositiveRatings": {
+          "minimum": 0,
+          "p25": 3,
+          "median": 4,
+          "p75": 7,
+          "p90": 12,
+          "maximum": 88,
+          "mean": 6.217773
+        },
+        "itemObservedSupport": {
+          "minimum": 3,
+          "p25": 4,
+          "median": 5,
+          "p75": 8,
+          "p90": 13,
+          "maximum": 75,
+          "mean": 7.099349
+        },
+        "itemPositiveSupport": {
+          "minimum": 0,
+          "p25": 3,
+          "median": 5,
+          "p75": 7,
+          "p90": 12,
+          "maximum": 65,
+          "mean": 6.358351
+        },
+        "zeroObservedSupportItems": 0,
+        "zeroObservedSupportRate": 0,
+        "zeroPositiveSupportItems": 1,
+        "zeroPositiveSupportRate": 0.000434,
+        "nearColdObservedItems": 0,
+        "nearColdObservedRate": 0,
+        "nearColdPositiveItems": 27,
+        "nearColdPositiveRate": 0.011714,
+        "evaluationCohortDensity": 0.00295,
+        "trainingCorpusDensity": 0.002974,
+        "candidateCount": {
+          "minimum": 2216,
+          "p25": 2298,
+          "median": 2301,
+          "p75": 2302,
+          "p90": 2302,
+          "maximum": 2302,
+          "mean": 2298.200768
+        },
+        "contentSignal": {
+          "availableSubjects": 1815,
+          "zeroPositiveSeedSubjects": 8
+        },
+        "targetSupport": {
+          "targets": 1823,
+          "withObservedSupport": 1823,
+          "cold": 0,
+          "coldRate": 0
+        },
+        "evidenceSubjectsForGlobalModels": 2387,
+        "metadataCoverage": {
+          "artist": {
+            "present": 2282,
+            "total": 2305,
+            "rate": 0.990022
+          },
+          "genre": {
+            "present": 2081,
+            "total": 2305,
+            "rate": 0.90282
+          },
+          "year": {
+            "present": 208,
+            "total": 2305,
+            "rate": 0.090239
+          },
+          "label": {
+            "present": 2217,
+            "total": 2305,
+            "rate": 0.961822
+          }
+        }
+      },
+      "models": [
+        {
+          "model": "random",
+          "algorithmVersion": "historical-random-v1:groovehaus-historical-v1",
+          "metrics": {
+            "precision@10": 0.000439,
+            "recall@10": 0.004388,
+            "hitRate@10": 0.004388,
+            "mrr@10": 0.001611,
+            "map@10": 0.001611,
+            "ndcg@10": 0.002261,
+            "coverage": 0.998698,
+            "novelty": 8.702116,
+            "personalization": 0.995635
+          },
+          "interpretation": "random achieved NDCG@10 0.002, MAP@10 0.002, and catalog coverage 0.999 on the shared historical validation protocol."
+        },
+        {
+          "model": "popularity",
+          "algorithmVersion": "historical-popularity-positive-v1",
+          "metrics": {
+            "precision@10": 0.004279,
+            "recall@10": 0.042787,
+            "hitRate@10": 0.042787,
+            "mrr@10": 0.012804,
+            "map@10": 0.012804,
+            "ndcg@10": 0.019733,
+            "coverage": 0.008243,
+            "novelty": 5.321176,
+            "personalization": 0.049707
+          },
+          "interpretation": "popularity achieved NDCG@10 0.020, MAP@10 0.013, and catalog coverage 0.008 on the shared historical validation protocol."
+        },
+        {
+          "model": "content-based",
+          "algorithmVersion": "historical-content-profile-v1:content-demo-v1",
+          "metrics": {
+            "precision@10": 0.005376,
+            "recall@10": 0.053758,
+            "hitRate@10": 0.053758,
+            "mrr@10": 0.028967,
+            "map@10": 0.028967,
+            "ndcg@10": 0.035004,
+            "coverage": 0.670716,
+            "novelty": 8.497302,
+            "personalization": 0.97354
+          },
+          "interpretation": "content-based achieved NDCG@10 0.035, MAP@10 0.029, and catalog coverage 0.671 on the shared historical validation protocol."
+        }
+      ],
+      "privacy": {
+        "aggregateOnly": true,
+        "rawIdentifiersIncluded": false,
+        "rawRatingsIncluded": false
+      }
+    }
+  }
+}

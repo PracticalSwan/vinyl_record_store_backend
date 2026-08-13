@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "sha256",
+  "digest": "26f761b1ea1a6119fcd377099527ad70a80188ae6093350c107edf1bc45850c6",
+  "payload": {
+    "protocol": {
+      "schemaVersion": 1,
+      "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v3",
+      "relevanceThreshold": 4,
+      "minimumTrainingRatings": 3,
+      "k": 10,
+      "randomSeed": "groovehaus-historical-v1",
+      "evaluatorVersion": "historical-offline-evaluation-v1",
+      "baselineVersions": {
+        "random": "historical-random-v1:groovehaus-historical-v1",
+        "popularity": "historical-popularity-positive-v1",
+        "content": "historical-content-profile-v1:content-demo-v1"
+      },
+      "candidatePolicy": "full pinned dataset catalog excluding all allowed-history observations",
+      "popularityEvidence": "positive allowed-history ratings from all history subjects",
+      "contentEvidence": "positive allowed-history ratings for the evaluated subject",
+      "noveltyEvidence": "all allowed-history ratings from all history subjects",
+      "noveltyZeroSupportFloor": "1 / (allowed-history subjects + 1)",
+      "validation": {
+        "evidenceSplits": [
+          "train"
+        ],
+        "targetSplit": "validation"
+      },
+      "test": {
+        "evidenceSplits": [
+          "train",
+          "validation"
+        ],
+        "targetSplit": "test"
+      },
+      "finalTestRule": "run once after NEXT-02 and any approved NEXT-03 validation tuning are frozen"
+    },
+    "dataset": {
+      "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v3",
+      "sourceVersion": "2023-cds-vinyl-5core-v3",
+      "productCollection": "datasetProducts",
+      "counts": {
+        "products": 2305,
+        "users": 2387,
+        "ratings": 20288
+      },
+      "configDigest": "6b7d56f957c663c49d2d1d79a7074fac4665dc531f1cf07396ee7639aae3d648",
+      "identityRegistryDigest": "316f58bd8eac7d9e687a7c99328450452842e47c936ce5092fa31dbecb63a7ad",
+      "sealedAt": "2026-08-08T16:39:04.397Z"
+    }
+  }
+}

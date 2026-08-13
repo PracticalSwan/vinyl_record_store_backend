@@ -59,9 +59,11 @@ The recomputed profile reads preferences, ratings, wishlist, cart, exact feedbac
 
 `personalized-hybrid-v1` combines complete pre-diversity maps with fixed classroom assumptions preference `0.45`, behavior `0.35`, and popularity `0.20`. A true hybrid requires preference and behavior; popularity joins when available and weights renormalize once at request level. Preference-only, behavior-only, and popularity-only responses keep their pure modes/versions. Exact exclusions and the artist cap are applied once; product-to-product similarity remains separate.
 
-## Deferred Methods
+## Historical Evaluation And Deferred Live Methods
 
-Collaborative filtering, SVD/matrix factorization, learned ranking, and learned weights remain excluded from the planned project scope. The live app has only three showcase customers and the historical matrix is about 0.37% dense. User-user CF cannot treat historical subjects as app users; item-item CF is technically possible from historical co-ratings but is intentionally omitted because it would add a separate model/artifact/evaluation pipeline for limited project benefit. Interaction ingestion, request logging, frontend capture, and the evidence-gated offline evaluator remain active. No quality metric is authorized by this plan.
+The explicitly authorized post-PERS sequence now includes a sealed offline-academic evaluation and an evidence-based decision gate. NEXT-01 measured random, positive-popularity, and content validation baselines on the pinned v3 historical dataset; it did not change any production ranker or feature-flag default. The untouched final test remains sealed while NEXT-02 decides whether one bounded collaborative experiment is justified.
+
+Collaborative filtering, classical SVD, matrix factorization, learned ranking, and learned weights remain excluded from the live application. Historical Amazon subjects are not Groovehaus customers, and no learned historical user representation may be attached to an application account. Any NEXT-02-approved model remains offline-academic-only unless a separate future architecture is explicitly authorized. The live interaction evaluator still has insufficient evidence and no historical metric validates the preference, behavior, popularity, or hybrid modes.
 
 ## Personalization Roadmap
 

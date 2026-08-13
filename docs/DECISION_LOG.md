@@ -297,3 +297,13 @@ Decision: Keep routes thin and the recommender pure: the recommendation service 
 Rationale: Explicit persistence selection prevents configured credentials from silently changing runtime mode. A service-owned I/O boundary keeps scoring deterministic and independently testable. Transactional active-customer fencing orders recommendation logging against account deletion, preventing an in-flight request from recreating subject-linked analytics after deletion commits.
 
 Status: Implemented and verified in PERS-09 with default-off ranking flags, deterministic service/repository/failure/lifecycle regressions, full route and browser contracts, live MongoDB checks, and no dataset or quality-evaluation change.
+
+## BDEC-033: Seal Historical Validation Before Any Final-Test Read
+
+Date: 2026-08-13
+
+Decision: Evaluate the pinned v3 historical dataset in two separately authorized stages. NEXT-01 uses train evidence and relevant validation targets to compare deterministic random, positive-popularity, and positive-seed content baselines on one shared full-catalog cohort. Seal the exact dataset descriptor, protocol, baseline versions, evaluator/content/metric implementation digest, and deterministic validation result. Refuse final-test access unless the validation packet reproduces and a matching machine-readable decision authorizes the next stage.
+
+Rationale: A decision gate that consumes final-test outcomes would turn the test into tuning evidence. Separate invocations, immutable run IDs, stage-specific cohorts, all-observation candidate exclusion, full-corpus train popularity, all-observation novelty support, and aggregate-only artifacts preserve leakage, fairness, reproducibility, and identity isolation without changing the live recommender.
+
+Status: Implemented and independently reviewed. Canonical run `next-01-final-v3` evaluated 1,823 validation subjects; the 1,708-subject readiness count is final-test-stage-specific. The historical test split remains sealed, DATA-15 is unchanged, and all live PERS ranking defaults remain off.

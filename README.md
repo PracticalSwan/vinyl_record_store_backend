@@ -10,7 +10,7 @@ Three things worth knowing up front:
 
 - MongoDB mode currently activates the immutable `amazon-reviews-2023-cds-vinyl-5core-v3` research catalog: 2,305 products in `datasetProducts` and 20,288 isolated historical ratings from 2,387 pseudonymous subjects. V2 is the immediate rollback release, v1 is the legacy identity-registry base, and the original 116 reviewed records remain available.
 - Recommendations default to deterministic `content-demo-v1` behavior: the restricted legacy showcase is `demo-profile`, verified customers use a session-owned `cold-start` path, and visitors receive an `anonymous-fallback`. When the default-off flags are enabled, verified customers may receive `preference-profile-v1`, `behavior-profile-v1`, or `personalized-hybrid-v1`, and anonymous/empty-profile requests may receive `popularity-v1`; exact feedback remains a server-owned exclusion. No recommendation-quality claim is made.
-- The 116 legacy records retain their reviewed MusicBrainz/Cover Art Archive mappings and verified local JPEG fallbacks. V3 has 208 strict accepted artwork decisions with a separate verified local fallback set; v2 rollback evidence independently pins the same stable assets. Ambiguous or unresolved rows use the generic placeholder and never borrow legacy art. The dataset workflow does not reuse Amazon images. Nullable commercial fields remain unknown and non-purchasable. Historical-data `ready` status is not a quality score, and the live evaluator still reports `insufficient-evidence`.
+- The 116 legacy records retain their reviewed MusicBrainz/Cover Art Archive mappings and verified local JPEG fallbacks. V3 has 208 strict accepted artwork decisions with a separate verified local fallback set; v2 rollback evidence independently pins the same stable assets. Ambiguous or unresolved rows use the generic placeholder and never borrow legacy art. The dataset workflow does not reuse Amazon images. Nullable commercial fields remain unknown and non-purchasable. The live-customer evaluator still reports `insufficient-evidence`; separately, the sealed historical NEXT-01 validation benchmark measures random, positive-popularity, and content baselines without opening the final test split.
 
 ## API
 
@@ -69,6 +69,14 @@ npm.cmd run dataset:evaluation:readiness
 ```
 
 Raw source and staging files remain ignored. Apply/activation commands are not part of normal sealed-v3 verification; use them only for an explicitly approved new release or lifecycle rehearsal. See [`docs/AMAZON_REVIEWS_DATA_INTEGRATION_PLAN.md`](docs/AMAZON_REVIEWS_DATA_INTEGRATION_PLAN.md) before reacquiring artwork, importing, activating, or rolling back the dataset.
+
+The historical evaluator requires a new explicit immutable run ID and runs validation separately from the sealed final test:
+
+```powershell
+npm.cmd run recommender:evaluate:historical -- --stage=validation --run-id=<new-run-id>
+```
+
+The canonical NEXT-01 packet is under `reports/recommender/historical/amazon-reviews-2023-cds-vinyl-5core-v3/next-01-final-v3/`. Its validation cohort contains 1,823 subjects; the 1,708 reported by `dataset:evaluation:readiness` is a distinct test-readiness cohort. A final-test invocation is rejected unless it verifies the frozen validation seal and a matching decision authorization. Historical subjects remain research pseudonyms and are never joined to Groovehaus customers.
 
 Catalog imports default to a no-write preview: `npm run catalog:import -- --dry-run --input examples/catalog-import-template.json`. Add `--apply` only after reviewing every action; `--enrich` uses MusicBrainz and Cover Art Archive under their service limits. Run `npm run recommender:evaluate` to regenerate the privacy-safe report under `reports/recommender/`.
 
