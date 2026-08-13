@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -181,6 +182,24 @@ test("test-critical implementation binding covers and reacts to every execution 
     });
     assert.notEqual(changed.digest, initial.digest, filename);
   }
+});
+
+test("historical matrix-factorization CLI requires an explicit immutable run ID", () => {
+  const result = spawnSync(process.execPath, [
+    "scripts/run-historical-mf-experiment.mjs",
+    "--stage=validation",
+  ], {
+    cwd: path.resolve("."),
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      MONGODB_URI: "mongodb://127.0.0.1:1/must-not-be-contacted",
+    },
+    timeout: 10_000,
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /--run-id is required/);
+  assert.doesNotMatch(result.stderr, /ECONNREFUSED|Mongoose|MongoServer/);
 });
 
 test("one-time final-test claim survives a simulated post-claim failure", async () => {

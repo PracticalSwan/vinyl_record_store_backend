@@ -21,14 +21,13 @@ import {
 } from "../src/lib/recommender/historicalMatrixFactorizationEvaluation.js";
 import { historicalEvaluationRepository } from "../src/repositories/historicalEvaluationRepository.js";
 
-const DEFAULT_RUN_ID = "next-01-final-v3";
 const DEFAULT_SEED = "groovehaus-biased-mf-v1";
 const VALIDATION_DIRECTORY_NAME = "next-03-validation-final-v2";
 
 function parseArguments(argv) {
   const options = {
     stage: null,
-    runId: DEFAULT_RUN_ID,
+    runId: null,
     outputRoot: path.join("reports", "recommender", "historical"),
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -45,6 +44,7 @@ function parseArguments(argv) {
   if (!['validation', 'test'].includes(options.stage)) {
     throw new Error("--stage must be validation or test.");
   }
+  if (!options.runId) throw new Error("--run-id is required for immutable historical reports.");
   if (!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(options.runId)) {
     throw new Error("--run-id contains unsupported characters.");
   }
@@ -551,13 +551,14 @@ async function runTest({ runDirectory, active, base }) {
     models: [
       ...baselineResults.models.map((model) => ({
         ...model,
-        metricsUnrounded: model.metrics,
+        metricsPrecision: "six-decimal-reported-values",
         metrics: roundedMetrics(model.metrics),
       })),
       {
         model: "biased-matrix-factorization",
         algorithmVersion: "biased-matrix-factorization-v1",
-        metricsUnrounded: matrixFactorization.metrics,
+        metricsFullPrecision: matrixFactorization.metrics,
+        metricsPrecision: "full-ieee-754-plus-six-decimal-reported-values",
         metrics: roundedMetrics(matrixFactorization.metrics),
       },
     ],
