@@ -327,3 +327,13 @@ Decision: Accept the frozen NEXT-03 experiment as a valid negative academic resu
 Rationale: The selected MF model was fixed on validation, refit on 18,375 observed train-plus-validation ratings, and compared with unchanged baselines on one common 1,708-subject full-catalog test cohort. It used no fallback but achieved NDCG@10 `0.002301`, versus popularity `0.022427` and content `0.043214`, with coverage `0.005640` and personalization `0.014413`. The cohort is conditional on a relevant test target and no confidence or significance analysis was run.
 
 Status: Complete and independently approved. The durable attempt marker records `rerunPermitted: false`; aggregate artifacts contain no identities, raw ratings, or factors, and historical Amazon subjects remain isolated from Groovehaus accounts.
+
+## BDEC-036: Use Selective Personalization For The Final Classroom Environment
+
+Date: 2026-08-14
+
+Decision: Use explicit MongoDB/v3 Profile B for the final classroom procedure. Enable `PERS_ME_ENDPOINT`, `PERS_PROFILE_DOMAIN`, `PERS_PREFERENCE_RANKING`, and `PERS_NEGATIVE_FEEDBACK`; keep `PERS_BEHAVIORAL_RANKING`, `PERS_POPULARITY`, and `PERS_HYBRID` disabled. Use a temporary ordinary customer with a saved preference, leave the three protected showcase customers neutral, keep every committed source default unchanged, and retain the explicit seed rollback path.
+
+Rationale: The protected showcase audit found no stored preference, rating, wishlist, cart, feedback, or usable behavior evidence. Profile B therefore demonstrates one truthful, session-owned personalized path plus exact feedback without manufacturing showcase state, depending on sparse behavior, or presenting an enabled hybrid as measured quality. The MongoDB health preflight and visible 503 failure contract prevent silent seed substitution.
+
+Status: Complete. The exact-profile matrix passed 10 executed checks with 2 intentional full-hybrid skips across Chromium desktop/mobile/tablet, Firefox, and WebKit; serious/critical axe and horizontal-overflow checks passed, representative states were inspected, and Atlas cleanup returned to zero test residue while preserving all protected data.

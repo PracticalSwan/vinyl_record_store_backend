@@ -56,6 +56,8 @@ npm run dev
 
 The service runs at `http://localhost:3000`. By default it serves the bundled seed catalog, so no database is needed to try it. To use MongoDB Atlas, set `MONGODB_URI`, `MONGODB_DB_NAME`, and `CATALOG_DATA_SOURCE=mongodb` in `.env.local`, then run the seed and index scripts. See `.env.example` for all options.
 
+The final classroom setup is the explicit MongoDB/v3 **Profile B: Selective Personalization** environment, not the committed default. It enables saved-preference ranking and exact feedback while keeping behavioral ranking, popularity, and hybrid disabled. Follow [`docs/DEMO_PERSONALIZATION_RUNBOOK.md`](docs/DEMO_PERSONALIZATION_RUNBOOK.md) for exact flags, preflight, startup, rollback, and claim boundaries.
+
 The current sealed-v3 dataset workflow is hash-pinned and fail-closed. `dataset:prepare` is a no-write reproduction check for the existing private v3 staging evidence; it will not replace sealed staging or the committed public quality summary and it rejects same-key staging overrides:
 
 ```powershell

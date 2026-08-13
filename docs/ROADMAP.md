@@ -21,6 +21,8 @@ This file records current completion and deferred scope. It does not authorize c
 - PERS-03 through PERS-09 / BFP-10 through BFP-16: on-demand account profile, default-off preference/behavior/popularity/hybrid ranking, exact feedback, pure scoring below service-owned reads, lifecycle-safe exact-list logging, failure/privacy/data regression coverage, and documentation closure.
 - NEXT-01 historical validation benchmark: sealed, aggregate-only comparison of deterministic random, positive-popularity, and content baselines on the pinned v3 train-to-validation protocol.
 - NEXT-02/NEXT-03: 10/12 narrow approval and completed one-time offline-academic `biased-matrix-factorization-v1` experiment. Neighborhood CF and classical SVD were rejected. Content remained the strongest measured offline method; biased MF was a negative result and is not live-integrated.
+- NEXT-04: explicit MongoDB/v3 Profile B classroom configuration, demonstrating preference ranking and exact feedback while behavior, popularity, and hybrid remain disabled; committed defaults remain unchanged.
+- NEXT-05: final backend/frontend/browser/accessibility/failure/data-preservation regression and zero-residue cleanup, with exact evidence in the root `FINAL_RELEASE_READINESS_REPORT.md`.
 
 ## Deferred And Not Started
 

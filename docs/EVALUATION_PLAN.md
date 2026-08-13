@@ -4,7 +4,7 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 
 ## Current Automated Evidence
 
-| Check | Current evidence through 2026-08-13 |
+| Check | Current evidence through final NEXT-05 closure on 2026-08-14 |
 | --- | --- |
 | Literal search, repeated facets, sorting, pagination, and validation | Passing Node tests. |
 | Public product shape | Passing Node test. |
@@ -22,14 +22,15 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 | Write validation, ownership, interaction/merge idempotency, transactions, and account cleanup | Passing Node tests plus live Atlas browser flows. |
 | Exact recommendation request logging, opt-out, ordered reasons, attribution context, logger failure propagation, and deletion-race ownership | Passing Node transaction/service tests plus frontend desktop/mobile analytics flows and live Atlas cleanup. |
 | PERS-03 profile through PERS-09 integration closure | Passing Node tests cover every independent flag dependency, pure and hybrid mode/version/reason selection, one candidate read, one exclusion pass, later feedback suppression, opt-out, failure propagation, actor/subject isolation, and privacy-safe responses. All ranking flags remain default-off and modes use deterministic fixtures. |
+| NEXT-04 selected Profile B browser contract | Frontend exact-profile matrix passed 10 executed checks with 2 intentional full-hybrid skips across Chromium desktop/mobile/tablet, Firefox, and WebKit. The MongoDB/v3 environment enabled only `/me`, profile, preference ranking, and exact feedback; cleanup returned to zero residue. |
 | Catalog import validation, deduplication, ownership, transactions, external-client limits, and artwork provenance | Passing Node tests plus a live no-write Atlas preview. |
 | Exact 116-file local artwork parity, hashes, JPEG dimensions, orphan detection, redirect security, canonical-ID route mapping, immutable headers, and browser decoding | Passing verifier, Node tests, live HTTP enumeration, and frontend Playwright coverage on 2026-07-21. |
 | Dataset relevance, minimum evidence, temporal split, leakage checks, deterministic baselines, and aggregate-only output | Passing Node tests plus a live report generation. |
 | Historical NEXT-01 through NEXT-03 benchmark | Canonical `next-01-final-v3` packet seals deterministic random, positive train-popularity, and positive-seed content validation on 1,823 subjects, freezes one biased-MF winner, and records the one-time four-model test on a common 1,708-subject positive-target cohort. |
-| Amazon source/staging/config/identity/artwork ownership, deterministic record digests, explicit v3-current/v2-rollback/v1-base semantics, stable public IDs, pseudonym format, historical indexes/no-TTL, exact accepted/local artwork coverage, legacy preservation, and exact three-customer preservation | Passing DATA integration tests plus live read-only `dataset:artwork:verify`, v3 verification while active, full v2 and v1 rollback-target verification while v3 is active, `dataset:evaluation:readiness`, and Atlas index verification on 2026-08-13. No import, activation, or rollback write was run because PERS-09 did not change lifecycle behavior. |
-| Full backend behavior suite | 298 Node tests completed on 2026-08-13: 297 passed, 0 failed, and 1 intentional Windows symlink-permission skip, including historical evaluation/seal coverage, transactional lifecycle fencing, single-pass component preparation, legacy-route isolation, exact logging, all personalization modes/flags/failures, privacy, and DATA-15 regression coverage. |
-| ESLint | Passed on 2026-08-13. |
-| Next.js production build | Passed on 2026-08-13 with all catalog, recommendation, authentication, customer-state, dataset, and artwork routes. |
+| Amazon source/staging/config/identity/artwork ownership, deterministic record digests, explicit v3-current/v2-rollback/v1-base semantics, stable public IDs, pseudonym format, historical indexes/no-TTL, exact accepted/local artwork coverage, legacy preservation, and exact three-customer preservation | Passing DATA integration tests plus live read-only `dataset:artwork:verify`, v3 verification while active, full v2 and v1 rollback-target verification while v3 is active, `dataset:evaluation:readiness`, and Atlas index verification during NEXT-05. No import, activation, or rollback write was run. |
+| Full backend behavior suite | 306 Node tests completed in the final NEXT-05 run: 305 passed, 0 failed, and 1 intentional Windows symlink-permission skip, including historical evaluation/seal coverage, transactional lifecycle fencing, single-pass component preparation, legacy-route isolation, exact logging, all personalization modes/flags/failures, privacy, and DATA-15 regression coverage. |
+| ESLint | Passed with zero warnings in the final NEXT-05 run. |
+| Next.js production build | Passed with Next.js 16.2.12 and all catalog, recommendation, authentication, customer-state, dataset, and artwork routes. |
 
 Run:
 
@@ -96,7 +97,7 @@ The baseline runner refuses an omitted or reused run ID. Historical final-test a
 4. Report at least NDCG@k and MAP@k plus catalog coverage and one of novelty, diversity, or serendipity.
 5. Report the evaluated user count and state whether ranking used the full catalog or sampled negatives.
 
-`npm run recommender:evaluate` writes aggregate-only JSON and Markdown under `reports/recommender/<date>-<algorithm-version>/`. Metric helpers support precision, recall, hit rate, MRR, MAP, NDCG, coverage, novelty, and personalization. Do not publish metrics until the command reports an eligible dataset.
+`npm run recommender:evaluate` is the live Part B report command and writes aggregate-only JSON and Markdown under `reports/recommender/<date>-<algorithm-version>/`. Metric helpers support precision, recall, hit rate, MRR, MAP, NDCG, coverage, novelty, and personalization. Do not publish live Part B metrics until that command reports an eligible dataset. The separately sealed historical runners and their published aggregate metrics are governed by the NEXT-01/NEXT-03 protocol above.
 
 The offline popularity baseline is identified as `offline-popularity-train-v1` so
 its train-split-only evidence cannot be confused with the production
