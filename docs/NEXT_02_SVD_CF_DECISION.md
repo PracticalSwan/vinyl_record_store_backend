@@ -12,7 +12,7 @@ Final-test authorization: false. NEXT-03 must first complete validation-only sel
 
 This gate uses the canonical aggregate NEXT-01 validation packet at `reports/recommender/historical/amazon-reviews-2023-cds-vinyl-5core-v3/next-01-final-v3/` plus a separate aggregate query over `split: train` only. No test row, test metric, or test-target support statistic was read.
 
-The canonical validation seal is `4c30c32699d6d3d70116f86901b4470b48cf5f3f607d3dd7b02d523acf977e4b`. The frozen experiment contract is `next-03-experiment-contract.json`, canonicalized as SHA-256 of `JSON.stringify` on its parsed JSON value, with digest `361be2172ac6419c97fdd683942c06307c60a4a38c7b658542a8a865bd0bdcf1`.
+The canonical validation seal is `4c30c32699d6d3d70116f86901b4470b48cf5f3f607d3dd7b02d523acf977e4b`. The frozen experiment contract is `next-03-experiment-contract.json`, canonicalized as SHA-256 of `JSON.stringify` on its parsed JSON value, with digest `3c47a2acaaa3d18283fd8a73b00ffee756f3490d7c174e9c84e464d14c62d3a1`.
 
 ## Baseline validation evidence
 

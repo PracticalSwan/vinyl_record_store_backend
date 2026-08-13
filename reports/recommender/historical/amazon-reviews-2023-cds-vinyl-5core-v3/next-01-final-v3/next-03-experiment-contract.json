@@ -58,7 +58,7 @@
     },
     "epochOrder": {
       "algorithm": "fisher-yates-descending",
-      "seed": "sha256(baseSeed:configId:epoch:oneBasedEpoch)-first-uint32-little-endian",
+      "seed": "sha256(baseSeed:configId:oneBasedEpoch)-first-uint32-little-endian",
       "resetFromCanonicalRowsEveryEpoch": true
     },
     "update": {
@@ -143,11 +143,17 @@
     "novelty@10",
     "personalization@10"
   ],
+  "reportedMetricFieldMapping": {
+    "catalogCoverage@10": "coverage",
+    "novelty@10": "novelty",
+    "personalization@10": "personalization"
+  },
   "resourceGuard": {
     "validationGridWallClockMillisecondsMaximum": 600000,
+    "finalTestWallClockMillisecondsMaximum": 600000,
     "sampledPeakRssDeltaBytesMaximum": 268435456,
-    "sampling": "grid-start-config-boundaries-each-epoch-and-every-100-scored-subjects",
-    "failurePolicy": "abort-without-test-authorization"
+    "sampling": "validation-grid-start-config-boundaries-each-epoch-and-every-100-mf-scored-subjects;final-test-after-complete-baselines-and-each-epoch-and-every-100-mf-scored-subjects",
+    "failurePolicy": "validation-abort-without-authorization;final-test-failure-retains-one-time-attempt-claim"
   },
   "validationReport": {
     "includeEveryConfiguration": true,
@@ -161,6 +167,18 @@
   },
   "postValidationAuthorization": {
     "separateImmutableArtifactRequired": true,
+    "validationSelectionDigestScope": "complete-validation-grid-results-including-grid-and-per-configuration-runtime",
+    "candidateImplementationDigestScope": [
+      "scripts/run-historical-mf-experiment.mjs",
+      "src/lib/dataset/historicalEvaluationAdapter.js",
+      "src/lib/recommender/biasedMatrixFactorization.js",
+      "src/lib/recommender/contentBased.js",
+      "src/lib/recommender/evaluate.js",
+      "src/lib/recommender/historicalMatrixFactorizationAuthorization.js",
+      "src/lib/recommender/historicalMatrixFactorizationEvaluation.js",
+      "src/lib/recommender/historicalOfflineEvaluation.js",
+      "src/repositories/historicalEvaluationRepository.js"
+    ],
     "requiredBindings": [
       "validationSealDigest",
       "experimentContractDigest",
@@ -170,7 +188,8 @@
       "candidateVersion",
       "candidateImplementationDigest"
     ],
-    "testAuthorizedBeforeSelection": false
+    "testAuthorizedBeforeSelection": false,
+    "oneTimeAttemptClaim": "atomic-exclusive-file-created-immediately-before-first-test-row-query-and-never-removed"
   },
   "privacy": {
     "reportAggregateOnly": true,

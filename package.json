@@ -41,6 +41,7 @@
     "dataset:verify": "node --env-file-if-exists=.env.local scripts/verify-amazon-dataset.mjs",
     "recommender:evaluate": "node --env-file-if-exists=.env.local scripts/evaluate-recommender.mjs",
     "recommender:evaluate:historical": "node --env-file-if-exists=.env.local scripts/evaluate-historical-recommender.mjs",
+    "recommender:evaluate:historical:mf": "node --env-file-if-exists=.env.local scripts/run-historical-mf-experiment.mjs",
     "auth:hash": "node scripts/create-password-hash.mjs",
     "lint": "eslint",
     "test": "node --test"

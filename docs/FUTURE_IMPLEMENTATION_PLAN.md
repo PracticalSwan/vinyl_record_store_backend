@@ -1,6 +1,6 @@
 # Backend Future Implementation Plan
 
-Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, DATA-00 through DATA-15, PERS-00 through PERS-09, and post-PERS NEXT-01 are complete. PERS-04 through PERS-08 remain behind default-off ranking flags. BFP-05 remains a historical on-hold placeholder; the separately authorized NEXT-02 gate may approve at most one offline-academic experiment and does not reopen live PERS architecture or dataset lifecycle work.
+Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, DATA-00 through DATA-15, PERS-00 through PERS-09, and post-PERS NEXT-01 through NEXT-03 are complete. PERS-04 through PERS-08 remain behind default-off ranking flags. BFP-05 remains a historical on-hold placeholder. The one approved offline biased-MF experiment was negative, its final test attempt is consumed, and it does not reopen live PERS architecture or dataset lifecycle work.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 

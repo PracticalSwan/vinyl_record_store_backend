@@ -25,7 +25,7 @@ This plan separates deterministic behavior evidence from unsupported quality cla
 | Catalog import validation, deduplication, ownership, transactions, external-client limits, and artwork provenance | Passing Node tests plus a live no-write Atlas preview. |
 | Exact 116-file local artwork parity, hashes, JPEG dimensions, orphan detection, redirect security, canonical-ID route mapping, immutable headers, and browser decoding | Passing verifier, Node tests, live HTTP enumeration, and frontend Playwright coverage on 2026-07-21. |
 | Dataset relevance, minimum evidence, temporal split, leakage checks, deterministic baselines, and aggregate-only output | Passing Node tests plus a live report generation. |
-| Historical NEXT-01 validation benchmark | Canonical immutable `next-01-final-v3` packet evaluates deterministic random, positive train-popularity, and positive-seed content baselines on 1,823 validation-eligible subjects. The implementation digest, baseline versions, dataset descriptor, and deterministic validation result are sealed; the test split remains unopened. |
+| Historical NEXT-01 through NEXT-03 benchmark | Canonical `next-01-final-v3` packet seals deterministic random, positive train-popularity, and positive-seed content validation on 1,823 subjects, freezes one biased-MF winner, and records the one-time four-model test on a common 1,708-subject positive-target cohort. |
 | Amazon source/staging/config/identity/artwork ownership, deterministic record digests, explicit v3-current/v2-rollback/v1-base semantics, stable public IDs, pseudonym format, historical indexes/no-TTL, exact accepted/local artwork coverage, legacy preservation, and exact three-customer preservation | Passing DATA integration tests plus live read-only `dataset:artwork:verify`, v3 verification while active, full v2 and v1 rollback-target verification while v3 is active, `dataset:evaluation:readiness`, and Atlas index verification on 2026-08-13. No import, activation, or rollback write was run because PERS-09 did not change lifecycle behavior. |
 | Full backend behavior suite | 298 Node tests completed on 2026-08-13: 297 passed, 0 failed, and 1 intentional Windows symlink-permission skip, including historical evaluation/seal coverage, transactional lifecycle fencing, single-pass component preparation, legacy-route isolation, exact logging, all personalization modes/flags/failures, privacy, and DATA-15 regression coverage. |
 | ESLint | Passed on 2026-08-13. |
@@ -47,7 +47,7 @@ npm run build
 
 Behavior tests do not show that recommendations are relevant to real users. The live Part B pipeline implements final-state relevance, temporal leave-last-positive-out splitting, full active-catalog candidates, and matched random/popularity/content-based methods, but retained live evidence still does not meet its minimum boundary and emits no ranking-quality metrics.
 
-The Amazon historical adapter is a different evidence source. Its `ready` result means 1,708 pseudonymous subjects have valid leakage-safe final-test inputs under the pinned split and `rating >= 4` relevance rule. NEXT-01 separately evaluated 1,823 validation-eligible subjects using train evidence only. Neither result combines with live logs or changes the live `insufficient-evidence` status.
+The Amazon historical adapter is a different evidence source. Its `ready` result identified 1,708 pseudonymous subjects with valid leakage-safe final-test inputs under the pinned split and `rating >= 4` relevance rule. NEXT-01 separately evaluated 1,823 validation-eligible subjects using train evidence only. NEXT-03 then used the 1,708-subject cohort for every final model. These metrics condition on a relevant test target and do not cover the 679 otherwise structurally eligible subjects without one. None of this combines with live logs or changes the live `insufficient-evidence` status.
 
 ## Historical NEXT-01 Validation Benchmark
 
@@ -61,7 +61,24 @@ Validation measured the following aggregate results:
 | Positive popularity | 0.019733 | 0.012804 | 0.042787 | 0.008243 | 5.321176 | 0.049707 |
 | Content-based | 0.035004 | 0.028967 | 0.053758 | 0.670716 | 8.497302 | 0.973540 |
 
-These are single-target validation results, not production-quality claims. Content produced 98 hits versus popularity's 78, but no uncertainty or significance analysis was run and the absolute 5.38% content HitRate remains low. Eight subjects lacked a positive content seed. The final historical test split remains sealed until the validation-only decision/tuning path is complete.
+These are single-target validation results, not production-quality claims. Content produced 98 hits versus popularity's 78, but no uncertainty or significance analysis was run and the absolute 5.38% content HitRate remains low. Eight subjects lacked a positive content seed.
+
+## Historical NEXT-03 Final Test
+
+NEXT-02 approved exactly one offline-academic observed-rating biased-MF family. NEXT-03 tried eight frozen validation configurations and selected 16 factors, learning rate `0.005`, regularization `0.02`, and 50 epochs. After reproducing the validation seal, winner, complete selection artifact, and nine-file implementation boundary, the runner atomically claimed and consumed the one final-test attempt.
+
+The final common-cohort results are:
+
+| Model | NDCG@10 | MAP@10 | HitRate@10 | Coverage | Novelty | Personalization |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Random | 0.000910 | 0.000500 | 0.002342 | 0.999566 | 8.557413 | 0.995665 |
+| Positive popularity | 0.022427 | 0.014025 | 0.050351 | 0.007809 | 5.142454 | 0.056849 |
+| Content-based | 0.043214 | 0.035374 | 0.068501 | 0.657701 | 8.323877 | 0.975284 |
+| Biased matrix factorization | 0.002301 | 0.001105 | 0.006440 | 0.005640 | 8.116314 | 0.014413 |
+
+The MF refit used 18,375 observed train-plus-validation ratings, covered all 2,387 fit subjects and 2,305 items, and used no fallback. It retrieved about 11 test targets and surfaced only 13 catalog items, so it did not support the intended collaborative-discovery hypothesis. Content was strongest descriptively, but no confidence interval or significance test was run. Biased MF remains offline-only and is not part of live personalization.
+
+The immutable JSON field `metricsUnrounded` is accurate for MF but duplicates already six-decimal baseline values for random, popularity, and content. `NEXT_03_POST_TEST_ADDENDUM.md` records that precision correction without changing results or rerunning the consumed test.
 
 Run a new immutable validation only with:
 
@@ -69,7 +86,7 @@ Run a new immutable validation only with:
 npm.cmd run recommender:evaluate:historical -- --stage=validation --run-id=<new-run-id>
 ```
 
-The runner refuses an omitted or reused run ID. Final-test access additionally requires a matching validation seal and machine-readable decision authorization. Reports are aggregate-only and historical user factors or identities must never be attached to Groovehaus accounts.
+The baseline runner refuses an omitted or reused run ID. Historical final-test access required a matching validation seal and machine-readable authorization, and the permanent attempt marker now forbids another read. Reports are aggregate-only and historical user factors or identities must never be attached to Groovehaus accounts.
 
 ## Required Offline Protocol Before Reporting Quality
 
