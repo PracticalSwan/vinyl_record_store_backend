@@ -1,6 +1,6 @@
 # Personalization Implementation Plan (Backend)
 
-This roadmap converts the existing deterministic demo recommender into a genuine personalized recommender system for the Vinyl Record Store (CSX4207). PERS-00 through PERS-05 were implemented on the `feat/personalization-pers-03-05` branches on 2026-08-10, and PERS-06 through PERS-08 were implemented on the `feat/personalization-pers-06-08` branches on 2026-08-10; all new personalization flags remain default-off. DATA-00 through DATA-15 were re-verified with the final lifecycle evidence on 2026-08-08. PERS-09 remains deferred and was not implemented or used to authorize dataset changes.
+This roadmap converts the existing deterministic demo recommender into a genuine personalized recommender system for the Vinyl Record Store (CSX4207). PERS-00 through PERS-08 were implemented in the 2026-08-10 batches, and PERS-09 integration/closure was completed on `feat/personalization-pers-09` on 2026-08-13; all PERS-04 through PERS-08 ranking flags remain default-off. DATA-00 through DATA-15 were re-verified read-only; PERS-09 did not authorize or perform dataset changes.
 
 This plan is scheduled AFTER the entire existing documented roadmap: BFP-07 (admin backend), FFP-07 (admin frontend), FFP-08 (simulated checkout), and any backend support already planned for the simulated checkout. It does not reorder, replace, remove, or silently redefine any existing BFP/FFP plan. BFP-05 (recommender algorithm selection) remains its own on-hold placeholder; PERS-00 records the method decision that resolves BFP-05's open question without reusing the BFP-05 ID.
 
@@ -19,7 +19,7 @@ The remaining PERS milestones are revised as follows:
 - PERS-05 through PERS-06 are implemented as live-account features; neither writes into or reinterprets `historicalAmazonRatings`.
 - PERS-07 production planning may use aggregate historical ratings only for the exact active dataset; offline evaluation remains a separate train-only code path and must not reuse all-split production counts.
 - PERS-08 must score one shared active candidate set, keep live personalized evidence separate from aggregate historical popularity, and never map historical subjects to app users.
-- PERS-09 remains a separately deferred integration/closure milestone. This batch performs no dataset lifecycle write and does not claim its verification work.
+- PERS-09 is the completed integration/closure milestone. It performed no dataset lifecycle write and makes no recommendation-quality claim.
 
 Historical-data `ready` status does not satisfy the live evidence threshold and does not authorize Precision@k, Recall@k, MAP@k, NDCG@k, or a personalization claim. Future implementation requires a new explicit user request after this gate is revalidated.
 
@@ -97,7 +97,7 @@ Each PERS milestone maps to the next unused backend and/or frontend plan IDs. Th
 | PERS-08 | Hybrid recommendation orchestration | BFP-15 | FFP-13 |
 | PERS-09 | Cross-repository integration, migration, regression protection, documentation closure | BFP-16 | FFP-14 |
 
-Backend uses BFP-08 through BFP-16. Frontend uses FFP-09 through FFP-14. Do not reuse IDs already allocated by later admin/dataset work. This plan reserves BDEC-027 through BDEC-031 for PERS-03/05/06/07/08 and registers BR-037 for PERS-06. The next unreserved supporting IDs are B-027 / F-025, BDEC-032 / FDEC-018, and BR-038 / FR-030. Existing PERS task/risk IDs stay as already registered; allocate a new ID only for a genuinely new item.
+Backend uses BFP-08 through BFP-16. Frontend uses FFP-09 through FFP-14. Do not reuse IDs already allocated by later admin/dataset work. BDEC-027 through BDEC-031 record PERS-03/05/06/07/08, BDEC-032 records PERS-09 closure, and BR-037 records the PERS-06 passive-evidence risk. The next unreserved supporting IDs are B-027 / F-025, BDEC-033 / FDEC-020, and BR-038 / FR-030. Existing PERS task/risk IDs stay as already registered; allocate a new ID only for a genuinely new item.
 
 ## Milestone Template
 
@@ -1341,7 +1341,7 @@ PERS-09 / BFP-16 (backend) + FFP-14 (frontend) — Full cross-repository integra
 
 ### Status
 
-Deferred and explicitly outside the PERS-06 through PERS-08 batch. No PERS-09 integration/closure implementation or dataset lifecycle work was performed.
+Completed 2026-08-13 on `feat/personalization-pers-09`. The closure added integration/privacy/failure regressions and documentation updates without dataset lifecycle work or ranking-flag enablement.
 
 ### Goal
 
@@ -1353,7 +1353,7 @@ Each prior milestone is independently flag-gated. PERS-09 verifies cross-reposit
 
 ### Current Implementation Gap
 
-- PERS-03 through PERS-08 are implemented and individually verified; PERS-09 remains a later integration/closure task.
+- PERS-03 through PERS-09 are implemented and verified; any ranking-flag enablement remains a separate decision.
 - `/api/recommendations/me` and its auth-restoration/frontend resource-key behavior already exist from PERS-02; PERS-09 must verify them, not redesign or switch endpoints again.
 
 ### Dependencies
@@ -1552,9 +1552,9 @@ Planned decisions for later milestones (not yet recorded in `DECISION_LOG.md`):
 - BDEC-030 — Production popularity uses active-dataset historical rating count, mean-rating/id tie-break; offline evaluation remains train-only. Recorded during PERS-07.
 - BDEC-031 — Hybrid blending requires preference + behavioral affinity, adds popularity when available, uses the `0.45/0.35/0.20` v1 assumption, and performs no second min-max normalization. If either personalized component is absent, return the pure lower component mode/version. Product similarity remains separate. Recorded during PERS-08.
 
-PERS-00 through PERS-02 resolved identity/session architecture. The 2026-08-09/10 plan review and PERS-06 through PERS-08 implementation resolve the method shape above. Remaining approval is limited to production enablement of the new ranking flags and any later PERS-09 closure. All weights remain documented assumptions, not learned or validated-optimal values.
+PERS-00 through PERS-02 resolved identity/session architecture. The 2026-08-09/10 implementation resolved the method shape, and the 2026-08-13 PERS-09 closure verified cross-repository integration without changing it. Remaining approval is limited to production enablement of the ranking flags or a separately authorized experiment. All weights remain documented assumptions, not learned or validated-optimal values.
 
-Implementation update (2026-08-10): BDEC-027 through BDEC-031 are recorded in `DECISION_LOG.md`. PERS-03 recomputes the profile on demand; PERS-04 uses equal absolute group weights; PERS-05 stores only durable exact-item feedback; PERS-06 adds bounded behavior and the server opt-out backstop; PERS-07 adds candidate-owned historical popularity; and PERS-08 adds the true hybrid/mode matrix. All remain default-off and no quality or optimality claim is made. PERS-09 remains deferred.
+Implementation update (2026-08-13): BDEC-027 through BDEC-031 remain authoritative for PERS-03 through PERS-08. PERS-09 closes the service/repository boundary, exact-list logging, account-deletion lifecycle, fail-closed matrix, frontend stale-response and feedback UX, full-gate E2E, read-only DATA-15 regression, and documentation. PERS-04 through PERS-08 remain default-off and no quality or optimality claim is made.
 
 ## Honesty Contract
 

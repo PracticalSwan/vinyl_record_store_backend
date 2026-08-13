@@ -2,6 +2,7 @@ import { getOptionalRecommendationSubject } from "@/lib/auth/recommendationSubje
 import { notFound } from "@/lib/errors";
 import { personalizationMeEndpointEnabled } from "@/lib/features";
 import { failure, success } from "@/lib/http";
+import { trackingOptedOut } from "@/lib/trackingOptOut";
 import { serveUserRecommendations } from "@/services/recommendations";
 import { positiveInteger } from "@/validation/catalog";
 import { parseAnonymousId, parseInteractionSurface } from "@/validation/writes";
@@ -25,7 +26,7 @@ export async function GET(request) {
         request.nextUrl.searchParams.get("surface"),
         "recommendations",
       ),
-      trackingAllowed: request.headers.get("x-tracking-enabled") !== "false",
+      trackingAllowed: !trackingOptedOut(request),
     }));
   } catch (error) {
     return failure(error);

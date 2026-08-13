@@ -18,10 +18,12 @@ import {
   personalizationProfileDomainEnabled,
 } from "../src/lib/features.js";
 import { recommendForUser } from "../src/lib/recommender/contentBased.js";
+import { seedCatalogRepository } from "../src/repositories/seedCatalogRepository.js";
 
 const environment = {
   AUTH_SECRET: "recommendation-identity-test-secret-with-32-characters",
 };
+const seedCandidates = await seedCatalogRepository.listRecommendationCandidates();
 
 function requestFor(user) {
   const token = createSessionToken(user, { environment });
@@ -98,9 +100,10 @@ test("PERS-01 treats invalid or inactive sessions as anonymous and rejects admin
 });
 
 test("PERS-01 legacy user ids can select only demo-profile or identical cold-start ranking", async () => {
-  const first = await recommendForUser(legacyRecommendationSubject("user-one"), 8);
-  const second = await recommendForUser(legacyRecommendationSubject("user-two"), 8);
-  const demo = await recommendForUser(legacyRecommendationSubject("demo-user"), 8);
+  const options = { candidates: seedCandidates };
+  const first = await recommendForUser(legacyRecommendationSubject("user-one"), 8, options);
+  const second = await recommendForUser(legacyRecommendationSubject("user-two"), 8, options);
+  const demo = await recommendForUser(legacyRecommendationSubject("demo-user"), 8, options);
 
   assert.equal(first.mode, "cold-start");
   assert.equal(second.mode, "cold-start");
@@ -111,20 +114,33 @@ test("PERS-01 legacy user ids can select only demo-profile or identical cold-sta
   );
 });
 
-test("PERS-01 rejects legacy string subjects before any catalog access", async () => {
-  let catalogReads = 0;
+test("PERS-09 keeps arbitrary legacy ids on cold-start when popularity is enabled", async () => {
+  const researchCandidates = seedCandidates.map((candidate) => ({
+    ...candidate,
+    catalogMode: "research-only",
+    datasetKey: "release-v3",
+  }));
+  const result = await recommendForUser(legacyRecommendationSubject("another-customer"), 8, {
+    candidates: researchCandidates,
+    popularityEnabled: true,
+    popularityAggregates: researchCandidates.map((candidate, index) => ({
+      productPublicId: candidate.id,
+      ratingCount: 100 - index,
+      meanRating: 5,
+    })),
+  });
+
+  assert.equal(result.mode, "cold-start");
+  assert.equal(result.algorithmVersion, "content-demo-v1");
+});
+
+test("PERS-01 rejects legacy string subjects before candidate scoring", async () => {
   await assert.rejects(
     () => recommendForUser("demo-user", 8, {
-      repository: {
-        listRecommendationCandidates: async () => {
-          catalogReads += 1;
-          return [];
-        },
-      },
+      candidates: seedCandidates,
     }),
     TypeError,
   );
-  assert.equal(catalogReads, 0);
 });
 
 test("PERS-01 product recommendations remain independent of session and profile code", async () => {

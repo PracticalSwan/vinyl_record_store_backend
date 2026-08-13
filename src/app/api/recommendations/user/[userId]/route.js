@@ -5,6 +5,7 @@ import {
 } from "@/lib/auth/recommendationSubject";
 import { personalizationIdentityStrictEnabled } from "@/lib/features";
 import { failure, success } from "@/lib/http";
+import { trackingOptedOut } from "@/lib/trackingOptOut";
 import { serveUserRecommendations } from "@/services/recommendations";
 import { positiveInteger, userId } from "@/validation/catalog";
 import { parseAnonymousId, parseInteractionSurface } from "@/validation/writes";
@@ -36,7 +37,7 @@ export async function GET(request, { params }) {
           request.nextUrl.searchParams.get("surface"),
           "recommendations",
         ),
-        trackingAllowed: request.headers.get("x-tracking-enabled") !== "false",
+        trackingAllowed: !trackingOptedOut(request),
       },
     ));
   } catch (error) {

@@ -10,8 +10,8 @@ These files document the implemented catalog/recommendation API, active versione
 - `RECOMMENDER_SYSTEM_PLAN.md`: implemented content/demo, preference, behavior, popularity, and hybrid scoring, explanations, diversity, restricted showcase, session-owned fallback, and exact feedback rules.
 - `ARCHITECTURE_PLAN.md`: current modules and request flow.
 - `EVALUATION_PLAN.md`: automated behavior checks, implemented offline protocol, and the active evidence boundary.
-- `FUTURE_IMPLEMENTATION_PLAN.md`: completed BFP-01/02/03/04/06/07/08/09 and PERS-00 through PERS-08 records plus remaining deferred work; recommender selection stays as a historical on-hold placeholder.
-- `PERSONALIZATION_IMPLEMENTATION_PLAN.md`: PERS-00 through PERS-08 completed 2026-08-10 behind default-off flags; PERS-09 remains deferred, with no quality claim.
+- `FUTURE_IMPLEMENTATION_PLAN.md`: completed BFP-01/02/03/04/06/07/08/09 and PERS-00 through PERS-09 records plus remaining deferred work; recommender selection stays as a historical on-hold placeholder.
+- `PERSONALIZATION_IMPLEMENTATION_PLAN.md`: PERS-00 through PERS-09 completed through 2026-08-13; ranking flags remain default-off and no quality claim is made.
 - `ROADMAP.md` and `TASK_BACKLOG.md`: completed consolidation and deferred work.
 - `DECISION_LOG.md`, `RISK_REGISTER.md`, and `SETUP_LATER.md`: durable decisions, risks, and unstarted setup.
 

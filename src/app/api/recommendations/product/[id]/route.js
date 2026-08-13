@@ -1,4 +1,5 @@
 import { failure, success } from "@/lib/http";
+import { trackingOptedOut } from "@/lib/trackingOptOut";
 import { serveProductRecommendations } from "@/services/recommendations";
 import { positiveInteger } from "@/validation/catalog";
 import { parseInteractionSurface } from "@/validation/writes";
@@ -15,7 +16,7 @@ export async function GET(request, { params }) {
         request.nextUrl.searchParams.get("surface"),
         "product-detail",
       ),
-      trackingAllowed: request.headers.get("x-tracking-enabled") !== "false",
+      trackingAllowed: !trackingOptedOut(request),
     }));
   } catch (error) {
     return failure(error);

@@ -206,7 +206,7 @@ Decision: Represent source reviewers only as keyed HMAC-SHA-256 values in `histo
 
 Rationale: Historical research evidence has different provenance, retention, consent, and evaluation semantics from live Groovehaus activity. Isolation prevents identity conflation and leakage while leaving a separately approvable future evaluation path.
 
-Status: Implemented in DATA-05 through DATA-13. PERS-03 through PERS-08 were subsequently implemented as separate default-off batches; PERS-09 remains deferred.
+Status: Implemented in DATA-05 through DATA-13. PERS-03 through PERS-08 were subsequently implemented as separate default-off batches, and PERS-09 completed without changing this isolation boundary.
 
 ## BDEC-024: Seal V2 Rows And Enrich Artwork Conservatively
 
@@ -222,7 +222,7 @@ Status: Implemented and verified in the corrected v2 dataset closure. The storef
 
 Date: 2026-08-08
 
-Decision: Treat the corrected v2 dataset as publishable only after normal enriched preparation is deterministic, the sealed inactive import is verified while v1 remains active, activation and exact repeated import are safe, rollback to v1 preserves v2 evidence/legacy IDs/customer state without deletion, reactivation restores v2, and post-E2E cleanup leaves protected collections unchanged. Keep historical readiness aggregate-only; the separately implemented PERS-03 through PERS-08 batches do not alter this dataset, while PERS-09 remains deferred.
+Decision: Treat the corrected v2 dataset as publishable only after normal enriched preparation is deterministic, the sealed inactive import is verified while v1 remains active, activation and exact repeated import are safe, rollback to v1 preserves v2 evidence/legacy IDs/customer state without deletion, reactivation restores v2, and post-E2E cleanup leaves protected collections unchanged. Keep historical readiness aggregate-only; the separately implemented PERS-03 through PERS-09 work does not alter this dataset.
 
 Rationale: A final active pointer and green unit tests do not prove the transition path or customer-state boundary. The bounded rehearsal records the operational evidence required for the classroom database without introducing event sourcing, state migration, or recommendation work.
 
@@ -286,4 +286,14 @@ Decision: Implement `personalized-hybrid-v1` with fixed classroom assumptions pr
 
 Rationale: A single candidate/exclusion pass prevents score drift and double-counting while truthful mode/version labels make rollback and frontend attribution auditable. The weights are assumptions, not learned quality parameters.
 
-Status: Implemented behind default-off `PERS_HYBRID`; PERS-09 integration closure and production enablement remain deferred.
+Status: Implemented behind default-off `PERS_HYBRID`; PERS-09 integration closure is complete, while production enablement remains deferred.
+
+## BDEC-032: Close Recommendation Reads, Scoring, Logging, And Deletion As One Auditable Boundary
+
+Date: 2026-08-13
+
+Decision: Keep routes thin and the recommender pure: the recommendation service selects repositories, loads one candidate set and one profile, applies exact feedback exclusions once, and requests candidate-scoped popularity only when it can affect the selected mode. Require an explicit `CATALOG_DATA_SOURCE=mongodb`; otherwise use the seed source. For authenticated delivery, persist the exact ordered public result only after revalidating and write-fencing the active customer in the same transaction as log creation. Reuse the shared tracking opt-out parser at every recommendation route.
+
+Rationale: Explicit persistence selection prevents configured credentials from silently changing runtime mode. A service-owned I/O boundary keeps scoring deterministic and independently testable. Transactional active-customer fencing orders recommendation logging against account deletion, preventing an in-flight request from recreating subject-linked analytics after deletion commits.
+
+Status: Implemented and verified in PERS-09 with default-off ranking flags, deterministic service/repository/failure/lifecycle regressions, full route and browser contracts, live MongoDB checks, and no dataset or quality-evaluation change.

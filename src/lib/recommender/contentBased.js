@@ -1,6 +1,3 @@
-import { getCatalogRepository } from "../db/dataSource.js";
-import { getProductRecord } from "../../services/catalog.js";
-import { historicalPopularityRepository } from "../../repositories/historicalPopularityRepository.js";
 import { applyUserExclusions } from "./exclusions.js";
 import {
   BEHAVIOR_RANKING_VERSION,
@@ -106,10 +103,14 @@ export function rankCatalogFromHistory(records, trainingProductIds, limit = 10) 
 export async function recommendForProduct(
   sourceId,
   limit = 6,
-  { repository = getCatalogRepository() } = {},
+  { candidates = [], source = null } = {},
 ) {
-  const source = await getProductRecord(sourceId, { repository });
-  const candidates = await repository.listRecommendationCandidates();
+  if (!source) {
+    throw new TypeError("A validated source product is required.");
+  }
+  if (!source || source.id !== sourceId) {
+    throw new TypeError("The validated source product must match the requested product ID.");
+  }
   const scored = candidates
     .filter((candidate) => candidate.id !== source.id && candidate.stock !== "out")
     .map((candidate) => {
@@ -146,34 +147,102 @@ function genericRecommendations(records, limit) {
   return diversify(scored, limit);
 }
 
-export async function recommendForUser(
-  subject,
-  limit = 8,
-  {
-    repository = getCatalogRepository(),
-    candidates: providedCandidates = null,
-    profile = null,
-    preferenceRankingEnabled = false,
-    feedbackEnabled = false,
-    behaviorRankingEnabled = false,
-    popularityEnabled = false,
-    hybridEnabled = false,
-    popularityRepository = historicalPopularityRepository,
-    trackingEnabled = true,
-    now = new Date(),
-  } = {},
-) {
+function assertRecommendationSubject(subject) {
   if (
     !["anonymous", "cold-start", "demo", "registered"].includes(subject?.kind)
     || (subject.kind === "registered" && !subject.publicId)
   ) {
     throw new TypeError("A valid recommendation subject descriptor is required.");
   }
-  const records = providedCandidates || await repository.listRecommendationCandidates();
-  const feedbackResult = feedbackEnabled
+}
+
+export function prepareUserRecommendation(
+  subject,
+  records = [],
+  {
+    exclusion = null,
+    profile = null,
+    preferenceRankingEnabled = false,
+    feedbackEnabled = false,
+    behaviorRankingEnabled = false,
+    popularityEnabled = false,
+    hybridEnabled = false,
+    trackingEnabled = true,
+    now = new Date(),
+  } = {},
+) {
+  assertRecommendationSubject(subject);
+  if (!Array.isArray(records)) throw new TypeError("Candidates must be an array.");
+  const feedbackResult = exclusion || (feedbackEnabled
     ? applyUserExclusions(records, profile?.explicitFeedback || [])
-    : { candidates: records, excludedProductIds: [] };
+    : { candidates: records, excludedProductIds: [] });
   const eligibleRecords = feedbackResult.candidates;
+  const candidates = eligibleRecords.filter((candidate) => candidate.stock !== "out");
+  const components = {
+    preference: { available: false },
+    behavior: { available: false },
+  };
+
+  if (subject.kind === "registered" && preferenceRankingEnabled && profile) {
+    const catalogMode = candidates[0]?.catalogMode
+      || eligibleRecords[0]?.catalogMode
+      || "commerce-preview";
+    const scoreResult = scorePreferenceCandidates(
+      candidates,
+      profile.explicitPreferences,
+      { catalogMode },
+    );
+    if (scoreResult.available) components.preference = scoreResult;
+  }
+
+  if (subject.kind === "registered" && behaviorRankingEnabled && profile) {
+    const affinity = buildBehaviorAffinity(profile, records, {
+      now,
+      trackingEnabled,
+      feedbackEnabled,
+    });
+    const scoreResult = scoreBehaviorCandidates(candidates, affinity);
+    if (scoreResult.available) components.behavior = scoreResult;
+  }
+
+  const popularityNeeded = ["anonymous", "registered"].includes(subject.kind)
+    && popularityEnabled
+    && candidates.length > 0
+    && (
+      (!components.preference.available && !components.behavior.available)
+      || (hybridEnabled && components.preference.available && components.behavior.available)
+    );
+
+  return {
+    feedbackResult,
+    eligibleRecords,
+    candidates,
+    components,
+    popularityNeeded,
+    datasetKey: popularityNeeded ? getCandidateDatasetKey(candidates) : null,
+  };
+}
+
+export async function recommendForUser(
+  subject,
+  limit = 8,
+  {
+    candidates: records = null,
+    exclusion = null,
+    prepared = null,
+    profile = null,
+    preferenceRankingEnabled = false,
+    feedbackEnabled = false,
+    behaviorRankingEnabled = false,
+    popularityEnabled = false,
+    hybridEnabled = false,
+    popularityAggregates = [],
+    trackingEnabled = true,
+    now = new Date(),
+  } = {},
+) {
+  assertRecommendationSubject(subject);
+  records ||= [];
 
   if (subject.kind === "demo") {
     const sourceIds = [...DEMO_PROFILE.purchasedIds, ...DEMO_PROFILE.wishlistIds];
@@ -229,46 +298,27 @@ export async function recommendForUser(
     };
   }
 
-  const candidates = eligibleRecords.filter((candidate) => candidate.stock !== "out");
+  const preparedState = prepared || prepareUserRecommendation(subject, records, {
+    exclusion,
+    profile,
+    preferenceRankingEnabled,
+    feedbackEnabled,
+    behaviorRankingEnabled,
+    popularityEnabled,
+    hybridEnabled,
+    trackingEnabled,
+    now,
+  });
+  const { feedbackResult, eligibleRecords, candidates } = preparedState;
   const components = {
-    preference: { available: false },
-    behavior: { available: false },
+    preference: preparedState.components.preference,
+    behavior: preparedState.components.behavior,
     popularity: { available: false },
   };
 
-  if (subject.kind === "registered" && preferenceRankingEnabled && profile) {
-    const catalogMode = candidates[0]?.catalogMode || eligibleRecords[0]?.catalogMode || "commerce-preview";
-    const scoreResult = scorePreferenceCandidates(
-      candidates,
-      profile.explicitPreferences,
-      { catalogMode },
-    );
-    if (scoreResult.available) components.preference = scoreResult;
-  }
-
-  if (subject.kind === "registered" && behaviorRankingEnabled && profile) {
-    const affinity = buildBehaviorAffinity(profile, records, {
-      now,
-      trackingEnabled,
-      feedbackEnabled,
-    });
-    const scoreResult = scoreBehaviorCandidates(candidates, affinity);
-    if (scoreResult.available) components.behavior = scoreResult;
-  }
-
-  const shouldLoadPopularity = popularityEnabled
-    && candidates.length > 0
-    && (
-      (!components.preference.available && !components.behavior.available)
-      || (hybridEnabled && components.preference.available && components.behavior.available)
-    );
-  if (shouldLoadPopularity) {
-    const datasetKey = getCandidateDatasetKey(candidates);
-    if (datasetKey) {
-      const aggregates = await popularityRepository.listByDatasetKey(datasetKey);
-      const scoreResult = scorePopularityCandidates(candidates, aggregates);
-      if (scoreResult.available) components.popularity = scoreResult;
-    }
+  if (preparedState.popularityNeeded && preparedState.datasetKey) {
+    const scoreResult = scorePopularityCandidates(candidates, popularityAggregates);
+    if (scoreResult.available) components.popularity = scoreResult;
   }
 
   const baseResponse = {

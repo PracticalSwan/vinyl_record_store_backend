@@ -166,8 +166,22 @@ test("deleteCustomerAccount skips related cleanup when no customer matches", asy
 
 test("deleteCustomerAccount removes feedback in the same successful transaction", async () => {
   const calls = [];
-  const userModel = { deleteOne: async () => ({ deletedCount: 1 }) };
-  const tracker = { deleteMany: async (filter) => { calls.push(filter); } };
+  const transactionSession = { id: "account-cleanup-session" };
+  let userDeleteOptions;
+  const userModel = {
+    deleteOne: async (_filter, options) => {
+      userDeleteOptions = options;
+      return { deletedCount: 1 };
+    },
+  };
+  const tracker = { deleteMany: async (filter, options) => { calls.push({ filter, options }); } };
+  let feedbackCalls = 0;
+  const feedbackModel = {
+    deleteMany: async (filter, options) => {
+      feedbackCalls += 1;
+      calls.push({ filter, options });
+    },
+  };
   const repository = createAccountRepository(
     {
       userModel,
@@ -177,12 +191,189 @@ test("deleteCustomerAccount removes feedback in the same successful transaction"
       interactionModel: tracker,
       recommendationLogModel: tracker,
       guestMergeModel: tracker,
-      feedbackModel: tracker,
+      feedbackModel,
     },
-    transactionConnect,
+    async () => ({ transaction: async (fn) => fn(transactionSession) }),
   );
   assert.equal(await repository.deleteCustomerAccount("user-1"), true);
-  assert.ok(calls.some((filter) => filter.userPublicId === "user-1"));
+  assert.equal(feedbackCalls, 1);
+  assert.equal(userDeleteOptions.session, transactionSession);
+  assert.equal(calls.length, 7);
+  assert.ok(calls.some(({ filter }) => filter.userPublicId === "user-1"));
+  assert.ok(calls.some(({ filter }) => (
+    filter.subjectType === "user" && filter.subjectId === "user-1"
+  )));
+  assert.ok(calls.every(({ options }) => options.session === transactionSession));
+});
+
+test("deleteCustomerAccount propagates a cleanup failure so the transaction can roll back", async () => {
+  const failure = new Error("cleanup failed");
+  let transactionRejected = false;
+  const repository = createAccountRepository(
+    {
+      userModel: { deleteOne: async () => ({ deletedCount: 1 }) },
+      wishlistModel: { deleteMany: async () => {} },
+      cartModel: { deleteMany: async () => { throw failure; } },
+      ratingModel: { deleteMany: async () => {} },
+      interactionModel: { deleteMany: async () => {} },
+      recommendationLogModel: { deleteMany: async () => {} },
+      guestMergeModel: { deleteMany: async () => {} },
+      feedbackModel: { deleteMany: async () => {} },
+    },
+    async () => ({
+      transaction: async (fn) => {
+        try {
+          return await fn({ id: "rollback-session" });
+        } catch (error) {
+          transactionRejected = true;
+          throw error;
+        }
+      },
+    }),
+  );
+
+  await assert.rejects(() => repository.deleteCustomerAccount("user-1"));
+  assert.equal(transactionRejected, true);
+});
+
+test("user recommendation logs require an active customer in the same transaction", async () => {
+  const transactionSession = { id: "recommendation-log-session" };
+  const fenceCalls = [];
+  const userModel = {
+    findOneAndUpdate(filter, update, options) {
+      fenceCalls.push({ filter, update, options });
+      return chain({ _id: "active-user" });
+    },
+  };
+  const createCalls = [];
+  const recommendationLogModel = {
+    create: async (documents, options) => {
+      createCalls.push({ documents, options });
+      return documents;
+    },
+  };
+  const events = createEventRepository(
+    { userModel, recommendationLogModel },
+    async () => ({ transaction: async (fn) => fn(transactionSession) }),
+  );
+  const row = {
+    requestId: "request-1",
+    listId: "list-1",
+    subjectType: "user",
+    subjectId: "user-1",
+    mode: "cold-start",
+    algorithmVersion: "content-demo-v1",
+    surface: "home",
+    items: [],
+  };
+
+  await events.appendRecommendationLog(row);
+
+  assert.deepEqual(fenceCalls, [{
+    filter: { publicId: "user-1", role: "customer", active: true },
+    update: { $currentDate: { updatedAt: true } },
+    options: {
+      new: true,
+      projection: { _id: 1 },
+      session: transactionSession,
+      timestamps: false,
+    },
+  }]);
+  assert.deepEqual(createCalls, [{
+    documents: [row],
+    options: { session: transactionSession },
+  }]);
+});
+
+test("user recommendation logging does not recreate data after account deletion wins", async () => {
+  let createCalls = 0;
+  const events = createEventRepository(
+    {
+      userModel: { findOneAndUpdate: () => chain(null) },
+      recommendationLogModel: { create: async () => { createCalls += 1; } },
+    },
+    async () => ({ transaction: async (fn) => fn({}) }),
+  );
+
+  const result = await events.appendRecommendationLog({
+    subjectType: "user",
+    subjectId: "deleted-user",
+  });
+
+  assert.equal(result, null);
+  assert.equal(createCalls, 0);
+});
+
+test("concurrent recommendation logging and account deletion leave no user log in either order", async () => {
+  async function exercise(firstOperation) {
+    const state = { userExists: true, recommendationLogs: [] };
+    let transactionTail = Promise.resolve();
+    let sessionNumber = 0;
+    const connection = {
+      async transaction(operation) {
+        const previous = transactionTail;
+        let release;
+        transactionTail = new Promise((resolve) => { release = resolve; });
+        await previous;
+        try {
+          sessionNumber += 1;
+          return await operation({ id: `serialized-session-${sessionNumber}` });
+        } finally {
+          release();
+        }
+      },
+    };
+    const userModel = {
+      deleteOne: async () => {
+        const deletedCount = state.userExists ? 1 : 0;
+        state.userExists = false;
+        return { deletedCount };
+      },
+      findOneAndUpdate: () => chain(state.userExists ? { _id: "active-user" } : null),
+    };
+    const recommendationLogModel = {
+      create: async (documents) => {
+        state.recommendationLogs.push(...documents);
+        return documents;
+      },
+      deleteMany: async () => { state.recommendationLogs = []; },
+    };
+    const noOwnedState = { deleteMany: async () => {} };
+    const connect = async () => connection;
+    const events = createEventRepository({ userModel, recommendationLogModel }, connect);
+    const accounts = createAccountRepository({
+      userModel,
+      recommendationLogModel,
+      wishlistModel: noOwnedState,
+      cartModel: noOwnedState,
+      ratingModel: noOwnedState,
+      interactionModel: noOwnedState,
+      guestMergeModel: noOwnedState,
+      feedbackModel: noOwnedState,
+    }, connect);
+    const log = () => events.appendRecommendationLog({
+      subjectType: "user",
+      subjectId: "user-1",
+      requestId: "request-1",
+      listId: "list-1",
+      mode: "cold-start",
+      algorithmVersion: "content-demo-v1",
+      surface: "home",
+      items: [],
+    });
+    const remove = () => accounts.deleteCustomerAccount("user-1");
+    const first = firstOperation === "log" ? log() : remove();
+    const second = firstOperation === "log" ? remove() : log();
+    const [firstResult, secondResult] = await Promise.all([first, second]);
+
+    assert.equal(state.userExists, false);
+    assert.deepEqual(state.recommendationLogs, []);
+    assert.equal(firstOperation === "log" ? secondResult : firstResult, true);
+    if (firstOperation === "delete") assert.equal(secondResult, null);
+  }
+
+  await exercise("log");
+  await exercise("delete");
 });
 
 test("recent interactions are bounded, ordered, and owner fields are stripped", async () => {

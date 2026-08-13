@@ -2,6 +2,7 @@ import { AuditLog } from "../models/AuditLog.js";
 import { Interaction } from "../models/Interaction.js";
 import { RecommendationLog } from "../models/RecommendationLog.js";
 import { RETENTION_MS } from "../models/constants.js";
+import { User } from "../models/User.js";
 import { createMongoRunner, toPlainObject } from "./repositorySupport.js";
 
 const clean = (document) => {
@@ -16,6 +17,7 @@ export function createEventRepository(
     interactionModel = Interaction,
     recommendationLogModel = RecommendationLog,
     auditLogModel = AuditLog,
+    userModel = User,
   } = {},
   connect,
 ) {
@@ -36,9 +38,30 @@ export function createEventRepository(
       const inserted = result.upsertedCount || 0;
       return { accepted: inserted, duplicates: items.length - inserted };
     }),
-    appendRecommendationLog: (data) => run(async () => clean(
-      await recommendationLogModel.create(data),
-    )),
+    appendRecommendationLog: (data) => run(async (connection) => {
+      if (data.subjectType !== "user") {
+        return clean(await recommendationLogModel.create(data));
+      }
+      return connection.transaction(async (session) => {
+        // Take a write lock on the active customer inside the same transaction
+        // as the log insert. $currentDate is intentionally not a no-op: it
+        // makes account deletion and logging serialize. Deletion either removes
+        // this committed log or wins first and leaves no customer for a retry.
+        const activeUser = await userModel.findOneAndUpdate(
+          { publicId: data.subjectId, role: "customer", active: true },
+          { $currentDate: { updatedAt: true } },
+          {
+            new: true,
+            projection: { _id: 1 },
+            session,
+            timestamps: false,
+          },
+        ).lean().exec();
+        if (!activeUser) return null;
+        const [created] = await recommendationLogModel.create([data], { session });
+        return clean(created);
+      });
+    }),
     appendAuditLog: (data) => run(async () => clean(await auditLogModel.create(data))),
     // Recent safe audit actions for the admin dashboard. adminUserPublicId is
     // select:false on the schema and is also stripped here; only the safe

@@ -1,6 +1,6 @@
 # Backend Future Implementation Plan
 
-Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, DATA-00 through DATA-15, and PERS-00 through PERS-08 are complete behind default-off flags. BFP-05 remains a historical on-hold placeholder whose open method decision was frozen by PERS-00; PERS-09 remains future work and was not implemented with the dataset.
+Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, DATA-00 through DATA-15, and PERS-00 through PERS-09 are complete. PERS-04 through PERS-08 remain behind default-off ranking flags. BFP-05 remains a historical on-hold placeholder whose open method decision was frozen by PERS-00; PERS-09 completed without changing the dataset lifecycle.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
@@ -17,7 +17,7 @@ Any remaining recommender milestone must now:
 - treat `dataset:evaluation:readiness` as input validation, not model quality;
 - keep nullable commercial fields and exclude unavailable products according to the public catalog contract;
 - preserve `content-demo-v1`, the three showcase users, and a non-destructive rollback path;
-- keep the implemented PERS-03 through PERS-08 batch behind default-off flags and request a separate task for PERS-09 only. The batch does not change the dataset lifecycle.
+- keep the implemented PERS-04 through PERS-08 ranking flags default-off unless a later rollout is explicitly authorized. PERS-09 did not change the dataset lifecycle.
 
 ## User Decisions Recorded On 2026-07-03
 
@@ -44,7 +44,7 @@ Any remaining recommender milestone must now:
 
 ## Approved Cross-Repository Implementation Order
 
-The first nine milestones are complete. Implement the remaining plans in this order so each later surface builds on verified contracts and regression coverage:
+All original milestones in this order are complete; the appended personalization order 15 through 24 is also complete. The table remains the dependency record for how each later surface built on verified contracts and regression coverage:
 
 | Order | Plan | Dependency-safe outcome |
 | --- | --- | --- |
@@ -60,10 +60,10 @@ The first nine milestones are complete. Implement the remaining plans in this or
 | 10 | BFP-06: catalog ingestion and metadata quality | Completed 2026-07-06 with validated preview/apply imports and approved metadata enrichment. |
 | 11 | FFP-06: artwork and image handling | Completed 2026-07-06; hardened 2026-07-21 with proxy-to-local-to-placeholder failover and an exact 116-file local bundle. |
 | 12 | BFP-02 Part B: offline evaluation dataset and benchmark | Completed 2026-07-06; the pipeline correctly reports insufficient evidence without metrics. |
-| 13 | BFP-07, then FFP-07: integrated admin mode | Implement protected backend administration before exposing its frontend workspace. |
-| 14 | FFP-08: simulated checkout and order demonstration | Add the low-risk classroom flow last, after catalog, state, identity, and testing are stable. |
+| 13 | BFP-07, then FFP-07: integrated admin mode | Completed 2026-07-09 with protected backend administration before the frontend workspace. |
+| 14 | FFP-08: simulated checkout and order demonstration | Completed 2026-07-09 as a client-only preview after catalog, state, identity, and testing were stable. |
 
-BFP-05 remains on hold and is excluded from this order until the user selects a recommender approach. Deployment, real payments, and a production order system remain out of scope.
+BFP-05 remains only as a historical on-hold placeholder; PERS-00 resolved its method question under new IDs, so it has no separate implementation step. Deployment, real payments, and a production order system remain out of scope.
 
 ### Completed FFP-05 Backend Read Contract
 
@@ -394,7 +394,7 @@ Excluded:
 
 ### Validation And Definition Of Done
 
-All required BFP-04 checks below passed on 2026-07-04; the role helper is verified directly because BFP-07 administrator routes remain deferred:
+All required BFP-04 checks below passed on 2026-07-04. At that milestone the role helper was verified directly before BFP-07; the administrator routes were subsequently implemented and independently verified:
 
 - Correct seeded credentials create a session; incorrect credentials return the same generic failure.
 - Tampered, expired, or missing cookies are rejected.
@@ -407,7 +407,7 @@ All required BFP-04 checks below passed on 2026-07-04; the role helper is verifi
 
 Status: historical on-hold placeholder; its method-selection question is resolved by PERS-00 and the 2026-08-09/10 PERS re-review. Do not implement BFP-05 as a separate algorithm task.
 
-The current deterministic `content-demo-v1` implementation remains active until the separately authorized PERS milestones are implemented/enabled. The selected later roadmap is knowledge-based preference scoring, behavioral content affinity, active-dataset historical popularity, and a true hybrid only when preference + behavior are both available. Collaborative filtering, matrix factorization/SVD, learned ranking, and learned weights remain excluded from this project scope.
+The deterministic `content-demo-v1` implementation remains the default while the implemented PERS-04 through PERS-08 ranking flags are disabled. When explicitly enabled, the selected paths are knowledge-based preference scoring, behavioral content affinity, active-dataset historical popularity, and a true hybrid only when preference + behavior are both available. Collaborative filtering, matrix factorization/SVD, learned ranking, and learned weights remain excluded from this project scope.
 
 Preserve the existing leakage-safe evaluation/logging infrastructure and honest current mode labels. Reopen algorithm selection only if the user explicitly asks to replace the PERS method choices; otherwise PERS-03 through PERS-09 are the sole implementation path.
 
@@ -549,7 +549,7 @@ Database phases additionally require the relevant smoke, migration dry-run, pari
 
 ## Personalization Roadmap (PERS-00 - PERS-09)
 
-This section records the dependency-safe personalization roadmap. PERS-00 through PERS-08 were completed on 2026-08-10 after BFP-07, FFP-07, and FFP-08; PERS-09 remains deferred and default-off. The sequence does not reorder, replace, remove, or silently redefine any existing plan. Full detail lives in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`.
+This section records the dependency-safe personalization roadmap. PERS-00 through PERS-08 were completed on 2026-08-10 after BFP-07, FFP-07, and FFP-08; PERS-09 integration closure completed on 2026-08-13. The ranking flags remain default-off. The sequence does not reorder, replace, remove, or silently redefine any existing plan. Full detail lives in `PERSONALIZATION_IMPLEMENTATION_PLAN.md`.
 
 BFP-05 remains its own on-hold placeholder; completed PERS-00 records the method decision that resolves its open question under new IDs and does not reuse the BFP-05 ID.
 
@@ -568,7 +568,7 @@ Collaborative filtering, SVD/matrix factorization, learned ranking, and another 
 | PERS-06 / BFP-13 | Behavioral-signal personalization | Completed 2026-08-10 | Durable live-account state + bounded opt-in passive content affinity; default-off `PERS_BEHAVIORAL_RANKING`. |
 | PERS-07 / BFP-14 | Popularity baseline and fallback | Completed 2026-08-10 | Active-dataset historical rating-count popularity; deterministic fallback; default-off `PERS_POPULARITY`. |
 | PERS-08 / BFP-15 | Hybrid recommendation orchestration | Completed 2026-08-10 | Blend only when preference + behavior are both available; popularity is optional inside that hybrid; default-off `PERS_HYBRID`. |
-| PERS-09 / BFP-16 | Integration, hardening, documentation closure | Deferred | Not part of the PERS-06 through PERS-08 implementation batch. |
+| PERS-09 / BFP-16 | Integration, hardening, documentation closure | Completed 2026-08-13 | Cross-repository contracts, lifecycle-safe logging, failure paths, browser integration, DATA-15 regression evidence, and documentation are closed without enabling ranking flags. |
 
 ### Dependency-Safe Personalization Order (Appended After FFP-08)
 
@@ -585,4 +585,4 @@ Collaborative filtering, SVD/matrix factorization, learned ranking, and another 
 | 23 | PERS-08 / BFP-15 + FFP-13: hybrid orchestration | Combine only preference + behavior (plus popularity when available) into `personalized-hybrid`; otherwise return the pure lower component mode. |
 | 24 | PERS-09 / BFP-16 + FFP-14: integration and hardening | Read-only DATA-15 regression protection, cross-repo integration, documentation closure; new ranking flags stay off pending authorization. |
 
-Each milestone ships behind a feature flag, preserves `content-demo-v1` for regression, and is independently reversible. PERS-03 through PERS-08 were opened and completed on 2026-08-10; PERS-09 still requires a separate explicit task.
+Each ranking milestone ships behind a feature flag, preserves `content-demo-v1` for regression, and is independently reversible. PERS-03 through PERS-08 were opened and completed on 2026-08-10; PERS-09 completed on 2026-08-13 without changing their defaults.

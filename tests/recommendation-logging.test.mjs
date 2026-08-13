@@ -33,6 +33,20 @@ test("BFP-02 logs the exact ordered product recommendation response", async () =
   assert.ok(logged.items.every((item) => Array.isArray(item.reasons)));
 });
 
+test("PERS-09 product service passes the validated numeric source ID to the pure scorer", async () => {
+  const result = await serveProductRecommendations("1", 3, {
+    surface: "product-detail",
+    trackingAllowed: false,
+  }, {
+    repository: seedCatalogRepository,
+    environment: { CATALOG_DATA_SOURCE: "seed" },
+  });
+
+  assert.equal(result.sourceProductId, 1);
+  assert.equal(result.mode, "content-similarity");
+  assert.ok(result.recommendations.every((item) => item.product.id !== 1));
+});
+
 test("BFP-02 derives authenticated ownership and never returns the stored subject", async () => {
   let logged;
   const result = await serveUserRecommendations(legacyRecommendationSubject("demo-user"), 3, {
@@ -79,4 +93,35 @@ test("usage-data opt-out suppresses MongoDB request logs", async () => {
   });
   assert.equal(result.recommendationLogged, false);
   assert.equal(calls, 0);
+});
+
+test("authenticated logging returns a safe error when account deletion wins the transaction race", async () => {
+  const actor = { kind: "registered", publicId: "deleted-user" };
+  await assert.rejects(
+    () => serveUserRecommendations(actor, 2, {
+      actor,
+      surface: "home",
+    }, {
+      repository: seedCatalogRepository,
+      events: { appendRecommendationLog: async () => null },
+      environment: mongoEnvironment,
+    }),
+    (error) => error.code === "FORBIDDEN" && error.status === 403,
+  );
+});
+
+test("recommendation log failures propagate instead of returning an unlogged believable list", async () => {
+  const failure = new Error("log unavailable");
+  const actor = { kind: "registered", publicId: "user-1" };
+  await assert.rejects(
+    () => serveUserRecommendations(actor, 2, {
+      actor,
+      surface: "home",
+    }, {
+      repository: seedCatalogRepository,
+      events: { appendRecommendationLog: async () => { throw failure; } },
+      environment: mongoEnvironment,
+    }),
+    failure,
+  );
 });
