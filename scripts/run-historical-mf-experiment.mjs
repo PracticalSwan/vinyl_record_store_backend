@@ -2,24 +2,18 @@ import { createHash } from "node:crypto";
 import { access, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
-import { AMAZON_CURRENT_DATASET_KEY } from "../src/lib/dataset/amazonDatasetReleases.js";
-import { disconnectMongoDB } from "../src/lib/db/mongodb.js";
-import {
-  assertAggregateOnlyReport,
-  evaluateHistoricalStage,
-  verifyValidationSeal,
-} from "../src/lib/recommender/historicalOfflineEvaluation.js";
-import {
-  claimHistoricalFinalTestAttempt,
-  createHistoricalMfImplementationDescriptor,
-  HISTORICAL_MF_IMPLEMENTATION_FILES,
-  historicalMfGridFromContract,
-} from "../src/lib/recommender/historicalMatrixFactorizationAuthorization.js";
-import {
-  evaluateHistoricalMatrixFactorization,
-  selectHistoricalMatrixFactorizationWinner,
-} from "../src/lib/recommender/historicalMatrixFactorizationEvaluation.js";
-import { historicalEvaluationRepository } from "../src/repositories/historicalEvaluationRepository.js";
+let AMAZON_CURRENT_DATASET_KEY;
+let disconnectMongoDB = async () => {};
+let assertAggregateOnlyReport;
+let evaluateHistoricalStage;
+let verifyValidationSeal;
+let claimHistoricalFinalTestAttempt;
+let createHistoricalMfImplementationDescriptor;
+let HISTORICAL_MF_IMPLEMENTATION_FILES;
+let historicalMfGridFromContract;
+let evaluateHistoricalMatrixFactorization;
+let selectHistoricalMatrixFactorizationWinner;
+let historicalEvaluationRepository;
 
 const DEFAULT_SEED = "groovehaus-biased-mf-v1";
 const VALIDATION_DIRECTORY_NAME = "next-03-validation-final-v2";
@@ -49,6 +43,29 @@ function parseArguments(argv) {
     throw new Error("--run-id contains unsupported characters.");
   }
   return options;
+}
+
+async function loadRuntime() {
+  const [datasetReleases, mongodb, offlineEvaluation, authorization, mfEvaluation, repository] = await Promise.all([
+    import("../src/lib/dataset/amazonDatasetReleases.js"),
+    import("../src/lib/db/mongodb.js"),
+    import("../src/lib/recommender/historicalOfflineEvaluation.js"),
+    import("../src/lib/recommender/historicalMatrixFactorizationAuthorization.js"),
+    import("../src/lib/recommender/historicalMatrixFactorizationEvaluation.js"),
+    import("../src/repositories/historicalEvaluationRepository.js"),
+  ]);
+  AMAZON_CURRENT_DATASET_KEY = datasetReleases.AMAZON_CURRENT_DATASET_KEY;
+  disconnectMongoDB = mongodb.disconnectMongoDB;
+  assertAggregateOnlyReport = offlineEvaluation.assertAggregateOnlyReport;
+  evaluateHistoricalStage = offlineEvaluation.evaluateHistoricalStage;
+  verifyValidationSeal = offlineEvaluation.verifyValidationSeal;
+  claimHistoricalFinalTestAttempt = authorization.claimHistoricalFinalTestAttempt;
+  createHistoricalMfImplementationDescriptor = authorization.createHistoricalMfImplementationDescriptor;
+  HISTORICAL_MF_IMPLEMENTATION_FILES = authorization.HISTORICAL_MF_IMPLEMENTATION_FILES;
+  historicalMfGridFromContract = authorization.historicalMfGridFromContract;
+  evaluateHistoricalMatrixFactorization = mfEvaluation.evaluateHistoricalMatrixFactorization;
+  selectHistoricalMatrixFactorizationWinner = mfEvaluation.selectHistoricalMatrixFactorizationWinner;
+  historicalEvaluationRepository = repository.historicalEvaluationRepository;
 }
 
 async function readJson(filename) {
@@ -595,6 +612,7 @@ async function runTest({ runDirectory, active, base }) {
 
 try {
   const options = parseArguments(process.argv.slice(2));
+  await loadRuntime();
   const runDirectory = path.resolve(
     options.outputRoot,
     AMAZON_CURRENT_DATASET_KEY,
