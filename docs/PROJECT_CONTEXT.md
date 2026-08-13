@@ -37,7 +37,7 @@ The current report is `insufficient-evidence`: no ranking-quality metrics are em
 ## Deferred Scope
 
 - Demo orders, payments, deployment automation, ranking-flag production enablement, and live collaborative/matrix-factorization integration. PERS-09 integration closure and the administrator catalog APIs are implemented.
-- PERS-00 through PERS-09 are complete; PERS-04 through PERS-08 remain behind default-off flags. NEXT-02 may authorize one bounded offline-academic experiment, but no historical evidence is a live hybrid quality claim.
+- PERS-00 through PERS-09 and NEXT-01/NEXT-02 are complete; PERS-04 through PERS-08 remain behind default-off flags. NEXT-02 approved one bounded offline-academic biased-MF experiment for NEXT-03, but test access remains sealed and no historical evidence is a live hybrid quality claim.
 
 BFP-01, BFP-03, BFP-04, BFP-06, BFP-07, BFP-08, BFP-09, both parts of BFP-02, and the shared FFP-01/02/03/05/06/07/08/09 contracts are complete. Behavior tests and insufficient interaction evidence do not establish recommendation quality.
 

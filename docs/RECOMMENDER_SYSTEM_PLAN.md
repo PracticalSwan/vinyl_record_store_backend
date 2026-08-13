@@ -61,7 +61,7 @@ The recomputed profile reads preferences, ratings, wishlist, cart, exact feedbac
 
 ## Historical Evaluation And Deferred Live Methods
 
-The explicitly authorized post-PERS sequence now includes a sealed offline-academic evaluation and an evidence-based decision gate. NEXT-01 measured random, positive-popularity, and content validation baselines on the pinned v3 historical dataset; it did not change any production ranker or feature-flag default. The untouched final test remains sealed while NEXT-02 decides whether one bounded collaborative experiment is justified.
+The explicitly authorized post-PERS sequence includes a sealed offline-academic evaluation and an evidence-based decision gate. NEXT-01 measured random, positive-popularity, and content validation baselines on the pinned v3 historical dataset; it did not change any production ranker or feature-flag default. NEXT-02 then rejected neighborhood CF and classical SVD, and approved one dependency-free observed-rating `biased-matrix-factorization-v1` validation experiment. The untouched final test remains sealed until NEXT-03 freezes a validation winner and candidate implementation.
 
 Collaborative filtering, classical SVD, matrix factorization, learned ranking, and learned weights remain excluded from the live application. Historical Amazon subjects are not Groovehaus customers, and no learned historical user representation may be attached to an application account. Any NEXT-02-approved model remains offline-academic-only unless a separate future architecture is explicitly authorized. The live interaction evaluator still has insufficient evidence and no historical metric validates the preference, behavior, popularity, or hybrid modes.
 

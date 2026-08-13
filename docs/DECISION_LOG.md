@@ -307,3 +307,13 @@ Decision: Evaluate the pinned v3 historical dataset in two separately authorized
 Rationale: A decision gate that consumes final-test outcomes would turn the test into tuning evidence. Separate invocations, immutable run IDs, stage-specific cohorts, all-observation candidate exclusion, full-corpus train popularity, all-observation novelty support, and aggregate-only artifacts preserve leakage, fairness, reproducibility, and identity isolation without changing the live recommender.
 
 Status: Implemented and independently reviewed. Canonical run `next-01-final-v3` evaluated 1,823 validation subjects; the 1,708-subject readiness count is final-test-stage-specific. The historical test split remains sealed, DATA-15 is unchanged, and all live PERS ranking defaults remain off.
+
+## BDEC-034: Approve One Offline Observed-Only Biased-MF Experiment
+
+Date: 2026-08-13
+
+Decision: Reject user-user and item-item neighborhood CF because over 90% of connected pairs share exactly one rating, and reject classical truncated SVD because zero-filling/centering semantics and dependency cost are not justified. Approve only `biased-matrix-factorization-v1`: deterministic dependency-free JavaScript SGD over observed 1-5 ratings, classified `offline-academic-only`, under the exact machine-readable NEXT-03 contract. Keep the initial gate at `testAuthorized: false` until validation binds every attempted configuration, the winner, and the candidate implementation in a separate immutable authorization.
+
+Rationale: The train matrix is sparse (0.2974%) and positive-skewed, but all 2,305 items and all 2,387 structurally eligible subjects have train evidence. A small bias-plus-latent model can use the unchanged full-catalog protocol and answer a distinct academic question without a new dependency or historical/live identity mapping. The 10/12 rubric score supports one bounded experiment; it does not predict a win.
+
+Status: NEXT-02 complete after independent recommender, database, and model-QA review. The frozen contract digest is `361be2172ac6419c97fdd683942c06307c60a4a38c7b658542a8a865bd0bdcf1`. The historical test remains sealed, source ranking defaults remain off, and no production integration is authorized.
