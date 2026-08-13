@@ -23,7 +23,7 @@ V3 supersedes v2 with corrected original-release-year enrichment. V2 remains the
 - explicit research-only browsing with no invented price, currency, stock, condition, cart, or checkout behavior;
 - protected customer state, seed-mode regression coverage, and a reproducible dataset E2E mode.
 
-Historical evidence is data-ready only: no historical-data ranking model was implemented or evaluated. The separately implemented `preference-profile-v1` live mode remains default-off and has not been quality-evaluated. The deployed default behavior remains `content-demo-v1`, and the live evaluator remains `insufficient-evidence`.
+This dataset milestone originally established readiness only. The later, separately authorized NEXT-01/NEXT-03 work evaluated deterministic random, positive-popularity, content, and one observed-only biased-MF candidate on aggregate historical evidence; biased MF was rejected for live use. The live `preference-profile-v1` mode remains default-off and has not been quality-evaluated, the deployed default behavior remains `content-demo-v1`, and the live evaluator remains `insufficient-evidence`.
 
 ## Source, Citation, And Redistribution Boundary
 
@@ -242,4 +242,4 @@ Observed on 2026-08-08. This block preserves v2/v1 migration history and does no
 
 ## Recommender Gate
 
-DATA-00 through DATA-15 are closed only for the dataset foundation. PERS-03 through PERS-09 were implemented separately and do not alter this dataset; the PERS-04 through PERS-08 ranking flags remain default-off. Collaborative filtering, matrix factorization, SVD, and any recommendation-quality claim remain deferred. The implemented popularity/behavior/hybrid paths use the versioned historical adapter without mixing live identities; offline baselines remain leakage-safe and train-only, and `content-demo-v1` remains regression behavior.
+DATA-00 through DATA-15 are closed only for the dataset foundation. PERS-03 through PERS-09 were implemented separately and do not alter this dataset; the PERS-04 through PERS-08 ranking flags remain default-off. The completed NEXT-03 offline-academic experiment evaluated one observed-only biased matrix-factorization model and rejected it for live use; neighborhood collaborative filtering, classical SVD, live latent-factor integration, and any recommendation-quality claim remain deferred. The implemented popularity/behavior/hybrid paths use the versioned historical adapter without mixing live identities; offline baselines remain leakage-safe, and `content-demo-v1` remains regression behavior.

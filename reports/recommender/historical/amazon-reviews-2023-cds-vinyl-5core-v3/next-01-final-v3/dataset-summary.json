@@ -1,0 +1,13 @@
+{
+  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v3",
+  "sourceVersion": "2023-cds-vinyl-5core-v3",
+  "productCollection": "datasetProducts",
+  "counts": {
+    "products": 2305,
+    "users": 2387,
+    "ratings": 20288
+  },
+  "configDigest": "6b7d56f957c663c49d2d1d79a7074fac4665dc531f1cf07396ee7639aae3d648",
+  "identityRegistryDigest": "316f58bd8eac7d9e687a7c99328450452842e47c936ce5092fa31dbecb63a7ad",
+  "sealedAt": "2026-08-08T16:39:04.397Z"
+}

@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "experimentName": "biased-matrix-factorization-v1",
+  "classification": "offline-academic-only",
+  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v3",
+  "validationSealDigest": "4c30c32699d6d3d70116f86901b4470b48cf5f3f607d3dd7b02d523acf977e4b",
+  "implementation": {
+    "language": "JavaScript",
+    "runtime": "project Node.js runtime",
+    "dependencyPolicy": "no-new-dependency"
+  },
+  "feedback": {
+    "type": "explicit-1-to-5",
+    "fitObservations": "all-observed-ratings",
+    "missingRatingTreatment": "absent-from-loss-never-zero"
+  },
+  "populations": {
+    "structuralEligibility": "at-least-3-original-train-rows",
+    "validationFit": {
+      "splits": [
+        "train"
+      ],
+      "expectedSubjects": 2387,
+      "expectedRatings": 16364
+    },
+    "validationMetrics": {
+      "targetSplit": "validation",
+      "expectedTargetPositiveSubjects": 1823
+    },
+    "finalFit": {
+      "splits": [
+        "train",
+        "validation"
+      ]
+    },
+    "finalMetrics": {
+      "targetSplit": "test",
+      "eligibilityComputedOnlyAfterAuthorization": true
+    }
+  },
+  "model": {
+    "predictionEquation": "globalMean + userBias + itemBias + dot(userFactors,itemFactors)",
+    "globalMean": "arithmetic-mean-of-all-observed-fit-ratings",
+    "objective": "per-observation-half-squared-error-plus-half-lambda-l2",
+    "optimizer": "seeded-stochastic-gradient-descent",
+    "biasInitialization": 0,
+    "factorInitialization": {
+      "distribution": "uniform[-0.01,0.01)",
+      "prng": "mulberry32",
+      "seedDerivation": "sha256-utf8-first-uint32-little-endian",
+      "baseSeed": "groovehaus-biased-mf-v1",
+      "sequence": "observed-users-lexicographic-then-observed-items-numeric-each-dimension-ascending"
+    },
+    "indexing": {
+      "users": "subject-key-lexicographic-code-unit-ascending",
+      "items": "public-item-id-numeric-ascending",
+      "canonicalRows": "user-index-then-public-item-id-ascending"
+    },
+    "epochOrder": {
+      "algorithm": "fisher-yates-descending",
+      "seed": "sha256(baseSeed:configId:oneBasedEpoch)-first-uint32-little-endian",
+      "resetFromCanonicalRowsEveryEpoch": true
+    },
+    "update": {
+      "residual": "rating-unboundedPrediction",
+      "biasRule": "bias += learningRate * (residual - regularization * bias)",
+      "factorRule": "p += learningRate * (residual * qBefore - regularization * pBefore); q += learningRate * (residual * pBefore - regularization * qBefore)",
+      "semantics": "residual-and-all-paired-parameter-updates-use-pre-update-values",
+      "regularizedParameters": [
+        "userBias",
+        "itemBias",
+        "userFactors",
+        "itemFactors"
+      ]
+    },
+    "epochs": 50,
+    "earlyStopping": false,
+    "predictionClipping": false,
+    "nonFinitePolicy": "fail-closed"
+  },
+  "validationGrid": {
+    "canonicalLoopOrder": [
+      "factors",
+      "learningRate",
+      "regularization",
+      "epochs"
+    ],
+    "factors": [
+      8,
+      16
+    ],
+    "learningRate": [
+      0.005,
+      0.01
+    ],
+    "regularization": [
+      0.02,
+      0.05
+    ],
+    "epochs": [
+      50
+    ],
+    "configurationCount": 8
+  },
+  "selection": {
+    "primary": "ndcg@10",
+    "comparisonPrecision": "unrounded-ieee-754-number",
+    "tieBreakers": [
+      "map@10",
+      "hitRate@10",
+      "fewerFactors",
+      "higherRegularization",
+      "lowerLearningRate",
+      "canonicalConfigurationOrder"
+    ]
+  },
+  "ranking": {
+    "k": 10,
+    "candidateUniverse": "same-pinned-full-catalog",
+    "exclude": "all-subject-observations-in-allowed-history",
+    "modelSpecificSubjectDropping": false,
+    "scoreTieBreak": "public-item-id-ascending"
+  },
+  "coldEvidence": {
+    "unknownItem": "zero-item-bias-and-zero-item-vector",
+    "unknownUser": "zero-user-bias-and-zero-user-vector",
+    "fallbackModel": null
+  },
+  "reportedComparators": [
+    "historical-random-v1:groovehaus-historical-v1",
+    "historical-popularity-positive-v1",
+    "historical-content-profile-v1:content-demo-v1",
+    "biased-matrix-factorization-v1"
+  ],
+  "reportedMetrics": [
+    "precision@10",
+    "recall@10",
+    "hitRate@10",
+    "mrr@10",
+    "map@10",
+    "ndcg@10",
+    "catalogCoverage@10",
+    "novelty@10",
+    "personalization@10"
+  ],
+  "reportedMetricFieldMapping": {
+    "catalogCoverage@10": "coverage",
+    "novelty@10": "novelty",
+    "personalization@10": "personalization"
+  },
+  "resourceGuard": {
+    "validationGridWallClockMillisecondsMaximum": 600000,
+    "finalTestWallClockMillisecondsMaximum": 600000,
+    "sampledPeakRssDeltaBytesMaximum": 268435456,
+    "sampling": "validation-grid-start-config-boundaries-each-epoch-and-every-100-mf-scored-subjects;final-test-after-complete-baselines-and-each-epoch-and-every-100-mf-scored-subjects",
+    "failurePolicy": "validation-abort-without-authorization;final-test-failure-retains-one-time-attempt-claim"
+  },
+  "validationReport": {
+    "includeEveryConfiguration": true,
+    "includeUnroundedSelectionMetrics": true,
+    "includeRuntimeAndSampledPeakRssPerConfiguration": true,
+    "includeTrainingRmse": true,
+    "biasDominanceDisclosure": {
+      "zeroWithinUserRatingVarianceRate": 0.5002,
+      "positiveOnlyUserRate": 0.6435
+    }
+  },
+  "postValidationAuthorization": {
+    "separateImmutableArtifactRequired": true,
+    "validationSelectionDigestScope": "complete-validation-grid-results-including-grid-and-per-configuration-runtime",
+    "candidateImplementationDigestScope": [
+      "scripts/run-historical-mf-experiment.mjs",
+      "src/lib/dataset/historicalEvaluationAdapter.js",
+      "src/lib/recommender/biasedMatrixFactorization.js",
+      "src/lib/recommender/contentBased.js",
+      "src/lib/recommender/evaluate.js",
+      "src/lib/recommender/historicalMatrixFactorizationAuthorization.js",
+      "src/lib/recommender/historicalMatrixFactorizationEvaluation.js",
+      "src/lib/recommender/historicalOfflineEvaluation.js",
+      "src/repositories/historicalEvaluationRepository.js"
+    ],
+    "requiredBindings": [
+      "validationSealDigest",
+      "experimentContractDigest",
+      "allAttemptedConfigurationsAndResultsDigest",
+      "winningConfiguration",
+      "selectionRuleOutcome",
+      "candidateVersion",
+      "candidateImplementationDigest"
+    ],
+    "testAuthorizedBeforeSelection": false,
+    "oneTimeAttemptClaim": "atomic-exclusive-file-created-immediately-before-first-test-row-query-and-never-removed"
+  },
+  "privacy": {
+    "reportAggregateOnly": true,
+    "serializeUserFactors": false,
+    "rawSubjectsForbidden": true,
+    "rawRatingsForbidden": true,
+    "historicalToGroovehausIdentityMappingForbidden": true
+  },
+  "failurePolicy": "surface-error-no-silent-fallback"
+}

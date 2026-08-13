@@ -1,0 +1,444 @@
+{
+  "schemaVersion": 1,
+  "status": "validation-complete",
+  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v3",
+  "validationSealDigest": "4c30c32699d6d3d70116f86901b4470b48cf5f3f607d3dd7b02d523acf977e4b",
+  "experimentContractDigest": "3c47a2acaaa3d18283fd8a73b00ffee756f3490d7c174e9c84e464d14c62d3a1",
+  "candidateImplementation": {
+    "files": [
+      "scripts/run-historical-mf-experiment.mjs",
+      "src/lib/dataset/historicalEvaluationAdapter.js",
+      "src/lib/recommender/biasedMatrixFactorization.js",
+      "src/lib/recommender/contentBased.js",
+      "src/lib/recommender/evaluate.js",
+      "src/lib/recommender/historicalMatrixFactorizationAuthorization.js",
+      "src/lib/recommender/historicalMatrixFactorizationEvaluation.js",
+      "src/lib/recommender/historicalOfflineEvaluation.js",
+      "src/repositories/historicalEvaluationRepository.js"
+    ],
+    "digest": "5cef69f14dac7981292da159d72b437e09176a027a747d3724eb82857d601c3d"
+  },
+  "seed": "groovehaus-biased-mf-v1",
+  "gridWallClock": {
+    "elapsedMs": 13530,
+    "sampledPeakRssBytes": 145154048,
+    "sampledPeakRssDeltaBytes": 63795200
+  },
+  "attempts": [
+    {
+      "canonicalOrder": 0,
+      "configuration": {
+        "factors": 8,
+        "learningRate": 0.005,
+        "regularization": 0.02,
+        "epochs": 50
+      },
+      "configurationId": "factors=8;learningRate=0.005;regularization=0.02;epochs=50",
+      "fit": {
+        "subjects": 2387,
+        "items": 2305,
+        "ratings": 16364,
+        "globalMean": 4.608592031288193,
+        "trainingRmse": 0.6906351831181976
+      },
+      "cohort": {
+        "evaluatedSubjects": 1823,
+        "unsupportedSubjects": 0
+      },
+      "coldEvidence": {
+        "unsupportedCandidateItems": 0,
+        "unsupportedCandidateOccurrences": 0,
+        "unsupportedTargetItems": 0,
+        "unsupportedTargetOccurrences": 0,
+        "fallbackCount": 0,
+        "fallbackModel": null
+      },
+      "metrics": {
+        "precision@10": 0.0006034009873834338,
+        "recall@10": 0.006034009873834339,
+        "hitRate@10": 0.006034009873834339,
+        "mrr@10": 0.002535285461780251,
+        "map@10": 0.002535285461780251,
+        "ndcg@10": 0.0033266644186245244,
+        "coverage": 0.005639913232104121,
+        "novelty": 8.459914696132849,
+        "personalization": 0.006904759468224553
+      },
+      "runtime": {
+        "elapsedMs": 1138,
+        "rssBeforeBytes": 113111040,
+        "sampledPeakRssBytes": 119463936,
+        "sampledPeakRssDeltaBytes": 6352896
+      }
+    },
+    {
+      "canonicalOrder": 1,
+      "configuration": {
+        "factors": 8,
+        "learningRate": 0.005,
+        "regularization": 0.05,
+        "epochs": 50
+      },
+      "configurationId": "factors=8;learningRate=0.005;regularization=0.05;epochs=50",
+      "fit": {
+        "subjects": 2387,
+        "items": 2305,
+        "ratings": 16364,
+        "globalMean": 4.608592031288193,
+        "trainingRmse": 0.6921014256793908
+      },
+      "cohort": {
+        "evaluatedSubjects": 1823,
+        "unsupportedSubjects": 0
+      },
+      "coldEvidence": {
+        "unsupportedCandidateItems": 0,
+        "unsupportedCandidateOccurrences": 0,
+        "unsupportedTargetItems": 0,
+        "unsupportedTargetOccurrences": 0,
+        "fallbackCount": 0,
+        "fallbackModel": null
+      },
+      "metrics": {
+        "precision@10": 0.0006034009873834338,
+        "recall@10": 0.006034009873834339,
+        "hitRate@10": 0.006034009873834339,
+        "mrr@10": 0.0025309319193027365,
+        "map@10": 0.0025309319193027365,
+        "ndcg@10": 0.0033214919096312915,
+        "coverage": 0.005639913232104121,
+        "novelty": 8.459914696132849,
+        "personalization": 0.006904759468224553
+      },
+      "runtime": {
+        "elapsedMs": 1422,
+        "rssBeforeBytes": 119746560,
+        "sampledPeakRssBytes": 125763584,
+        "sampledPeakRssDeltaBytes": 6017024
+      }
+    },
+    {
+      "canonicalOrder": 2,
+      "configuration": {
+        "factors": 8,
+        "learningRate": 0.01,
+        "regularization": 0.02,
+        "epochs": 50
+      },
+      "configurationId": "factors=8;learningRate=0.01;regularization=0.02;epochs=50",
+      "fit": {
+        "subjects": 2387,
+        "items": 2305,
+        "ratings": 16364,
+        "globalMean": 4.608592031288193,
+        "trainingRmse": 0.6598422423808774
+      },
+      "cohort": {
+        "evaluatedSubjects": 1823,
+        "unsupportedSubjects": 0
+      },
+      "coldEvidence": {
+        "unsupportedCandidateItems": 0,
+        "unsupportedCandidateOccurrences": 0,
+        "unsupportedTargetItems": 0,
+        "unsupportedTargetOccurrences": 0,
+        "fallbackCount": 0,
+        "fallbackModel": null
+      },
+      "metrics": {
+        "precision@10": 0.0004936917169500822,
+        "recall@10": 0.004936917169500823,
+        "hitRate@10": 0.004936917169500823,
+        "mrr@10": 0.001010239531907113,
+        "map@10": 0.001010239531907113,
+        "ndcg@10": 0.0019176229066233579,
+        "coverage": 0.005639913232104121,
+        "novelty": 9.117187263434396,
+        "personalization": 0.0032660485942045403
+      },
+      "runtime": {
+        "elapsedMs": 1289,
+        "rssBeforeBytes": 124874752,
+        "sampledPeakRssBytes": 132399104,
+        "sampledPeakRssDeltaBytes": 7524352
+      }
+    },
+    {
+      "canonicalOrder": 3,
+      "configuration": {
+        "factors": 8,
+        "learningRate": 0.01,
+        "regularization": 0.05,
+        "epochs": 50
+      },
+      "configurationId": "factors=8;learningRate=0.01;regularization=0.05;epochs=50",
+      "fit": {
+        "subjects": 2387,
+        "items": 2305,
+        "ratings": 16364,
+        "globalMean": 4.608592031288193,
+        "trainingRmse": 0.6641057086909098
+      },
+      "cohort": {
+        "evaluatedSubjects": 1823,
+        "unsupportedSubjects": 0
+      },
+      "coldEvidence": {
+        "unsupportedCandidateItems": 0,
+        "unsupportedCandidateOccurrences": 0,
+        "unsupportedTargetItems": 0,
+        "unsupportedTargetOccurrences": 0,
+        "fallbackCount": 0,
+        "fallbackModel": null
+      },
+      "metrics": {
+        "precision@10": 0.0004936917169500822,
+        "recall@10": 0.004936917169500823,
+        "hitRate@10": 0.004936917169500823,
+        "mrr@10": 0.0010163344913756325,
+        "map@10": 0.0010163344913756325,
+        "ndcg@10": 0.001924186356621215,
+        "coverage": 0.004772234273318872,
+        "novelty": 9.117182155951983,
+        "personalization": 0.0032626164161516646
+      },
+      "runtime": {
+        "elapsedMs": 1295,
+        "rssBeforeBytes": 131411968,
+        "sampledPeakRssBytes": 137531392,
+        "sampledPeakRssDeltaBytes": 6119424
+      }
+    },
+    {
+      "canonicalOrder": 4,
+      "configuration": {
+        "factors": 16,
+        "learningRate": 0.005,
+        "regularization": 0.02,
+        "epochs": 50
+      },
+      "configurationId": "factors=16;learningRate=0.005;regularization=0.02;epochs=50",
+      "fit": {
+        "subjects": 2387,
+        "items": 2305,
+        "ratings": 16364,
+        "globalMean": 4.608592031288193,
+        "trainingRmse": 0.690355159273313
+      },
+      "cohort": {
+        "evaluatedSubjects": 1823,
+        "unsupportedSubjects": 0
+      },
+      "coldEvidence": {
+        "unsupportedCandidateItems": 0,
+        "unsupportedCandidateOccurrences": 0,
+        "unsupportedTargetItems": 0,
+        "unsupportedTargetOccurrences": 0,
+        "fallbackCount": 0,
+        "fallbackModel": null
+      },
+      "metrics": {
+        "precision@10": 0.0006034009873834338,
+        "recall@10": 0.006034009873834339,
+        "hitRate@10": 0.006034009873834339,
+        "mrr@10": 0.0025796915950508934,
+        "map@10": 0.0025796915950508934,
+        "ndcg@10": 0.0033685696998510175,
+        "coverage": 0.005639913232104121,
+        "novelty": 8.459914696132849,
+        "personalization": 0.006904759468224553
+      },
+      "runtime": {
+        "elapsedMs": 1529,
+        "rssBeforeBytes": 136404992,
+        "sampledPeakRssBytes": 142204928,
+        "sampledPeakRssDeltaBytes": 5799936
+      }
+    },
+    {
+      "canonicalOrder": 5,
+      "configuration": {
+        "factors": 16,
+        "learningRate": 0.005,
+        "regularization": 0.05,
+        "epochs": 50
+      },
+      "configurationId": "factors=16;learningRate=0.005;regularization=0.05;epochs=50",
+      "fit": {
+        "subjects": 2387,
+        "items": 2305,
+        "ratings": 16364,
+        "globalMean": 4.608592031288193,
+        "trainingRmse": 0.6918807350160375
+      },
+      "cohort": {
+        "evaluatedSubjects": 1823,
+        "unsupportedSubjects": 0
+      },
+      "coldEvidence": {
+        "unsupportedCandidateItems": 0,
+        "unsupportedCandidateOccurrences": 0,
+        "unsupportedTargetItems": 0,
+        "unsupportedTargetOccurrences": 0,
+        "fallbackCount": 0,
+        "fallbackModel": null
+      },
+      "metrics": {
+        "precision@10": 0.0006034009873834338,
+        "recall@10": 0.006034009873834339,
+        "hitRate@10": 0.006034009873834339,
+        "mrr@10": 0.0025309319193027365,
+        "map@10": 0.0025309319193027365,
+        "ndcg@10": 0.0033214919096312915,
+        "coverage": 0.005639913232104121,
+        "novelty": 8.459914696132849,
+        "personalization": 0.006904759468224553
+      },
+      "runtime": {
+        "elapsedMs": 1477,
+        "rssBeforeBytes": 142901248,
+        "sampledPeakRssBytes": 142901248,
+        "sampledPeakRssDeltaBytes": 0
+      }
+    },
+    {
+      "canonicalOrder": 6,
+      "configuration": {
+        "factors": 16,
+        "learningRate": 0.01,
+        "regularization": 0.02,
+        "epochs": 50
+      },
+      "configurationId": "factors=16;learningRate=0.01;regularization=0.02;epochs=50",
+      "fit": {
+        "subjects": 2387,
+        "items": 2305,
+        "ratings": 16364,
+        "globalMean": 4.608592031288193,
+        "trainingRmse": 0.6534437359456525
+      },
+      "cohort": {
+        "evaluatedSubjects": 1823,
+        "unsupportedSubjects": 0
+      },
+      "coldEvidence": {
+        "unsupportedCandidateItems": 0,
+        "unsupportedCandidateOccurrences": 0,
+        "unsupportedTargetItems": 0,
+        "unsupportedTargetOccurrences": 0,
+        "fallbackCount": 0,
+        "fallbackModel": null
+      },
+      "metrics": {
+        "precision@10": 0.0004936917169500822,
+        "recall@10": 0.004936917169500823,
+        "hitRate@10": 0.004936917169500823,
+        "mrr@10": 0.000984118277042029,
+        "map@10": 0.000984118277042029,
+        "ndcg@10": 0.0018925281685271552,
+        "coverage": 0.006941431670281995,
+        "novelty": 9.117095213412174,
+        "personalization": 0.005730834146587149
+      },
+      "runtime": {
+        "elapsedMs": 1568,
+        "rssBeforeBytes": 141574144,
+        "sampledPeakRssBytes": 145154048,
+        "sampledPeakRssDeltaBytes": 3579904
+      }
+    },
+    {
+      "canonicalOrder": 7,
+      "configuration": {
+        "factors": 16,
+        "learningRate": 0.01,
+        "regularization": 0.05,
+        "epochs": 50
+      },
+      "configurationId": "factors=16;learningRate=0.01;regularization=0.05;epochs=50",
+      "fit": {
+        "subjects": 2387,
+        "items": 2305,
+        "ratings": 16364,
+        "globalMean": 4.608592031288193,
+        "trainingRmse": 0.6598586082001995
+      },
+      "cohort": {
+        "evaluatedSubjects": 1823,
+        "unsupportedSubjects": 0
+      },
+      "coldEvidence": {
+        "unsupportedCandidateItems": 0,
+        "unsupportedCandidateOccurrences": 0,
+        "unsupportedTargetItems": 0,
+        "unsupportedTargetOccurrences": 0,
+        "fallbackCount": 0,
+        "fallbackModel": null
+      },
+      "metrics": {
+        "precision@10": 0.0004936917169500822,
+        "recall@10": 0.004936917169500823,
+        "hitRate@10": 0.004936917169500823,
+        "mrr@10": 0.0009902132365105485,
+        "map@10": 0.0009902132365105485,
+        "ndcg@10": 0.0018990916185250123,
+        "coverage": 0.006073752711496746,
+        "novelty": 9.117199815200195,
+        "personalization": 0.003914188323391299
+      },
+      "runtime": {
+        "elapsedMs": 1415,
+        "rssBeforeBytes": 142831616,
+        "sampledPeakRssBytes": 144146432,
+        "sampledPeakRssDeltaBytes": 1314816
+      }
+    }
+  ],
+  "selection": {
+    "rule": {
+      "primary": "ndcg@10",
+      "comparisonPrecision": "unrounded-ieee-754-number",
+      "tieBreakers": [
+        "map@10",
+        "hitRate@10",
+        "fewerFactors",
+        "higherRegularization",
+        "lowerLearningRate",
+        "canonicalConfigurationOrder"
+      ]
+    },
+    "winner": {
+      "canonicalOrder": 4,
+      "configuration": {
+        "factors": 16,
+        "learningRate": 0.005,
+        "regularization": 0.02,
+        "epochs": 50
+      },
+      "configurationId": "factors=16;learningRate=0.005;regularization=0.02;epochs=50",
+      "metrics": {
+        "precision@10": 0.0006034009873834338,
+        "recall@10": 0.006034009873834339,
+        "hitRate@10": 0.006034009873834339,
+        "mrr@10": 0.0025796915950508934,
+        "map@10": 0.0025796915950508934,
+        "ndcg@10": 0.0033685696998510175,
+        "coverage": 0.005639913232104121,
+        "novelty": 8.459914696132849,
+        "personalization": 0.006904759468224553
+      }
+    }
+  },
+  "limitations": {
+    "zeroWithinUserRatingVarianceRate": 0.5002,
+    "positiveOnlyUserRate": 0.6435,
+    "singleTargetValidation": true,
+    "testRowsRead": false
+  },
+  "privacy": {
+    "aggregateOnly": true,
+    "rawIdentifiersIncluded": false,
+    "rawRatingsIncluded": false,
+    "factorsSerialized": false
+  }
+}

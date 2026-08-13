@@ -297,3 +297,43 @@ Decision: Keep routes thin and the recommender pure: the recommendation service 
 Rationale: Explicit persistence selection prevents configured credentials from silently changing runtime mode. A service-owned I/O boundary keeps scoring deterministic and independently testable. Transactional active-customer fencing orders recommendation logging against account deletion, preventing an in-flight request from recreating subject-linked analytics after deletion commits.
 
 Status: Implemented and verified in PERS-09 with default-off ranking flags, deterministic service/repository/failure/lifecycle regressions, full route and browser contracts, live MongoDB checks, and no dataset or quality-evaluation change.
+
+## BDEC-033: Seal Historical Validation Before Any Final-Test Read
+
+Date: 2026-08-13
+
+Decision: Evaluate the pinned v3 historical dataset in two separately authorized stages. NEXT-01 uses train evidence and relevant validation targets to compare deterministic random, positive-popularity, and positive-seed content baselines on one shared full-catalog cohort. Seal the exact dataset descriptor, protocol, baseline versions, evaluator/content/metric implementation digest, and deterministic validation result. Refuse final-test access unless the validation packet reproduces and a matching machine-readable decision authorizes the next stage.
+
+Rationale: A decision gate that consumes final-test outcomes would turn the test into tuning evidence. Separate invocations, immutable run IDs, stage-specific cohorts, all-observation candidate exclusion, full-corpus train popularity, all-observation novelty support, and aggregate-only artifacts preserve leakage, fairness, reproducibility, and identity isolation without changing the live recommender.
+
+Status: Implemented and independently reviewed. Canonical run `next-01-final-v3` evaluated 1,823 validation subjects; the distinct final-test metric cohort later contained 1,708 subjects with a relevant test target. The one-time test is complete, DATA-15 is unchanged, and all live PERS ranking defaults remain off.
+
+## BDEC-034: Approve One Offline Observed-Only Biased-MF Experiment
+
+Date: 2026-08-13
+
+Decision: Reject user-user and item-item neighborhood CF because over 90% of connected pairs share exactly one rating, and reject classical truncated SVD because zero-filling/centering semantics and dependency cost are not justified. Approve only `biased-matrix-factorization-v1`: deterministic dependency-free JavaScript SGD over observed 1-5 ratings, classified `offline-academic-only`, under the exact machine-readable NEXT-03 contract. Keep the initial gate at `testAuthorized: false` until validation binds every attempted configuration, the winner, and the candidate implementation in a separate immutable authorization.
+
+Rationale: The train matrix is sparse (0.2974%) and positive-skewed, but all 2,305 items and all 2,387 structurally eligible subjects have train evidence. A small bias-plus-latent model can use the unchanged full-catalog protocol and answer a distinct academic question without a new dependency or historical/live identity mapping. The 10/12 rubric score supports one bounded experiment; it does not predict a win.
+
+Status: NEXT-02 complete after independent recommender, database, and model-QA review. The frozen contract digest is `3c47a2acaaa3d18283fd8a73b00ffee756f3490d7c174e9c84e464d14c62d3a1`. NEXT-03 later completed the one authorized experiment; source ranking defaults remain off and no production integration is authorized.
+
+## BDEC-035: Retain The Negative Biased-MF Result Offline Only
+
+Date: 2026-08-13
+
+Decision: Accept the frozen NEXT-03 experiment as a valid negative academic result and reject `biased-matrix-factorization-v1` for live integration. Preserve content-based ranking as the strongest descriptively measured historical method, without changing the live `content-demo-v1` implementation or claiming statistical superiority. Do not rerun the permanently claimed final test or tune against its outcome.
+
+Rationale: The selected MF model was fixed on validation, refit on 18,375 observed train-plus-validation ratings, and compared with unchanged baselines on one common 1,708-subject full-catalog test cohort. It used no fallback but achieved NDCG@10 `0.002301`, versus popularity `0.022427` and content `0.043214`, with coverage `0.005640` and personalization `0.014413`. The cohort is conditional on a relevant test target and no confidence or significance analysis was run.
+
+Status: Complete and independently approved. The durable attempt marker records `rerunPermitted: false`; aggregate artifacts contain no identities, raw ratings, or factors, and historical Amazon subjects remain isolated from Groovehaus accounts.
+
+## BDEC-036: Use Selective Personalization For The Final Classroom Environment
+
+Date: 2026-08-14
+
+Decision: Use explicit MongoDB/v3 Profile B for the final classroom procedure. Enable `PERS_ME_ENDPOINT`, `PERS_PROFILE_DOMAIN`, `PERS_PREFERENCE_RANKING`, and `PERS_NEGATIVE_FEEDBACK`; keep `PERS_BEHAVIORAL_RANKING`, `PERS_POPULARITY`, and `PERS_HYBRID` disabled. Use a temporary ordinary customer with a saved preference, leave the three protected showcase customers neutral, keep every committed source default unchanged, and retain the explicit seed rollback path.
+
+Rationale: The protected showcase audit found no stored preference, rating, wishlist, cart, feedback, or usable behavior evidence. Profile B therefore demonstrates one truthful, session-owned personalized path plus exact feedback without manufacturing showcase state, depending on sparse behavior, or presenting an enabled hybrid as measured quality. The MongoDB health preflight and visible 503 failure contract prevent silent seed substitution.
+
+Status: Complete. The exact-profile matrix passed 10 executed checks with 2 intentional full-hybrid skips across Chromium desktop/mobile/tablet, Firefox, and WebKit; serious/critical axe and horizontal-overflow checks passed, representative states were inspected, and Atlas cleanup returned to zero test residue while preserving all protected data.

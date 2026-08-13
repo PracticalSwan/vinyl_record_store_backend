@@ -19,11 +19,15 @@ This file records current completion and deferred scope. It does not authorize c
 - BFP-07 administrator catalog APIs and the matching FFP-07 administrator workspace; FFP-08 client-only simulated checkout.
 - DATA-00 through DATA-15 corrected v3 external-dataset integration: pinned Amazon source, controlled taxonomy/year semantics, authoritative original-year hydration for 208 accepted matches, stable cross-version identities, immutable sealed storage, exact local fallbacks, 2,305 active research products, 20,288 isolated ratings, v2 immediate rollback, v1/legacy preservation, exact-three-user verification, separate seed/dataset browser coverage, and a readiness-only evaluation adapter. The 2026-08-08 v2 migration record remains historical evidence.
 - PERS-03 through PERS-09 / BFP-10 through BFP-16: on-demand account profile, default-off preference/behavior/popularity/hybrid ranking, exact feedback, pure scoring below service-owned reads, lifecycle-safe exact-list logging, failure/privacy/data regression coverage, and documentation closure.
+- NEXT-01 historical validation benchmark: sealed, aggregate-only comparison of deterministic random, positive-popularity, and content baselines on the pinned v3 train-to-validation protocol.
+- NEXT-02/NEXT-03: 10/12 narrow approval and completed one-time offline-academic `biased-matrix-factorization-v1` experiment. Neighborhood CF and classical SVD were rejected. Content remained the strongest measured offline method; biased MF was a negative result and is not live-integrated.
+- NEXT-04: explicit MongoDB/v3 Profile B classroom configuration, demonstrating preference ranking and exact feedback while behavior, popularity, and hybrid remain disabled; committed defaults remain unchanged.
+- NEXT-05: final backend/frontend/browser/accessibility/failure/data-preservation regression and zero-residue cleanup, with exact evidence in the root `FINAL_RELEASE_READINESS_REPORT.md`.
 
 ## Deferred And Not Started
 
-- A ranking-quality conclusion: live evidence remains `insufficient-evidence`, while historical Amazon evidence is data-ready but has not been used to run an approved recommender experiment.
+- A live ranking-quality conclusion: live evidence remains `insufficient-evidence`. Historical NEXT-01 validation is separate offline-academic evidence and does not validate live personalization.
 - Backend order APIs, real payments, scraping, and deployment automation.
-- Ranking-flag production enablement, collaborative filtering, matrix factorization/SVD, and learned ranking remain separate decisions. BFP-05 is only a historical placeholder whose open method question was resolved by PERS-00.
+- Ranking-flag production enablement and any live collaborative/learned integration remain separate decisions. The final historical test attempt is permanently consumed and must not be rerun or tuned against; BFP-05 remains a historical placeholder and is not reused.
 
 Detailed plans and the cross-repository order are in `FUTURE_IMPLEMENTATION_PLAN.md`. Deferred items require a separate explicit task.

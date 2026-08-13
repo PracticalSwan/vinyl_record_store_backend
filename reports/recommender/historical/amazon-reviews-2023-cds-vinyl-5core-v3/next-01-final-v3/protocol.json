@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "datasetKey": "amazon-reviews-2023-cds-vinyl-5core-v3",
+  "relevanceThreshold": 4,
+  "minimumTrainingRatings": 3,
+  "k": 10,
+  "randomSeed": "groovehaus-historical-v1",
+  "evaluatorVersion": "historical-offline-evaluation-v1",
+  "implementationFiles": [
+    "src/lib/recommender/contentBased.js",
+    "src/lib/recommender/evaluate.js",
+    "src/lib/recommender/historicalOfflineEvaluation.js"
+  ],
+  "implementationDigest": "9e7d34476408ac850992ae437bb4d18635281d2fbfd305cd3d6de2e55ccd7e11",
+  "baselineVersions": {
+    "random": "historical-random-v1:groovehaus-historical-v1",
+    "popularity": "historical-popularity-positive-v1",
+    "content": "historical-content-profile-v1:content-demo-v1"
+  },
+  "candidatePolicy": "full pinned dataset catalog excluding all allowed-history observations",
+  "popularityEvidence": "positive allowed-history ratings from all history subjects",
+  "contentEvidence": "positive allowed-history ratings for the evaluated subject",
+  "noveltyEvidence": "all allowed-history ratings from all history subjects",
+  "noveltyZeroSupportFloor": "1 / (allowed-history subjects + 1)",
+  "validation": {
+    "evidenceSplits": [
+      "train"
+    ],
+    "targetSplit": "validation"
+  },
+  "test": {
+    "evidenceSplits": [
+      "train",
+      "validation"
+    ],
+    "targetSplit": "test"
+  },
+  "finalTestRule": "run once after NEXT-02 and any approved NEXT-03 validation tuning are frozen"
+}

@@ -82,10 +82,21 @@ function diversify(scored, limit) {
   return selected.map((item, index) => ({ ...item, rank: index + 1 }));
 }
 
-export function rankCatalogFromHistory(records, trainingProductIds, limit = 10) {
+export function rankCatalogFromHistory(
+  records,
+  trainingProductIds,
+  limit = 10,
+  {
+    candidateExclusions = trainingProductIds,
+    includeOutOfStock = false,
+  } = {},
+) {
   const sources = records.filter((record) => trainingProductIds.has(record.id));
   const scored = records
-    .filter((candidate) => !trainingProductIds.has(candidate.id) && candidate.stock !== "out")
+    .filter((candidate) => (
+      !candidateExclusions.has(candidate.id)
+      && (includeOutOfStock || candidate.stock !== "out")
+    ))
     .map((candidate) => {
       let score = 0;
       for (const source of sources) score += compareProducts(source, candidate).score;
