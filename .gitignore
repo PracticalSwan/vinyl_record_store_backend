@@ -7,6 +7,9 @@ node_modules/
 .env.*.local
 !.env.example
 
+# Local classroom credentials
+CLASSROOM_CREDENTIALS.local.txt
+
 # Build, cache, and test output
 .next/
 output/
