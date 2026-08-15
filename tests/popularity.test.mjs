@@ -43,6 +43,7 @@ test("popularity joins public product IDs, isolates release keys, and returns a 
   assert.equal(scores.scoresByProductId.get(2).score, 0.5);
   assert.equal(scores.scoresByProductId.get(3).score, 0);
   assert.deepEqual(scores.scoresByProductId.get(3).reasons, []);
+  assert.deepEqual(scores.scoresByProductId.get(1).reasons, ["Popular with listeners."]);
   assert.ok([...scores.scoresByProductId.values()].every((entry) => entry.score >= 0 && entry.score <= 1));
 });
 
