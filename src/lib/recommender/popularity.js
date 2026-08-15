@@ -73,7 +73,7 @@ export function scorePopularityCandidates(candidates, aggregates = []) {
   for (const candidate of candidates) {
     const aggregate = aggregatesByProductId.get(candidate.id) || { ratingCount: 0, meanRating: null };
     const reasons = aggregate.ratingCount > 0
-      ? ["Popular in the research ratings dataset."]
+      ? ["Popular with listeners."]
       : [];
     scoresByProductId.set(candidate.id, {
       score: maxRatingCount > 0 ? aggregate.ratingCount / maxRatingCount : 0,

@@ -107,7 +107,7 @@ function cartResponse(value, products) {
       warnings.push({
         code: "PURCHASE_UNAVAILABLE",
         productId: item.productPublicId,
-        message: `${product.title} is available for research browsing only.`,
+        message: `${product.title} is not available for purchase.`,
       });
     }
     return {
@@ -143,7 +143,7 @@ export async function setCart(user, productPublicId, quantity, {
 } = {}) {
   const product = await productOrThrow(productPublicId, catalog);
   if (!purchasable(product)) {
-    throw conflict("This research-catalog product is not available for cart or checkout actions.");
+    throw conflict("This record is not available for purchase.");
   }
   await state.setCartItem(user.publicId, productPublicId, quantity);
   return readCart(user, { state, catalog });
@@ -278,7 +278,7 @@ export async function mergeGuestState(user, input, {
       .map((id) => ({
       code: "PURCHASE_UNAVAILABLE",
       productId: id,
-      message: "A research-catalog product was not merged into the cart.",
+      message: "A record that is unavailable for purchase was not added to the cart.",
     })),
   ];
   const result = await state.mergeGuestState(

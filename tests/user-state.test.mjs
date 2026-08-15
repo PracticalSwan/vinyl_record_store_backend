@@ -100,7 +100,7 @@ test("research-only products are rejected before cart persistence", async () => 
   };
   await assert.rejects(
     () => setCart(user, 100_001, 1, { state, catalog: researchCatalog }),
-    /research-catalog product is not available/i,
+    /record is not available for purchase/i,
   );
   assert.equal(called, false);
 });
@@ -245,6 +245,7 @@ test("research-only cart product is rejected with exactly one purchase-unavailab
   const purchaseWarnings = capturedWarnings.filter((w) => w.code === "PURCHASE_UNAVAILABLE");
   assert.equal(purchaseWarnings.length, 1);
   assert.equal(purchaseWarnings[0].productId, 100);
+  assert.equal(purchaseWarnings[0].message, "A record that is unavailable for purchase was not added to the cart.");
 });
 
 test("research-only product in both wishlist and cart preserves wishlist but rejects cart", async () => {
