@@ -275,6 +275,7 @@ test("createArtworkResponse streams the image with safe caching headers on succe
   assert.equal(result.status, 200);
   assert.equal(result.headers["Content-Type"], "image/jpeg");
   assert.match(result.headers["Cache-Control"], /immutable/);
+  assert.equal(result.headers["Netlify-Vary"], "query=u");
   assert.equal(result.headers["X-Content-Type-Options"], "nosniff");
   assert.deepEqual(result.body, PNG_BYTES);
 });

@@ -7,6 +7,7 @@ const sharedProxy = createArtworkImageProxy();
 const SUCCESS_HEADERS = Object.freeze({
   "Content-Type": null, // set per response from the cached upstream content type
   "Cache-Control": "public, max-age=86400, s-maxage=604800, immutable",
+  "Netlify-Vary": "query=u",
   "X-Content-Type-Options": "nosniff",
 });
 
