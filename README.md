@@ -86,6 +86,12 @@ Artwork curation is also preview-first. `npm run catalog:artwork:propose` produc
 
 Run `npm run catalog:artwork:download` to stage, validate, and publish local JPEG fallbacks from that reviewed source manifest. The command is idempotent and reuses valid files; `--refresh` forces retrieval and `--prune` removes only verified orphan JPEGs. Run `npm run catalog:artwork:verify` for the non-network legacy release check. It requires exact catalog/source/local ID parity, all 116 hashes and dimensions, and no orphan artwork files. Run `npm run dataset:artwork:verify` for the current v3 set; `dataset:verify -- --dataset-key=amazon-reviews-2023-cds-vinyl-5core-v2 --expect-active=amazon-reviews-2023-cds-vinyl-5core-v3` verifies the v2 rollback evidence while v3 remains active.
 
+## Netlify production
+
+The production API is deployed as the `groovehaus-api` Netlify project using this repository's `netlify.toml` and Netlify's native Next.js runtime. Production uses MongoDB/v3 Profile B and stores `MONGODB_URI`, `AUTH_SECRET`, administrator hashes/salts, and all other sensitive values only in Netlify environment variables.
+
+Set `FRONTEND_ORIGIN` to the exact production storefront origin, `AUTH_COOKIE_SECURE=true`, and `ARTWORK_CACHE_DIR=/tmp/groovehaus-artwork-images`. Keep `PERS_BEHAVIORAL_RANKING`, `PERS_POPULARITY`, and `PERS_HYBRID` disabled. The companion storefront proxies `/api/*` through its own Netlify origin, so browser sessions remain first-party.
+
 ## Showcase accounts
 
 Two roles exist: `customer` and `admin`. Exactly three showcase customer accounts are seeded into MongoDB and protected from account deletion by immutable public ID. The single administrator account is environment-backed and is never stored as a customer record.
