@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { ArtworkProxyError, createArtworkImageProxy } from "../src/lib/external/artworkImageProxy.js";
 import { createArtworkResponse } from "../src/services/artworkImage.js";
 
@@ -58,6 +61,25 @@ test("artwork proxy fetches an approved Cover Art Archive image and caches its b
   assert.equal(calls.length, 1);
   assert.equal(stored.contentType, "image/jpeg");
   assert.deepEqual(stored.body, PNG_BYTES);
+});
+
+test("artwork proxy honors ARTWORK_CACHE_DIR for the default disk cache", async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), "groovehaus-artwork-cache-"));
+  const previous = process.env.ARTWORK_CACHE_DIR;
+  process.env.ARTWORK_CACHE_DIR = directory;
+  try {
+    const proxy = createArtworkImageProxy({
+      fetchImpl: async () => imageResponse({ contentType: "image/jpeg" }),
+      userAgent: "GroovehausTest/1.0 (test@example.com)",
+    });
+    await proxy.fetchImage(CAA_URL);
+    const files = await readdir(directory);
+    assert.equal(files.length, 2);
+  } finally {
+    if (previous === undefined) delete process.env.ARTWORK_CACHE_DIR;
+    else process.env.ARTWORK_CACHE_DIR = previous;
+    await rm(directory, { recursive: true, force: true });
+  }
 });
 
 test("artwork proxy serves a cache hit without calling upstream", async () => {

@@ -126,7 +126,7 @@ async function readBodyCapped(response, maxSizeBytes) {
 
 export function createArtworkImageProxy({
   fetchImpl = globalThis.fetch,
-  cache = createImageFileCache(),
+  cache = createImageFileCache({ directory: process.env.ARTWORK_CACHE_DIR?.trim() || undefined }),
   userAgent = process.env.MUSICBRAINZ_USER_AGENT || DEFAULT_USER_AGENT,
   timeoutMs = REQUEST_TIMEOUT_MS,
   maxSizeBytes = MAX_SIZE_BYTES,
