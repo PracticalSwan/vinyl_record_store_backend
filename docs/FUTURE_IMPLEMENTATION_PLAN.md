@@ -28,7 +28,7 @@ Any remaining recommender milestone must now:
 - Collect anonymous interaction data by default with a visible opt-out, no direct personal information, and a 90-day retention target.
 - Protect an integrated `/admin` mode with the backend `admin` role.
 - Use MusicBrainz and Cover Art Archive as the primary metadata and artwork sources, with a verified bundled fallback for the reviewed catalog and placeholders for unresolved records.
-- Do not add deployment work, a machine-readable API schema, or a real payment system.
+- GitHub-linked Netlify deployment is now implemented. Do not add a machine-readable API schema, real payment system, or broader infrastructure without a separate requirement.
 
 ## Plan Status Summary
 
@@ -63,7 +63,7 @@ All original milestones in this order are complete; the appended personalization
 | 13 | BFP-07, then FFP-07: integrated admin mode | Completed 2026-07-09 with protected backend administration before the frontend workspace. |
 | 14 | FFP-08: simulated checkout and order demonstration | Completed 2026-07-09 as a client-only preview after catalog, state, identity, and testing were stable. |
 
-BFP-05 remains only as a historical on-hold placeholder; PERS-00 resolved its method question under new IDs, so it has no separate implementation step. Deployment, real payments, and a production order system remain out of scope.
+BFP-05 remains only as a historical on-hold placeholder; PERS-00 resolved its method question under new IDs, so it has no separate implementation step. GitHub-linked Netlify deployment was completed later; real payments and a production order system remain out of scope.
 
 ### Completed FFP-05 Backend Read Contract
 
@@ -586,3 +586,7 @@ Collaborative filtering, SVD/matrix factorization, learned ranking, and another 
 | 24 | PERS-09 / BFP-16 + FFP-14: integration and hardening | Read-only DATA-15 regression protection, cross-repo integration, documentation closure; new ranking flags stay off pending authorization. |
 
 Each ranking milestone ships behind a feature flag, preserves `content-demo-v1` for regression, and is independently reversible. PERS-03 through PERS-08 were opened and completed on 2026-08-10; PERS-09 completed on 2026-08-13 without changing their defaults.
+
+## Current-State Refinement â€” 2026-08-19
+
+The application is deployed to Netlify from the sole `master` branch. Production uses MongoDB/v3 Profile B through environment overrides, while source defaults remain unchanged. A presentation overlay suppresses 46 high-confidence duplicate display rows and exposes 2,259 customer-visible records without mutating the sealed 2,305-row source or historical evidence. Visible artwork is 1,300/2,259 after 1,124 validated supplemental release-group mappings; strict dataset art remains locally verified and local-first, while supplemental art is proxy-only. These are presentation/deployment refinements, not new recommender evidence.

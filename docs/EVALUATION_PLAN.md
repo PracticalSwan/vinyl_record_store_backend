@@ -102,3 +102,7 @@ The baseline runner refuses an omitted or reused run ID. Historical final-test a
 The offline popularity baseline is identified as `offline-popularity-train-v1` so
 its train-split-only evidence cannot be confused with the production
 `popularity-v1` aggregate mode.
+
+## Production Verification Addendum â€” 2026-08-19
+
+Historical NEXT-05 counts above remain the evidence for that 2026-08-14 closure and are not rewritten. Subsequent production work upgraded the backend to Next.js 16.3.1, deployed GitHub-linked Netlify, fixed the artwork proxy cache key, added a non-mutating 46-row presentation suppression overlay plus supplemental artwork, and completed live storefront/API smoke plus targeted regressions. The historical final recommender test was not rerun. Current live recommendation quality remains `insufficient-evidence`.

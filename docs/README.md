@@ -1,6 +1,6 @@
 # Backend Documentation
 
-These files document the implemented catalog/recommendation API, active versioned MongoDB dataset, signed authentication, and customer-state mutation boundary.
+These files document the deployed catalog/recommendation API, active versioned MongoDB dataset, presentation overlay, signed authentication, customer-state mutation boundary, and Netlify production state.
 
 - `PROJECT_CONTEXT.md`: canonical backend status and boundaries.
 - `BACKEND_REQUIREMENTS.md`: requirements and implementation status.
@@ -12,7 +12,7 @@ These files document the implemented catalog/recommendation API, active versione
 - `EVALUATION_PLAN.md`: automated behavior checks, implemented offline protocol, and the active evidence boundary.
 - `FUTURE_IMPLEMENTATION_PLAN.md`: completed BFP-01/02/03/04/06/07/08/09 and PERS-00 through PERS-09 records plus remaining deferred work; recommender selection stays as a historical on-hold placeholder.
 - `PERSONALIZATION_IMPLEMENTATION_PLAN.md`: PERS-00 through PERS-09 completed through 2026-08-13; ranking flags remain default-off and no quality claim is made.
-- `ROADMAP.md` and `TASK_BACKLOG.md`: completed consolidation and deferred work.
+- `ROADMAP.md` and `TASK_BACKLOG.md`: completed consolidation, production deployment/presentation hardening, cleanup, and deferred work.
 - `DECISION_LOG.md`, `RISK_REGISTER.md`, and `SETUP_LATER.md`: durable decisions, risks, and unstarted setup.
 
 Update the frontend contract when a shared path or response shape changes.

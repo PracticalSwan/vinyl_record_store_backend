@@ -5,13 +5,13 @@ Statuses are `done` or `deferred`. Deferred items are not active work.
 | ID | Task | Status | Notes |
 | --- | --- | --- | --- |
 | B-001 | Establish backend repository and instructions. | done | Agent, lesson, license, and GitHub-facing files exist. |
-| B-002 | Confirm Next.js JavaScript base. | done | Next.js 16.2.12 App Router. |
+| B-002 | Confirm Next.js JavaScript base. | done | Next.js 16.3.1 App Router. |
 | B-003 | Implement catalog list/detail/search. | done | Repository-backed literal search, repeated facets, deterministic sorts, pagination, and facet metadata. |
 | B-004 | Implement content-based recommendations. | done | Product, demo-profile, and cold-start modes. |
 | B-005 | Add explanations, exclusions, diversity, and version. | done | `content-demo-v1`. |
 | B-006 | Connect frontend origin with CORS. | done | `FRONTEND_ORIGIN`. |
 | B-007 | Add automated validation. | done | Catalog, persistence, migration, recommender, and metric tests plus lint and build. |
-| B-008 | Align backend documentation. | done | Updated through the 2026-08-08 DATA-00 through DATA-15 closure and live migration evidence. |
+| B-008 | Align backend documentation. | done | Current-state docs synchronized through the 2026-08-19 production/deployment/presentation cleanup; historical phase evidence remains unchanged. |
 | B-009 | Add MongoDB persistence. | done | BFP-01 models, repositories, explicit source selection, seed migration, parity checks, and live index verification are complete. |
 | B-010 | Add identity and write APIs. | done | BFP-04 and BFP-03 completed 2026-07-04 with auth, profile/preferences, interactions, wishlist, cart, ratings, merge, and account deletion. |
 | B-011 | Build the live-customer evaluation dataset and run its offline benchmark. | done | BFP-02 Part B is implemented; its current live-customer aggregate report is `insufficient-evidence`, so that pipeline publishes no quality metrics. The separate historical NEXT-01/NEXT-03 benchmark is recorded under B-027 through B-029. |
@@ -35,3 +35,7 @@ Statuses are `done` or `deferred`. Deferred items are not active work.
 | B-029 | Run the frozen offline biased-matrix-factorization experiment. | done | NEXT-03 tuned exactly eight frozen validation configurations, selected 16 factors / 0.005 learning rate / 0.02 regularization / 50 epochs, and consumed the final test once on the common 1,708-subject cohort. Biased MF underperformed content and popularity, used no fallback, and is rejected for live integration. |
 | B-030 | Freeze the final classroom personalization configuration. | done | NEXT-04 selected MongoDB/v3 Profile B: `/me`, profile, preference ranking, and exact feedback enabled by environment; behavior, popularity, and hybrid disabled; source defaults unchanged. |
 | B-031 | Complete final regression and release-readiness evidence. | done | NEXT-05 passed backend, frontend, selected-profile browser, accessibility, failure, dataset/index/artwork, cleanup, and protected-state gates; exact results are in the root release-readiness report. |
+
+| B-032 | Deploy the production backend. | done | GitHub-linked Netlify `groovehaus-api`; same-origin storefront proxy, Atlas/v3 Profile B environment, secure cookies, and Next runtime adapter verified. |
+| B-033 | Harden the production catalog presentation. | done | Suppress 46 high-confidence duplicate display rows without source mutation, add validated supplemental artwork, fix proxy cache-key isolation, and retain exact DATA-15/evaluation evidence. |
+| B-034 | Clean release/runtime residue. | done | Removed stale worktrees, deploy/runtime staging, builds/caches, and one-off temp scripts after preserving credentials, dependencies, and evidence. |

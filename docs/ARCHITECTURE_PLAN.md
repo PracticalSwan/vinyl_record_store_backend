@@ -27,6 +27,7 @@ This document describes the implemented read and authenticated mutation service 
 - Error/response helpers: `src/lib/errors.js` and `src/lib/http.js`.
 - Default data source: `src/data/records.js` through `seedCatalogRepository.js`.
 - Optional data source: Atlas through `mongoCatalogRepository.js` and `src/lib/db/mongodb.js`.
+- Catalog presentation overlay: `src/data/catalogPresentationOverlay.json` plus presentation services suppress only 46 verified duplicate display rows and add supplemental artwork metadata without changing `datasetProducts`, historical ratings, direct source-row identity, or DATA-15 evidence.
 - Data-source selection and migration support: `src/lib/db/dataSource.js` and `src/lib/db/seedMigration.js`.
 
 ## Runtime Properties
@@ -39,8 +40,16 @@ This document describes the implemented read and authenticated mutation service 
 - Showcase and registered customer identity/state require MongoDB mode; the sole environment-backed administrator is not a customer profile and cannot use `/me` recommendations.
 - Recommendation responses always receive request/list IDs. `GET /api/recommendations/me` uses a verified customer descriptor or anonymous fallback; administrators are rejected. The service owns catalog/profile/popularity reads and passes immutable request inputs to pure scorers. MongoDB mode logs a tracking-enabled served list before response; authenticated logging revalidates and transactionally fences the active customer against account deletion, while seed mode and usage opt-out skip persistence.
 - Offline evaluation is a command path, not a request route. Live evidence remains separate from the versioned historical Amazon collection. The historical adapter consumes only the active dataset, validates temporal splits and eligibility, and emits aggregate readiness rather than model metrics.
-- Artwork remains proxy-first but upstream-independent after failover. The legacy manifest binds all 116 reviewed records to content-addressed JPEGs; the current-v3 dataset manifest binds only strict accepted MusicBrainz/Cover Art Archive decisions to `public/artwork/dataset/`, and separate evidence pins the stable v2 rollback set. `/api/artwork/local/:publicId` resolves either live manifest, while ambiguous and unresolved dataset records skip the endpoint and use the generic placeholder. Both verifiers enforce exact coverage, SHA-256, JPEG dimensions, and orphan-free directories.
+- Artwork runtime ordering is source-aware. Legacy/seed rows use proxy -> local -> placeholder. Strict v3 rows with verified local coverage use local -> proxy -> placeholder. Presentation-only supplemental dataset artwork has no bundled file and uses proxy -> placeholder. The proxy validates every redirect hop and its Netlify cache varies by `u`; local verifiers still enforce exact coverage, SHA-256, dimensions, and orphan-free directories.
 
 ## Security
 
 Inputs are bounded before repository work, regex metacharacters are escaped for MongoDB substring matching, ownership is server-derived, login failures are generic with dummy-hash timing, interaction ingestion is per-identity capped, and sessions are signed/HttpOnly. Artwork acquisition starts only from reviewed Cover Art Archive URLs, validates every redirect hop, and enforces time/byte/pixel/JPEG bounds before publication. Public responses omit seed-only reasons, internal ObjectIds, password fields, and raw events. Unexpected failures return safe errors; credentials stay in ignored local environment files.
+
+## Production Deployment
+
+- `master` is the sole Git branch and GitHub-linked source for Netlify production.
+- API: `https://groovehaus-api.netlify.app/`; storefront: `https://groovehaus-store.netlify.app/`.
+- Netlify runs the Next.js adapter from `netlify.toml`; artwork cache files use `/tmp` and are disposable.
+- Browser traffic is same-origin at the storefront and `/api/*` is proxied to the API, so signed cookies remain first-party.
+- Production environment overrides select MongoDB/v3 Profile B; committed source defaults remain conservative.

@@ -44,3 +44,10 @@ Read this file before every backend session.
 - Do not start payments, broad scraping, public admin tools, collaborative filtering, demo-order APIs, or additional identity features without explicit scope. Manifest-driven retrieval of already reviewed Cover Art Archive files is the narrow approved exception.
 - Use plain text instead of emojis.
 - Cleanup only verified exact paths inside this repository.
+
+## 2026-08-19 — Production deployment and cleanup
+
+- Netlify production is GitHub-linked from `master`; `.netlify/`, `.next/`, deployment staging, release worktrees, caches, and `.tmp-*` scripts are disposable local residue and must remain untracked.
+- Preserve the immutable 2,305-row DATA-15 source and historical evaluator packet even when customer presentation suppresses duplicate display rows. Presentation count is 2,259 and must not replace source metrics in Admin/evaluation docs.
+- Strict dataset artwork with a verified local file should be local-first in production; supplemental release-group artwork is proxy-only and representative rather than exact-pressing evidence.
+- Never delete a release worktree until any ignored current credentials/configuration it uniquely contains have been compared with the primary checkout and synchronized if needed.

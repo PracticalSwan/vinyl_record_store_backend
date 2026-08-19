@@ -1,6 +1,6 @@
-# Backend Requirements
+﻿# Backend Requirements
 
-Requirement status reflects the integrated academic demo through PERS-09 closure on 2026-08-13.
+Requirement status reflects the implemented system through the 2026-08-19 production deployment, presentation hardening, and cleanup pass.
 
 ## Requirement Status
 
@@ -19,9 +19,11 @@ Requirement status reflects the integrated academic demo through PERS-09 closure
 | BR-011 | Optional MongoDB catalog persistence. | Implemented | Explicit data-source selection, strict models, repository parity, conflict-safe seed migration, and index verification. |
 | BR-012 | Authentication and authorization. | Implemented | Registration, seeded/registered login, signed HttpOnly sessions, logout, restoration, role checks, and account deletion. |
 | BR-013 | Preferences and ratings. | Implemented | Validated preference replacement and current rating/history mutation routes. |
-| BR-014 | Controlled catalog ingestion and artwork. | Implemented | Preview/apply CSV/JSON import, source/conflict safeguards, verified enrichment/provenance, structured public artwork, a bounded remote proxy, a hash-verified local JPEG fallback for all 116 legacy records, an exact current-v3 fallback set, and independently pinned v2 rollback evidence. |
+| BR-014 | Controlled catalog ingestion and artwork. | Implemented | Preview/apply CSV/JSON import, verified provenance, bounded proxy, 116 legacy and 208 strict-v3 local files, plus a non-mutating supplemental presentation-art overlay; Amazon images are never used. |
 | BR-015 | Offline recommender evaluation. | Implemented | Pseudonymized dataset, evidence gate, leakage-safe split, matched baselines, and aggregate-only reporting. |
 | BR-016 | Versioned external research dataset. | Implemented | DATA-00 through DATA-15: pinned provenance/hashes, ignored raw boundary, streaming deterministic subset, stable cross-version IDs, exact sealed records, conservative metadata, strict reviewed artwork with complete accepted local coverage, 2,305 active v3 products, 20,288 isolated ratings, v2 immediate rollback and v1 identity-base preservation, exact-three-user verification, and readiness-only reporting. |
+| BR-017 | Production deployment. | Implemented | GitHub-linked Netlify API, same-origin storefront proxy, secure production cookie/origin configuration, Atlas-backed Profile B, and Git `master` as the only release branch. |
+| BR-018 | Customer catalog presentation hardening. | Implemented | The sealed 2,305-row source remains unchanged while 46 duplicate display rows are suppressed and supplemental validated artwork raises visible coverage to 1,300/2,259. |
 
 ## Non-Functional Requirements
 

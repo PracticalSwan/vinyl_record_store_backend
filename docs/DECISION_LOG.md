@@ -337,3 +337,33 @@ Decision: Use explicit MongoDB/v3 Profile B for the final classroom procedure. E
 Rationale: The protected showcase audit found no stored preference, rating, wishlist, cart, feedback, or usable behavior evidence. Profile B therefore demonstrates one truthful, session-owned personalized path plus exact feedback without manufacturing showcase state, depending on sparse behavior, or presenting an enabled hybrid as measured quality. The MongoDB health preflight and visible 503 failure contract prevent silent seed substitution.
 
 Status: Complete. The exact-profile matrix passed 10 executed checks with 2 intentional full-hybrid skips across Chromium desktop/mobile/tablet, Firefox, and WebKit; serious/critical axe and horizontal-overflow checks passed, representative states were inspected, and Atlas cleanup returned to zero test residue while preserving all protected data.
+
+## BDEC-037: Deploy GitHub-Linked Netlify With Same-Origin Storefront API Proxy
+
+Date: 2026-08-19
+
+Decision: Deploy `groovehaus-api` and `groovehaus-store` as separate GitHub-linked Netlify projects, with storefront `/api/*` requests proxied to the API and production secrets/environment values held only by Netlify. Keep `master` as the sole release branch.
+
+Rationale: Same-origin browser traffic preserves first-party signed-cookie behavior and exact-origin mutation checks without merging the two repositories. Git-linked builds remove manual source-upload drift.
+
+Status: Implemented and live at the stable `*.netlify.app` URLs.
+
+## BDEC-038: Keep Sealed DATA-15 Separate From Customer Presentation
+
+Date: 2026-08-19
+
+Decision: Preserve all 2,305 sealed v3 source rows and historical evaluation evidence, but suppress 46 high-confidence duplicate-looking rows only in customer-facing list/recommendation presentation. Preserve direct source-row lookup and source metrics in Admin.
+
+Rationale: The storefront needs a cleaner browsing catalog without deleting research evidence, changing stable IDs, or invalidating the permanently consumed historical benchmark.
+
+Status: Implemented; customer-visible catalog count is 2,259 while source count remains 2,305.
+
+## BDEC-039: Prefer Local Files For Strict Dataset Artwork And Keep Supplemental Art Representative
+
+Date: 2026-08-19
+
+Decision: For strict dataset rows with a verified local asset, render local-first and use the bounded proxy as recovery. For supplemental high-confidence release-group mappings with no exact local asset, use proxy -> placeholder and describe the image only as representative album artwork. Keep legacy/seed proxy-first behavior.
+
+Rationale: Local-first strict artwork removes avoidable upstream latency/failure in production. Supplemental artwork improves presentation coverage without converting a release-group match into false exact-pressing provenance.
+
+Status: Implemented; visible artwork coverage is 1,300/2,259 (57.55%).

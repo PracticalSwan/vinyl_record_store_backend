@@ -10,7 +10,7 @@ Three things worth knowing up front:
 
 - MongoDB mode currently activates the immutable `amazon-reviews-2023-cds-vinyl-5core-v3` research catalog: 2,305 products in `datasetProducts` and 20,288 isolated historical ratings from 2,387 pseudonymous subjects. V2 is the immediate rollback release, v1 is the legacy identity-registry base, and the original 116 reviewed records remain available.
 - Recommendations default to deterministic `content-demo-v1` behavior: the restricted legacy showcase is `demo-profile`, verified customers use a session-owned `cold-start` path, and visitors receive an `anonymous-fallback`. When the default-off flags are enabled, verified customers may receive `preference-profile-v1`, `behavior-profile-v1`, or `personalized-hybrid-v1`, and anonymous/empty-profile requests may receive `popularity-v1`; exact feedback remains a server-owned exclusion. No recommendation-quality claim is made.
-- The 116 legacy records retain their reviewed MusicBrainz/Cover Art Archive mappings and verified local JPEG fallbacks. V3 has 208 strict accepted artwork decisions with a separate verified local fallback set; v2 rollback evidence independently pins the same stable assets. Ambiguous or unresolved rows use the generic placeholder and never borrow legacy art. The dataset workflow does not reuse Amazon images. Nullable commercial fields remain unknown and non-purchasable. The live-customer evaluator still reports `insufficient-evidence`; separately, the completed historical benchmark measured random, positive-popularity, content, and one offline-only biased-MF candidate. Content was strongest descriptively; biased MF was a negative result and is not production-integrated.
+- The 116 legacy records and 208 strict v3 artwork decisions retain verified local JPEGs. Customer presentation is separate from sealed DATA-15: 46 duplicate-looking rows are suppressed, leaving 2,259 visible records; 1,124 validated supplemental MusicBrainz release-group mappings bring visible artwork coverage to 1,300/2,259 (57.55%). Verified dataset local art renders local-first with proxy recovery, supplemental art is proxy-only, and unresolved rows remain placeholders. Amazon images are never used. The live evaluator remains `insufficient-evidence`; historical content was strongest descriptively and biased MF was a negative offline-only result.
 
 ## API
 
@@ -45,7 +45,7 @@ Full query, filter, and response-shape details are documented in `docs/API_CONTR
 
 ## Tech stack
 
-Next.js, React, Tailwind CSS, and Mongoose, tested with the Node test runner.
+Next.js 16.3.1, React 19.2.4, Tailwind CSS 4, and Mongoose, tested with the Node test runner.
 
 ## Run locally
 
@@ -94,7 +94,7 @@ Artwork enrichment is also presentation-only. The sealed dataset contributes 176
 
 ## Netlify production
 
-The production API is deployed as the `groovehaus-api` Netlify project using this repository's `netlify.toml` and Netlify's native Next.js runtime. Production uses MongoDB/v3 Profile B and stores `MONGODB_URI`, `AUTH_SECRET`, administrator hashes/salts, and all other sensitive values only in Netlify environment variables.
+The production API is `https://groovehaus-api.netlify.app/`, deployed as the GitHub-linked `groovehaus-api` Netlify project from this repository's only branch, `master`, using `netlify.toml` and Netlify's native Next.js runtime. Production uses MongoDB/v3 Profile B and stores `MONGODB_URI`, `AUTH_SECRET`, administrator hashes/salts, and all other sensitive values only in Netlify environment variables.
 
 Set `FRONTEND_ORIGIN` to the exact production storefront origin, `AUTH_COOKIE_SECURE=true`, and `ARTWORK_CACHE_DIR=/tmp/groovehaus-artwork-images`. Keep `PERS_BEHAVIORAL_RANKING`, `PERS_POPULARITY`, and `PERS_HYBRID` disabled. The companion storefront proxies `/api/*` through its own Netlify origin, so browser sessions remain first-party.
 
