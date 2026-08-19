@@ -1,4 +1,5 @@
 import { hasLocalArtwork } from "../services/localArtwork.js";
+import { cleanPresentationArtist, cleanPresentationTitle, supplementalArtworkForProduct } from "../lib/catalog/presentationOverlay.js";
 
 const valueOf = (record) => (
   typeof record?.toObject === "function" ? record.toObject() : record
@@ -47,29 +48,34 @@ export function toPublicProduct(record) {
   } : {};
 
   const legacyUrl = value.imageUrl ?? value.artwork?.url ?? null;
+  const supplementalArtwork = supplementalArtworkForProduct(
+    value.publicId ?? value.id,
+    value.datasetKey,
+  );
+  const presentationArtwork = value.artwork?.thumbnailUrl ? value.artwork : supplementalArtwork;
   const thumbnailUrl = approvedUrl(
-    value.artwork?.thumbnailUrl,
+    presentationArtwork?.thumbnailUrl,
     ["coverartarchive.org", "www.coverartarchive.org"],
   );
   const detailUrl = approvedUrl(
-    value.artwork?.detailUrl,
+    presentationArtwork?.detailUrl,
     ["coverartarchive.org", "www.coverartarchive.org"],
   );
   const sourceUrl = approvedUrl(
-    value.artwork?.sourceUrl,
+    presentationArtwork?.sourceUrl,
     ["musicbrainz.org", "www.musicbrainz.org"],
   );
   const hasStructuredImage = Boolean(
     thumbnailUrl
     && detailUrl
-    && value.artwork?.source === "cover-art-archive"
+    && presentationArtwork?.source === "cover-art-archive"
     && sourceUrl,
   );
 
   return {
     id: value.publicId ?? value.id,
-    title: value.title,
-    artist: value.artist,
+    title: cleanPresentationTitle(value.title),
+    artist: cleanPresentationArtist(value.artist),
     genre: value.genre,
     year: value.year,
     originalReleaseYear: value.originalReleaseYear ?? null,
@@ -87,7 +93,7 @@ export function toPublicProduct(record) {
     image: hasStructuredImage ? {
       thumbnailUrl,
       detailUrl,
-      source: value.artwork.source,
+      source: presentationArtwork.source,
       sourceUrl,
     } : null,
     localArtworkAvailable: hasLocalArtwork(value.publicId ?? value.id),

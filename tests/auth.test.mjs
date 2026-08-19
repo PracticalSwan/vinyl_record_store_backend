@@ -246,3 +246,9 @@ test("mutation requests require the exact configured origin and bounded JSON", a
     (error) => error.code === "INVALID_INPUT",
   );
 });
+
+test("scrypt verification accepts dotenv-escaped dollar delimiters", async () => {
+  const value = await hashPassword("correct horse battery staple");
+  const dotenvEscaped = value.passwordHash.replaceAll("$", "\\$");
+  assert.equal(await verifyPassword("correct horse battery staple", dotenvEscaped, value.passwordSalt), true);
+});

@@ -351,3 +351,32 @@ test("Cover Art Archive client avoids fetch and retry entirely on a cached respo
   assert.equal(artwork.thumbnailUrl, "https://coverartarchive.org/cached-500.jpg");
   assert.equal(calls, 0);
 });
+
+
+test("MusicBrainz client searches album release groups for presentation artwork", async () => {
+  let requestedUrl = null;
+  const client = createMusicBrainzClient({
+    fetchImpl: async (url) => {
+      requestedUrl = url;
+      return { ok: true, status: 200, json: async () => ({ "release-groups": [{
+        id: "33333333-3333-4333-8333-333333333333",
+        title: "Pale Communion",
+        score: 100,
+        "primary-type": "Album",
+        "first-release-date": "2014-08-25",
+        "artist-credit": [{ name: "Opeth", joinphrase: "" }],
+      }] }) };
+    },
+    sleep: noSleep,
+    now: () => 0,
+    cache: noCache,
+    userAgent: "GroovehausTest/1.0 (test@example.com)",
+  });
+  assert.equal(typeof client.findReleaseGroupCandidates, "function");
+  const groups = await client.findReleaseGroupCandidates({ title: "Pale Communion", artist: "Opeth", primaryType: "album", limit: 5 });
+  assert.equal(requestedUrl.pathname, "/ws/2/release-group");
+  assert.match(requestedUrl.searchParams.get("query"), /releasegroup:"Pale Communion"/);
+  assert.match(requestedUrl.searchParams.get("query"), /artist:"Opeth"/);
+  assert.match(requestedUrl.searchParams.get("query"), /primarytype:album/);
+  assert.deepEqual(groups[0], { id: "33333333-3333-4333-8333-333333333333", title: "Pale Communion", score: 100, primaryType: "Album", firstReleaseDate: "2014-08-25", artistCredit: ["Opeth"], artistCreditPhrase: "Opeth" });
+});

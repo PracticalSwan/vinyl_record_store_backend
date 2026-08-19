@@ -86,6 +86,12 @@ Artwork curation is also preview-first. `npm run catalog:artwork:propose` produc
 
 Run `npm run catalog:artwork:download` to stage, validate, and publish local JPEG fallbacks from that reviewed source manifest. The command is idempotent and reuses valid files; `--refresh` forces retrieval and `--prune` removes only verified orphan JPEGs. Run `npm run catalog:artwork:verify` for the non-network legacy release check. It requires exact catalog/source/local ID parity, all 116 hashes and dimensions, and no orphan artwork files. Run `npm run dataset:artwork:verify` for the current v3 set; `dataset:verify -- --dataset-key=amazon-reviews-2023-cds-vinyl-5core-v2 --expect-active=amazon-reviews-2023-cds-vinyl-5core-v3` verifies the v2 rollback evidence while v3 remains active.
 
+## Catalog presentation overlay
+
+The sealed v3 research dataset remains unchanged at 2,305 source products. The customer-facing catalog applies a reproducible presentation overlay that suppresses 46 high-confidence duplicate display rows, leaving 2,259 visible records while preserving direct source-row lookup and all historical evaluation data. Run `npm run catalog:presentation:verify` to confirm that the committed suppression list still matches the active dataset.
+
+Artwork enrichment is also presentation-only. The sealed dataset contributes 176 structured artwork records among the visible rows, and the reviewed supplemental overlay adds Cover Art Archive artwork to 1,124 more records, for 1,300/2,259 visible records with artwork (57.55%). Supplemental artwork is accepted only after a unique MusicBrainz album release-group match (score >= 95, exact normalized title, strong artist match) and a successful image validation through the production artwork proxy. It never overrides sealed structured artwork. Because a MusicBrainz release group can contain multiple editions, supplemental artwork is representative album artwork, not evidence of the exact Amazon pressing. Unresolved records remain without guessed artwork. The resumable enrichment command is `npm run catalog:presentation:artwork`.
+
 ## Netlify production
 
 The production API is deployed as the `groovehaus-api` Netlify project using this repository's `netlify.toml` and Netlify's native Next.js runtime. Production uses MongoDB/v3 Profile B and stores `MONGODB_URI`, `AUTH_SECRET`, administrator hashes/salts, and all other sensitive values only in Netlify environment variables.
@@ -100,6 +106,8 @@ Two roles exist: `customer` and `admin`. Exactly three showcase customer account
 - Customer (rock): `rockcollector` / `rock-groove-2026`
 - Customer (soul): `soulseeker` / `soul-groove-2026`
 - Admin: environment-backed through `AUTH_DEMO_ADMIN_USERNAME`, `AUTH_DEMO_ADMIN_PASSWORD_HASH`, and `AUTH_DEMO_ADMIN_PASSWORD_SALT`; no administrator password is committed.
+
+For local Next.js development, escape every `$` delimiter in the scrypt hash as `\$` inside `.env.local`; Next's dotenv loader expands unescaped `$` values. Netlify environment variables are stored literally and do not require that escaping.
 
 Showcase customer logins require MongoDB mode. Seed the accounts with `npm run db:seed:users:apply`. Registered customers choose their own credentials through the frontend.
 
