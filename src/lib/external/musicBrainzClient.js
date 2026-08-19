@@ -58,6 +58,20 @@ function releaseSummary(release) {
   };
 }
 
+function releaseGroupSearchSummary(group) {
+  if (!UUID_PATTERN.test(String(group?.id || ""))) return null;
+  const credits = group["artist-credit"] || [];
+  return {
+    id: group.id,
+    title: group.title,
+    score: Number(group.score ?? 0),
+    primaryType: group["primary-type"] || null,
+    firstReleaseDate: group["first-release-date"] || null,
+    artistCredit: credits.map((credit) => credit.name).filter(Boolean),
+    artistCreditPhrase: credits.map((credit) => `${credit.name || ""}${credit.joinphrase || ""}`).join(""),
+  };
+}
+
 export function createMusicBrainzClient({
   fetchImpl = globalThis.fetch,
   sleep = pause,
@@ -128,6 +142,20 @@ export function createMusicBrainzClient({
       if (!query) throw new Error("MusicBrainz release search requires at least one supported field.");
       const payload = await request("release", { query, limit: Math.min(Math.max(limit, 1), 10) });
       return (payload?.releases || []).map(releaseSummary).filter(Boolean);
+    },
+    async findReleaseGroupCandidates({ title, artist, primaryType = null, limit = 5 }) {
+      const normalizedPrimaryType = primaryType ? String(primaryType).trim().toLowerCase() : null;
+      if (normalizedPrimaryType && !/^[a-z]+$/.test(normalizedPrimaryType)) {
+        throw new Error("MusicBrainz release-group primary type is invalid.");
+      }
+      const query = [
+        title ? `releasegroup:${JSON.stringify(title)}` : null,
+        artist ? `artist:${JSON.stringify(artist)}` : null,
+        normalizedPrimaryType ? `primarytype:${normalizedPrimaryType}` : null,
+      ].filter(Boolean).join(" AND ");
+      if (!query) throw new Error("MusicBrainz release-group search requires a title or artist.");
+      const payload = await request("release-group", { query, limit: Math.min(Math.max(limit, 1), 10) });
+      return (payload?.["release-groups"] || []).map(releaseGroupSearchSummary).filter(Boolean);
     },
     async getRelease(id) {
       if (!UUID_PATTERN.test(String(id))) throw new Error("MusicBrainz release ID is invalid.");

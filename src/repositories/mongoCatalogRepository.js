@@ -10,6 +10,7 @@ import { DatasetImport } from "../models/DatasetImport.js";
 import { DatasetProduct } from "../models/DatasetProduct.js";
 import { VinylRecord } from "../models/VinylRecord.js";
 import { slugifyProduct, toAdminProduct, toPublicProduct } from "./catalogMapping.js";
+import { presentationVisibilityFilter } from "../lib/catalog/presentationOverlay.js";
 
 const ERAS = ["1950s", "1960s", "1970s", "1980s", "1990s", "2000s+"];
 // DATA-11 compatibility ceiling: enough for the validated 2,305-product
@@ -26,6 +27,7 @@ function eraRange(era) {
 
 export function buildMongoCatalogFilter(query, activeDataset = { datasetKey: null }) {
   const filter = { deletedAt: null, datasetKey: activeDataset.datasetKey ?? null };
+  Object.assign(filter, presentationVisibilityFilter(activeDataset.datasetKey));
   const clauses = [];
   if (query.q) {
     const pattern = contains(query.q);
@@ -72,7 +74,7 @@ const dynamicCounts = (preferred, source) => {
 
 async function readFacets(model, activeDataset) {
   const [facets = {}] = await model.aggregate([
-    { $match: { deletedAt: null, datasetKey: activeDataset.datasetKey ?? null } },
+    { $match: { deletedAt: null, datasetKey: activeDataset.datasetKey ?? null, ...presentationVisibilityFilter(activeDataset.datasetKey) } },
     {
       $facet: {
         genres: [{ $group: { _id: "$genre", count: { $sum: 1 } } }],
@@ -178,6 +180,7 @@ export function createMongoCatalogRepository(
       await activeCatalogModel(activeDataset).find({
         deletedAt: null,
         datasetKey: activeDataset.datasetKey,
+        ...presentationVisibilityFilter(activeDataset.datasetKey),
       })
         .sort({ publicId: 1 })
         .limit(MAX_RECOMMENDATION_CANDIDATES)

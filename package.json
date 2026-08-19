@@ -23,6 +23,8 @@
     "catalog:artwork:build": "node scripts/build-artwork-manifest.mjs --input=output/artwork-proposals.json --output=src/data/artworkManifest.js",
     "catalog:artwork:download": "node scripts/download-local-artwork.mjs",
     "catalog:artwork:verify": "node scripts/download-local-artwork.mjs --check",
+    "catalog:presentation:verify": "node --env-file-if-exists=.env.local scripts/build-catalog-presentation-overlay.mjs --verify",
+    "catalog:presentation:artwork": "node --env-file-if-exists=.env.local scripts/enrich-catalog-presentation-artwork.mjs",
     "dataset:profile": "node --env-file-if-exists=.env.local scripts/prepare-amazon-dataset.mjs --profile-only",
     "dataset:identity:build": "node scripts/build-amazon-identity-registry.mjs",
     "dataset:identity:build:apply": "node scripts/build-amazon-identity-registry.mjs --apply",

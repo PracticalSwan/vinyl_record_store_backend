@@ -12,7 +12,7 @@ function encodeHash(hash) {
 }
 
 function decodeHash(encoded) {
-  const [prefix, n, r, p, keyLength, value] = String(encoded || "").split("$");
+  const [prefix, n, r, p, keyLength, value] = String(encoded || "").replaceAll("\\$", "$").split("$");
   const parsed = {
     N: Number(n),
     r: Number(r),
