@@ -1,6 +1,6 @@
 # Backend Future Implementation Plan
 
-Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, DATA-00 through DATA-15, PERS-00 through PERS-09, and post-PERS NEXT-01 through NEXT-05 are complete and independently approved. PERS-04 through PERS-08 remain behind default-off ranking flags. BFP-05 remains a historical on-hold placeholder. The one approved offline biased-MF experiment was negative and its final test attempt is consumed; Profile B remains environment-only.
+Status: BFP-01/03/04/06/07/08/09, both parts of BFP-02, the backend contracts for FFP-01/02/03/05/06/07/08/09, DATA-00 through DATA-15, PERS-00 through PERS-09, post-PERS NEXT-01 through NEXT-05, and the 2026-08-29 Profile C showcase maintenance are complete. PERS-04 through PERS-08 remain behind default-off source flags but are enabled by the current production environment. BFP-05 remains a historical on-hold placeholder. The one approved offline biased-MF experiment was negative and its final test attempt is consumed.
 
 Audience: the developers implementing the Next.js backend and the frontend developers consuming its contracts.
 
@@ -350,7 +350,7 @@ Excluded:
 
 - Three showcase demo customer accounts (`jazzlistener`, `rockcollector`, `soulseeker`) are seeded into MongoDB as real `users` documents by `scripts/seed-demo-users.mjs` (`npm run db:seed:users[:apply]`), driven by `src/data/demoUsers.js`. Their public classroom passwords are documented in the frontend README; only scrypt hashes are stored.
 - The seed is idempotent: it classifies each account as create/update/skip by `publicId`, never overwrites a username held by a different account, and applies transactionally. The demo usernames are reserved in `register`, so visitors cannot claim them, and account deletion rejects all three immutable showcase public IDs before repository access.
-- These shared showcase accounts carry EMPTY preferences by design. The optional `preference-profile-v1` branch honors saved customer preferences, but seeded showcase fixtures remain neutral demonstrations and are not re-seeded as quality evidence.
+- These shared showcase accounts carry small canonical synthetic personas by design: Jazz/Rock/Soul completed preferences, three same-role ratings, and two same-role wishlist items each. The seed reconciles this state transactionally; it remains functional demonstration data, not quality evidence.
 - These MongoDB customers have PERSISTENT preferences (they are real customer documents), so a tester's preference edits survive until the next `db:seed:users:apply` resets them to the canonical profile.
 
 ### Registration After User Persistence
@@ -409,7 +409,7 @@ Status: historical on-hold placeholder; its live method-selection question is re
 
 The deterministic `content-demo-v1` implementation remains the default while the implemented PERS-04 through PERS-08 ranking flags are disabled. When explicitly enabled, the selected paths are knowledge-based preference scoring, behavioral content affinity, active-dataset historical popularity, and a true hybrid only when preference + behavior are both available. Collaborative filtering, matrix factorization/SVD, learned ranking, and learned weights remain excluded from the live application.
 
-Preserve the existing leakage-safe evaluation/logging infrastructure and honest current mode labels. The separately authorized NEXT-01 through NEXT-05 sequence completed sealed historical validation, one bounded negative offline biased-MF experiment, environment-only Profile B, final regression, independent review, and local closure. It produced no production integration, identity mapping, ranking-default change, or BFP-05 reuse.
+Preserve the existing leakage-safe evaluation/logging infrastructure and honest current mode labels. The separately authorized NEXT-01 through NEXT-05 sequence completed sealed historical validation, one bounded negative offline biased-MF experiment, historical Profile B, final regression, independent review, and local closure. The later Profile C maintenance enables only the already-implemented deterministic live stages and canonical synthetic showcase state; it adds no historical identity mapping, source-default change, final-test rerun, or BFP-05 reuse.
 
 ## BFP-06: Catalog Ingestion And Metadata Quality
 
@@ -589,4 +589,4 @@ Each ranking milestone ships behind a feature flag, preserves `content-demo-v1` 
 
 ## Current-State Refinement â€” 2026-08-19
 
-The application is deployed to Netlify from the sole `master` branch. Production uses MongoDB/v3 Profile B through environment overrides, while source defaults remain unchanged. A presentation overlay suppresses 46 high-confidence duplicate display rows and exposes 2,259 customer-visible records without mutating the sealed 2,305-row source or historical evidence. Visible artwork is 1,300/2,259 after 1,124 validated supplemental release-group mappings; strict dataset art remains locally verified and local-first, while supplemental art is proxy-only. These are presentation/deployment refinements, not new recommender evidence.
+The application is deployed to Netlify from the sole `master` branch. Production uses MongoDB/v3 Profile C through environment overrides, while source defaults remain unchanged. A presentation overlay suppresses 46 high-confidence duplicate display rows and exposes 2,259 customer-visible records without mutating the sealed 2,305-row source or historical evidence. Visible artwork is 1,300/2,259 after 1,124 validated supplemental release-group mappings; strict dataset art remains locally verified and local-first, while supplemental art is proxy-only. These are presentation/deployment refinements, not new recommender evidence.

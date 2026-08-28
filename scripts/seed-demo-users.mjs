@@ -1,22 +1,25 @@
 import { connectMongoDB, disconnectMongoDB } from "../src/lib/db/mongodb.js";
+import { Cart } from "../src/models/Cart.js";
+import { Feedback } from "../src/models/Feedback.js";
+import { Rating } from "../src/models/Rating.js";
 import { User } from "../src/models/User.js";
+import { Wishlist } from "../src/models/Wishlist.js";
 import { hashPassword } from "../src/lib/auth/password.js";
 import { DEMO_USERS } from "../src/data/demoUsers.js";
 
 const apply = process.argv.includes("--apply");
 
-// Mirror the User model preference defaults so creates and updates land on the
-// same clean profile. Mongoose defaults apply on create but not on update, so
-// the seed sets them explicitly. Preferences stay empty for now (see
-// demoUsers.js and FUTURE_IMPLEMENTATION_PLAN).
-const emptyPreferences = () => ({
-  favoriteGenres: [],
+// Mirror the User model defaults around the small canonical classroom profile.
+// Mongoose defaults apply on create but not on update, so the seed writes the
+// complete preference object explicitly.
+const canonicalPreferences = (user, completedAt) => ({
+  favoriteGenres: [...user.personalization.preferences.favoriteGenres],
   dislikedGenres: [],
-  favoriteArtists: [],
+  favoriteArtists: [...user.personalization.preferences.favoriteArtists],
   budget: { min: null, max: null },
   conditions: [],
-  formats: [],
-  completedAt: null,
+  formats: [...user.personalization.preferences.formats],
+  completedAt,
   schemaVersion: 1,
 });
 
@@ -34,7 +37,15 @@ try {
   const plan = DEMO_USERS.map((user) => {
     const normalizedUsername = user.username.toLowerCase();
     const existing = existingByUser.get(normalizedUsername);
-    if (!existing) return { username: user.username, publicId: user.publicId, action: "create" };
+    const state = {
+      role: user.personalization.role,
+      ratings: user.personalization.ratings.length,
+      wishlist: user.personalization.wishlist.length,
+      cart: 0,
+    };
+    if (!existing) {
+      return { username: user.username, publicId: user.publicId, action: "create", state };
+    }
     if (existing.publicId !== user.publicId) {
       return {
         username: user.username,
@@ -44,7 +55,7 @@ try {
         heldBy: existing.publicId,
       };
     }
-    return { username: user.username, publicId: user.publicId, action: "update" };
+    return { username: user.username, publicId: user.publicId, action: "update", state };
   });
   const summary = {
     mode: apply ? "apply" : "dry-run",
@@ -63,13 +74,21 @@ try {
   }
 
   if (apply && summary.skipped < plan.length) {
-    await User.createIndexes();
+    await Promise.all([
+      User.createIndexes(),
+      Wishlist.createIndexes(),
+      Cart.createIndexes(),
+      Rating.createIndexes(),
+      Feedback.createIndexes(),
+    ]);
     const now = new Date();
     const operations = [];
+    const seededUsers = [];
     for (const [index, user] of DEMO_USERS.entries()) {
       const normalizedUsername = user.username.toLowerCase();
       const decision = plan[index];
       if (decision.action === "skip") continue;
+      seededUsers.push(user);
       const { passwordHash, passwordSalt } = await hashPassword(user.password);
       if (decision.action === "create") {
         // bulkWrite bypasses Mongoose timestamp middleware, so set both fields
@@ -85,7 +104,7 @@ try {
               passwordSalt,
               role: "customer",
               active: true,
-              preferences: emptyPreferences(),
+              preferences: canonicalPreferences(user, now),
               createdAt: now,
               updatedAt: now,
             },
@@ -105,7 +124,7 @@ try {
                 passwordSalt,
                 role: "customer",
                 active: true,
-                preferences: emptyPreferences(),
+                preferences: canonicalPreferences(user, now),
                 updatedAt: now,
               },
             },
@@ -122,12 +141,56 @@ try {
           const result = await User.bulkWrite(operations, { ordered: true, session });
           inserted = result.insertedCount;
           modified = result.modifiedCount;
+          const seededPublicIds = seededUsers.map((user) => user.publicId);
+          await Wishlist.bulkWrite(seededUsers.map((user) => ({
+            updateOne: {
+              filter: { userPublicId: user.publicId },
+              update: {
+                $set: {
+                  productPublicIds: user.personalization.wishlist
+                    .map((signal) => signal.productPublicId)
+                    .sort((a, b) => a - b),
+                  updatedAt: now,
+                },
+                $setOnInsert: { createdAt: now },
+              },
+              upsert: true,
+            },
+          })), { ordered: true, session, timestamps: false });
+          await Cart.bulkWrite(seededUsers.map((user) => ({
+            updateOne: {
+              filter: { userPublicId: user.publicId },
+              update: {
+                $set: { items: [], updatedAt: now },
+                $setOnInsert: { createdAt: now },
+              },
+              upsert: true,
+            },
+          })), { ordered: true, session, timestamps: false });
+          await Rating.deleteMany({ userPublicId: { $in: seededPublicIds } }, { session });
+          await Rating.insertMany(seededUsers.flatMap((user) => (
+            user.personalization.ratings.map((signal) => ({
+              userPublicId: user.publicId,
+              productPublicId: signal.productPublicId,
+              rating: signal.rating,
+              createdAt: now,
+              updatedAt: now,
+            }))
+          )), { ordered: true, session });
+          await Feedback.deleteMany({ userPublicId: { $in: seededPublicIds } }, { session });
         });
       } finally {
         await session.endSession();
       }
     }
-    console.log(JSON.stringify({ status: "applied", inserted, modified }));
+    console.log(JSON.stringify({
+      status: "applied",
+      inserted,
+      modified,
+      seededProfiles: seededUsers.length,
+      seededRatings: seededUsers.reduce((count, user) => count + user.personalization.ratings.length, 0),
+      seededWishlistItems: seededUsers.reduce((count, user) => count + user.personalization.wishlist.length, 0),
+    }));
   }
 } catch (error) {
   console.error(`Demo user seed failed: ${error.name || "Error"}`);

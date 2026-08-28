@@ -199,6 +199,7 @@ test("PERS-09 fail-closed parent and hybrid dependencies preserve the lower mode
       },
       mode: "cold-start",
       version: "content-demo-v1",
+      knownStateExcluded: false,
     },
     {
       name: "hybrid flag cannot substitute for missing behavior dependency",
@@ -210,6 +211,7 @@ test("PERS-09 fail-closed parent and hybrid dependencies preserve the lower mode
       },
       mode: "preference-profile",
       version: "preference-profile-v1",
+      knownStateExcluded: true,
     },
     {
       name: "hybrid flag cannot substitute for missing preference dependency",
@@ -221,6 +223,7 @@ test("PERS-09 fail-closed parent and hybrid dependencies preserve the lower mode
       },
       mode: "behavior-profile",
       version: "behavior-profile-v1",
+      knownStateExcluded: true,
     },
     {
       name: "hybrid disabled preserves preference precedence when both components exist",
@@ -233,6 +236,7 @@ test("PERS-09 fail-closed parent and hybrid dependencies preserve the lower mode
       },
       mode: "preference-profile",
       version: "preference-profile-v1",
+      knownStateExcluded: true,
     },
   ];
   const profile = {
@@ -249,7 +253,11 @@ test("PERS-09 fail-closed parent and hybrid dependencies preserve the lower mode
     });
     assert.equal(result.mode, fixture.mode, fixture.name);
     assert.equal(result.algorithmVersion, fixture.version, fixture.name);
-    assert.ok(result.recommendations.some((item) => item.product.id === 1), `${fixture.name}: feedback is inert`);
+    assert.equal(
+      result.recommendations.some((item) => item.product.id === 1),
+      !fixture.knownStateExcluded,
+      `${fixture.name}: profile state follows the parent domain flag`,
+    );
   }
 });
 
@@ -331,7 +339,7 @@ test("full hybrid uses one candidate read, one popularity read, and logs the exa
   })));
   assert.equal(logged.mode, result.mode);
   assert.equal(logged.algorithmVersion, result.algorithmVersion);
-  assert.deepEqual(logged.excludedProductIds, [4]);
+  assert.deepEqual(logged.excludedProductIds, [1, 4]);
   const serialized = JSON.stringify(result);
   for (const privateName of [
     "_id",

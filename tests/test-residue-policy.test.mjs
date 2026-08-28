@@ -19,7 +19,16 @@ test("test cleanup cannot target catalog or dataset evidence collections", () =>
     assert.equal(TEST_RESIDUE_COLLECTIONS.includes(collection), false);
   }
   assert.equal(new Set(TEST_RESIDUE_COLLECTIONS).size, TEST_RESIDUE_COLLECTIONS.length);
-  assert.equal(TEST_RESIDUE_COLLECTIONS.includes("feedback"), false);
-  assert.deepEqual(TEST_USER_SCOPED_RESIDUE_COLLECTIONS, ["feedback"]);
+  assert.deepEqual(TEST_RESIDUE_COLLECTIONS, [
+    "interactions",
+    "recommendationLogs",
+    "guestMerges",
+  ]);
+  assert.deepEqual(TEST_USER_SCOPED_RESIDUE_COLLECTIONS, [
+    "carts",
+    "wishlists",
+    "ratings",
+    "feedback",
+  ]);
   assert.equal(TEST_USER_FILTER.username.$regex, "^e2e_");
 });

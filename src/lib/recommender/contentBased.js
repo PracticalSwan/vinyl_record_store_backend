@@ -167,6 +167,15 @@ function assertRecommendationSubject(subject) {
   }
 }
 
+function knownProfileProductIds(profile) {
+  if (!profile) return [];
+  return [...new Set([
+    ...(profile.ratings || []).map((item) => item?.productPublicId),
+    ...(profile.wishlist || []),
+    ...(profile.cart || []).map((item) => item?.productPublicId),
+  ].filter((id) => Number.isInteger(id) && id > 0))].sort((a, b) => a - b);
+}
+
 export function prepareUserRecommendation(
   subject,
   records = [],
@@ -184,9 +193,21 @@ export function prepareUserRecommendation(
 ) {
   assertRecommendationSubject(subject);
   if (!Array.isArray(records)) throw new TypeError("Candidates must be an array.");
-  const feedbackResult = exclusion || (feedbackEnabled
-    ? applyUserExclusions(records, profile?.explicitFeedback || [])
+  const resolvedProfile = profile ? { ...profile } : null;
+  const exactFeedbackResult = exclusion || (feedbackEnabled
+    ? applyUserExclusions(records, resolvedProfile?.explicitFeedback || [])
     : { candidates: records, excludedProductIds: [] });
+  const knownIds = subject.kind === "registered"
+    ? knownProfileProductIds(resolvedProfile)
+    : [];
+  const knownIdSet = new Set(knownIds);
+  const feedbackResult = {
+    candidates: exactFeedbackResult.candidates.filter((candidate) => !knownIdSet.has(candidate.id)),
+    excludedProductIds: [...new Set([
+      ...exactFeedbackResult.excludedProductIds,
+      ...knownIds,
+    ])].sort((a, b) => a - b),
+  };
   const eligibleRecords = feedbackResult.candidates;
   const candidates = eligibleRecords.filter((candidate) => candidate.stock !== "out");
   const components = {
@@ -194,20 +215,20 @@ export function prepareUserRecommendation(
     behavior: { available: false },
   };
 
-  if (subject.kind === "registered" && preferenceRankingEnabled && profile) {
+  if (subject.kind === "registered" && preferenceRankingEnabled && resolvedProfile) {
     const catalogMode = candidates[0]?.catalogMode
       || eligibleRecords[0]?.catalogMode
       || "commerce-preview";
     const scoreResult = scorePreferenceCandidates(
       candidates,
-      profile.explicitPreferences,
+      resolvedProfile.explicitPreferences,
       { catalogMode },
     );
     if (scoreResult.available) components.preference = scoreResult;
   }
 
-  if (subject.kind === "registered" && behaviorRankingEnabled && profile) {
-    const affinity = buildBehaviorAffinity(profile, records, {
+  if (subject.kind === "registered" && behaviorRankingEnabled && resolvedProfile) {
+    const affinity = buildBehaviorAffinity(resolvedProfile, records, {
       now,
       trackingEnabled,
       feedbackEnabled,

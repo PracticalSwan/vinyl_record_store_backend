@@ -88,17 +88,19 @@ export async function serveUserRecommendations(subject, limit, context, options 
   const hybridEnabled = preferenceRankingEnabled
     && behaviorRankingEnabled
     && personalizationHybridEnabled(environment);
-  const profile = options.profile || (
-    subject.kind === "registered" && (preferenceRankingEnabled || feedbackEnabled || behaviorRankingEnabled)
-      ? await buildUserRecommendationProfile(subject, {
-          trackingAllowed: context.trackingAllowed !== false,
-          feedbackAllowed: feedbackEnabled,
-          users: options.users,
-          state: options.state,
-          feedback: options.feedback,
-        })
-      : null
-  );
+  const profile = profileEnabled
+    ? options.profile || (
+        subject.kind === "registered" && (preferenceRankingEnabled || feedbackEnabled || behaviorRankingEnabled)
+          ? await buildUserRecommendationProfile(subject, {
+              trackingAllowed: context.trackingAllowed !== false,
+              feedbackAllowed: feedbackEnabled,
+              users: options.users,
+              state: options.state,
+              feedback: options.feedback,
+            })
+          : null
+      )
+    : null;
   const repository = options.repository || getCatalogRepository(environment);
   const candidates = options.candidates || await repository.listRecommendationCandidates();
   const now = options.now || new Date();

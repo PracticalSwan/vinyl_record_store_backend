@@ -18,7 +18,7 @@ The backend is an implemented integration and authenticated customer-state servi
 - Preview-first CSV/JSON catalog ingestion supports atomic apply, source ownership, duplicate/conflict detection, optional MusicBrainz/Cover Art Archive enrichment, release-bound artwork, release-group fallback, local cache, and field provenance. The bundled catalog has one human-reviewed manifest entry and approved hotlink for every record.
 - The offline evaluator builds pseudonymized leakage-safe datasets, compares random/popularity/content-based rankings only above the evidence threshold, and otherwise writes aggregate counts and captured-field coverage without quality claims.
 - Corrected DATA-00 through DATA-15 v3 adds controlled metadata/year semantics, authoritative release-group original years for 208 strict matches, stable v1 IDs, immutable sealed rows and exact digests, strict MusicBrainz/CAA artwork with an exact local fallback set, 20,288 isolated historical ratings from 2,387 HMAC-pseudonymous subjects, transactional activation with v2 as the immediate rollback release, and aggregate-only readiness. Readiness alone is not a model result. The later NEXT-01/NEXT-03 aggregate benchmark evaluated random, positive-popularity, content, and one offline-only biased-MF candidate; it did not mutate DATA-15, validate live PERS modes, or authorize live integration.
-- Production is GitHub-linked Netlify at `https://groovehaus-api.netlify.app/`; `master` is the only branch and triggers production builds. The Vite storefront uses a same-origin `/api/*` proxy from `https://groovehaus-store.netlify.app/`. Production environment overrides select MongoDB/v3 Profile B; source defaults remain unchanged.
+- Production is GitHub-linked Netlify at `https://groovehaus-api.netlify.app/`; `master` is the only branch and triggers production builds. The Vite storefront uses a same-origin `/api/*` proxy from `https://groovehaus-store.netlify.app/`. Production environment overrides select MongoDB/v3 Profile C; source defaults remain unchanged.
 - The sealed v3 source remains 2,305 rows. `src/data/catalogPresentationOverlay.json` suppresses 46 high-confidence duplicate display rows without deleting source/history, leaving 2,259 customer-visible records; presentation-only supplemental artwork raises visible artwork to 1,300/2,259 while never overriding sealed structured artwork.
 - Administrator mode (BFP-07) exposes role-gated `/api/admin/*` routes (summary, product CRUD with `updatedAt` optimistic concurrency, soft-delete/restore, preview-token catalog import apply, artwork refresh) with best-effort audit logging. Reads work in seed and mongodb mode; writes are mongodb-only and return `PERSISTENCE_UNAVAILABLE` (503) in seed mode.
 - Artwork uses two backend-owned delivery paths. `GET /api/artwork?u=<approved URL>` is the bounded proxy, varies the Netlify cache key by `u`, and validates every Cover Art Archive/Internet Archive redirect hop. `GET /api/artwork/local/:publicId` resolves the 116-record legacy manifest or 208-file strict-v3 manifest. Dataset rows with verified local art render local-first in the client; supplemental presentation art uses the proxy without claiming an exact pressing. Each local JPEG retains generated provenance, size, dimensions, and SHA-256 evidence.
@@ -70,7 +70,7 @@ Read `../AGENT_MEMORY.md` at session start and append a dated entry at session e
 - `MUSICBRAINZ_USER_AGENT` identifies catalog enrichment requests. It must contain an application name, version, and contact.
 - `CATALOG_DATA_SOURCE` defaults to `seed`; set it to `mongodb` only when Atlas configuration and migrated data are ready.
 - `MONGODB_URI` and `MONGODB_DB_NAME` configure the server-only Atlas connection through an ignored `.env.local`. Explicit MongoDB mode never silently falls back to seed data.
-- `AUTH_SECRET` signs eight-hour HttpOnly sessions. Exactly three showcase customers are seeded into MongoDB by `db:seed:users` (`src/data/demoUsers.js`); their usernames are reserved and their immutable public IDs are protected from account deletion. The single administrator account is environment-backed through `AUTH_DEMO_ADMIN_*`; there is no environment-backed customer or admin-promotion path. Registered customers persist in MongoDB and require MongoDB mode.
+- `AUTH_SECRET` signs eight-hour HttpOnly sessions. Exactly three showcase customers are seeded into MongoDB by `db:seed:users` (`src/data/demoUsers.js`); each receives a canonical synthetic persona with completed preferences, three ratings, and two wishlist items. Persona labels are fixture metadata, not authorization roles. Their usernames are reserved and immutable public IDs are protected from account deletion. The single administrator account is environment-backed through `AUTH_DEMO_ADMIN_*`; there is no environment-backed customer or admin-promotion path. Registered customers persist in MongoDB and require MongoDB mode.
 - `PERS_IDENTITY_STRICT` and `PERS_ME_ENDPOINT` default on and provide explicit rollback switches for the completed identity and session-owned endpoint milestones.
 - Credentialed mutations require the exact `FRONTEND_ORIGIN`; ownership always comes from the verified session, never from a client user ID.
 - API contract changes require matching updates in both repositories.
@@ -88,7 +88,7 @@ npm run build
 
 Use live endpoint and cross-origin checks when the environment permits them.
 
-After any E2E or auth-write run that exercised MongoDB mode, remove the test-generated documents from Atlas with `npm run db:clean:test:apply` (dry-run: `npm run db:clean:test`). This is the standalone form of the root `CLAUDE.md`/`AGENTS.md` "Post-test Atlas cleanup" rule; the frontend Playwright suite also runs it automatically via its global teardown. The tool deletes only `e2e_`-prefixed users, the existing full-wipe test-residue collections (`interactions`, `recommendationLogs`, `carts`, `wishlists`, `ratings`, `guestMerges`), and `feedback` rows owned by those matched `e2e_` users. It never collection-wipes durable feedback and never touches `vinylRecords`, the demo users, `counters`, `orders`, or `auditLogs`.
+After any E2E or auth-write run that exercised MongoDB mode, remove the test-generated documents from Atlas with `npm run db:clean:test:apply` (dry-run: `npm run db:clean:test`). This is the standalone form of the root `CLAUDE.md`/`AGENTS.md` "Post-test Atlas cleanup" rule; the frontend Playwright suite also runs it automatically via its global teardown. The tool deletes only `e2e_`-prefixed users, full-wipe test-only collections (`interactions`, `recommendationLogs`, `guestMerges`), and `carts`, `wishlists`, `ratings`, and `feedback` rows owned by matched `e2e_` users. It never collection-wipes durable showcase or ordinary-customer state and never touches `vinylRecords`, dataset/evaluation collections, the demo users, `counters`, `orders`, or `auditLogs`.
 
 ## Documentation Synchronization
 
@@ -98,6 +98,7 @@ Use `docs/PROJECT_CONTEXT.md` as the backend source of truth. Update only affect
 
 - Never commit real secrets, MongoDB credentials, private interaction logs, emails, orders, ratings, or `.env` files.
 - Do not add scraping, payments, public admin APIs, collaborative filtering, demo orders, or new identity features without explicit scope.
+- Do not over-engineer, over-complicate, or over-test; prefer the smallest evidence-backed change and verification set that covers the changed boundary.
 - Do not use destructive Git commands or overwrite user work.
 - Cleanup must use verified exact paths inside this repository. Never delete source, docs, assets, config, or `node_modules` without explicit scope.
 - Do not commit or push unless the user explicitly asks.
@@ -106,3 +107,13 @@ Use `docs/PROJECT_CONTEXT.md` as the backend source of truth. Update only affect
 ## Completion Report
 
 Report changed behavior, files, validation actually run, supported routes, data limitations, and deferred work. Do not present deferred work as started.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

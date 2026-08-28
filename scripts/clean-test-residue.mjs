@@ -9,10 +9,9 @@
 //
 // What this deletes:
 //   - users whose username starts with `e2e_` (Playwright-registered test accounts)
-//   - interactions, recommendationLogs, carts, wishlists, ratings, guestMerges
-//     (these collections are retained as the existing full test-residue policy)
-//   - feedback rows owned by the matched `e2e_` users only; durable feedback from
-//     showcase or ordinary customers is never collection-wiped
+//   - interactions, recommendationLogs, and guestMerges (test-only collections)
+//   - carts, wishlists, ratings, and feedback owned by matched `e2e_` users only;
+//     durable showcase and ordinary-customer state is never collection-wiped
 // What this never deletes:
 //   - vinylRecords, datasetProducts, datasetImports, historicalAmazonRatings,
 //     counters, orders, and auditLogs
@@ -27,9 +26,8 @@ import {
 
 const apply = process.argv.includes("--apply");
 
-// Customer-operational collections that currently hold only automated-test data. Each
-// entry is wiped completely; vinylRecords and the admin/accounting collections
-// are deliberately absent from this list.
+// Test-only collections are wiped completely. Durable customer-state collections
+// are separately filtered by the matched test-user public IDs below.
 // The executable policy lives in src/lib/db/testResiduePolicy.js so tests can
 // prove dataset collections are outside the deletion set.
 

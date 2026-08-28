@@ -9,7 +9,7 @@ This service is the core of the demo. It owns the product catalog, the recommend
 Three things worth knowing up front:
 
 - MongoDB mode currently activates the immutable `amazon-reviews-2023-cds-vinyl-5core-v3` research catalog: 2,305 products in `datasetProducts` and 20,288 isolated historical ratings from 2,387 pseudonymous subjects. V2 is the immediate rollback release, v1 is the legacy identity-registry base, and the original 116 reviewed records remain available.
-- Recommendations default to deterministic `content-demo-v1` behavior: the restricted legacy showcase is `demo-profile`, verified customers use a session-owned `cold-start` path, and visitors receive an `anonymous-fallback`. When the default-off flags are enabled, verified customers may receive `preference-profile-v1`, `behavior-profile-v1`, or `personalized-hybrid-v1`, and anonymous/empty-profile requests may receive `popularity-v1`; exact feedback remains a server-owned exclusion. No recommendation-quality claim is made.
+- Recommendations default to deterministic `content-demo-v1` behavior: the restricted legacy showcase is `demo-profile`, verified customers use a session-owned `cold-start` path, and visitors receive an `anonymous-fallback`. When the default-off source flags are enabled, verified customers may receive `preference-profile-v1`, `behavior-profile-v1`, or the fixed-weight `personalized-hybrid-v1`, and anonymous/empty-profile requests may receive aggregate `popularity-v1`; exact feedback remains a server-owned exclusion. Production Profile C enables these implemented stages for the classroom demonstration. No recommendation-quality claim is made.
 - The 116 legacy records and 208 strict v3 artwork decisions retain verified local JPEGs. Customer presentation is separate from sealed DATA-15: 46 duplicate-looking rows are suppressed, leaving 2,259 visible records; 1,124 validated supplemental MusicBrainz release-group mappings bring visible artwork coverage to 1,300/2,259 (57.55%). Verified dataset local art renders local-first with proxy recovery, supplemental art is proxy-only, and unresolved rows remain placeholders. Amazon images are never used. The live evaluator remains `insufficient-evidence`; historical content was strongest descriptively and biased MF was a negative offline-only result.
 
 ## API
@@ -56,7 +56,7 @@ npm run dev
 
 The service runs at `http://localhost:3000`. By default it serves the bundled seed catalog, so no database is needed to try it. To use MongoDB Atlas, set `MONGODB_URI`, `MONGODB_DB_NAME`, and `CATALOG_DATA_SOURCE=mongodb` in `.env.local`, then run the seed and index scripts. See `.env.example` for all options.
 
-The final classroom setup is the explicit MongoDB/v3 **Profile B: Selective Personalization** environment, not the committed default. It enables saved-preference ranking and exact feedback while keeping behavioral ranking, popularity, and hybrid disabled. Follow [`docs/DEMO_PERSONALIZATION_RUNBOOK.md`](docs/DEMO_PERSONALIZATION_RUNBOOK.md) for exact flags, preflight, startup, rollback, and claim boundaries.
+The current classroom setup is the explicit MongoDB/v3 **Profile C: Showcase Hybrid** environment, not the committed default. It enables saved-preference, durable-behavior, aggregate-popularity, exact-feedback, and true-hybrid orchestration over three canonical synthetic showcase personas. Follow [`docs/DEMO_PERSONALIZATION_RUNBOOK.md`](docs/DEMO_PERSONALIZATION_RUNBOOK.md) for exact flags, preflight, seed verification, startup, rollback, and claim boundaries.
 
 The current sealed-v3 dataset workflow is hash-pinned and fail-closed. `dataset:prepare` is a no-write reproduction check for the existing private v3 staging evidence; it will not replace sealed staging or the committed public quality summary and it rejects same-key staging overrides:
 
@@ -94,22 +94,22 @@ Artwork enrichment is also presentation-only. The sealed dataset contributes 176
 
 ## Netlify production
 
-The production API is `https://groovehaus-api.netlify.app/`, deployed as the GitHub-linked `groovehaus-api` Netlify project from this repository's only branch, `master`, using `netlify.toml` and Netlify's native Next.js runtime. Production uses MongoDB/v3 Profile B and stores `MONGODB_URI`, `AUTH_SECRET`, administrator hashes/salts, and all other sensitive values only in Netlify environment variables.
+The production API is `https://groovehaus-api.netlify.app/`, deployed as the GitHub-linked `groovehaus-api` Netlify project from this repository's only branch, `master`, using `netlify.toml` and Netlify's native Next.js runtime. Production uses MongoDB/v3 Profile C and stores `MONGODB_URI`, `AUTH_SECRET`, administrator hashes/salts, and all other sensitive values only in Netlify environment variables.
 
-Set `FRONTEND_ORIGIN` to the exact production storefront origin, `AUTH_COOKIE_SECURE=true`, and `ARTWORK_CACHE_DIR=/tmp/groovehaus-artwork-images`. Keep `PERS_BEHAVIORAL_RANKING`, `PERS_POPULARITY`, and `PERS_HYBRID` disabled. The companion storefront proxies `/api/*` through its own Netlify origin, so browser sessions remain first-party.
+Set `FRONTEND_ORIGIN` to the exact production storefront origin, `AUTH_COOKIE_SECURE=true`, and `ARTWORK_CACHE_DIR=/tmp/groovehaus-artwork-images`. Profile C sets `PERS_ME_ENDPOINT`, `PERS_PROFILE_DOMAIN`, `PERS_PREFERENCE_RANKING`, `PERS_NEGATIVE_FEEDBACK`, `PERS_BEHAVIORAL_RANKING`, `PERS_POPULARITY`, and `PERS_HYBRID` to `true` in the production environment while committed defaults stay off. The companion storefront proxies `/api/*` through its own Netlify origin, so browser sessions remain first-party.
 
 ## Showcase accounts
 
 Two roles exist: `customer` and `admin`. Exactly three showcase customer accounts are seeded into MongoDB and protected from account deletion by immutable public ID. The single administrator account is environment-backed and is never stored as a customer record.
 
-- Customer (jazz): `jazzlistener` / `jazz-groove-2026`
-- Customer (rock): `rockcollector` / `rock-groove-2026`
-- Customer (soul): `soulseeker` / `soul-groove-2026`
+- Customer persona `jazz_listener`: `jazzlistener` / `jazz-groove-2026`
+- Customer persona `rock_collector`: `rockcollector` / `rock-groove-2026`
+- Customer persona `soul_seeker`: `soulseeker` / `soul-groove-2026`
 - Admin: environment-backed through `AUTH_DEMO_ADMIN_USERNAME`, `AUTH_DEMO_ADMIN_PASSWORD_HASH`, and `AUTH_DEMO_ADMIN_PASSWORD_SALT`; no administrator password is committed.
 
 For local Next.js development, escape every `$` delimiter in the scrypt hash as `\$` inside `.env.local`; Next's dotenv loader expands unescaped `$` values. Netlify environment variables are stored literally and do not require that escaping.
 
-Showcase customer logins require MongoDB mode. Seed the accounts with `npm run db:seed:users:apply`. Registered customers choose their own credentials through the frontend.
+Showcase customer logins require MongoDB mode. `npm run db:seed:users` previews the exact plan; `npm run db:seed:users:apply` transactionally restores each canonical completed profile, three ratings, two wishlist items, an empty cart, and no exact feedback. Known rating/wishlist items influence behavior affinity but are excluded from returned recommendations. Registered customers choose their own credentials through the frontend.
 
 ## Project structure
 

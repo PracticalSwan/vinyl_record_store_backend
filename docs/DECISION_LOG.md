@@ -367,3 +367,13 @@ Decision: For strict dataset rows with a verified local asset, render local-firs
 Rationale: Local-first strict artwork removes avoidable upstream latency/failure in production. Supplemental artwork improves presentation coverage without converting a release-group match into false exact-pressing provenance.
 
 Status: Implemented; visible artwork coverage is 1,300/2,259 (57.55%).
+
+## BDEC-040: Use Canonical Showcase Personas With The Existing True Hybrid
+
+Date: 2026-08-29
+
+Decision: Supersede the live classroom Profile B configuration with environment-only Profile C while retaining default-off source flags. Reconcile exactly three synthetic showcase personas through `src/data/demoUsers.js` and the transactional seed: one completed Jazz/Rock/Soul profile, three ratings, two wishlist items, an empty cart, and no exact feedback per customer. Enable the existing preference, behavior, aggregate-popularity, exact-feedback, and `personalized-hybrid-v1` stages. Exclude rating/wishlist/cart products from returned candidates while retaining them as behavior evidence. Scope E2E cleanup by `e2e_` ownership for durable state, and use a projected 60-second warm-runtime candidate cache with repository-write invalidation.
+
+Rationale: The professor-facing demonstration benefits from a truthful advanced hybrid already present in the system. Fixed deterministic components are easier to explain and safer than adding an unvalidated learned model. Canonical direct signals make every shared login repeatable, candidate exclusion avoids recommending known records back to the same customer, and the bounded cache addresses observed 4-11 second production loading without changing ranking semantics. The historical biased-MF result remains negative and the final test remains permanently consumed.
+
+Status: Implemented and verified through focused unit/service checks, exact Atlas state comparison, local API mode/privacy checks, and one real three-login browser flow with screenshots and zero post-test residue. Netlify environment values are staged for the Git-linked release; production activation must be confirmed by the release smoke. No DATA-15, historical identity, source-default, or recommendation-quality claim changed.

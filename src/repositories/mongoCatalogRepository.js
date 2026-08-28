@@ -16,6 +16,32 @@ const ERAS = ["1950s", "1960s", "1970s", "1980s", "1990s", "2000s+"];
 // DATA-11 compatibility ceiling: enough for the validated 2,305-product
 // Amazon subset without pretending to solve future large-catalog retrieval.
 const MAX_RECOMMENDATION_CANDIDATES = 5_000;
+const RECOMMENDATION_CANDIDATE_CACHE_TTL_MS = 60_000;
+const RECOMMENDATION_CANDIDATE_PROJECTION = {
+  publicId: 1,
+  title: 1,
+  artist: 1,
+  genre: 1,
+  year: 1,
+  originalReleaseYear: 1,
+  editionReleaseYear: 1,
+  yearDisplayType: 1,
+  price: 1,
+  currency: 1,
+  stock: 1,
+  condition: 1,
+  label: 1,
+  format: 1,
+  pressing: 1,
+  description: 1,
+  imageUrl: 1,
+  artwork: 1,
+  source: 1,
+  datasetKey: 1,
+  sourceVersion: 1,
+  fieldOrigins: 1,
+  qualityFlags: 1,
+};
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const contains = (value) => new RegExp(escapeRegex(value), "i");
 
@@ -110,7 +136,23 @@ export function createMongoCatalogRepository(
   connect = connectMongoDB,
   datasetImportModel = model === VinylRecord ? DatasetImport : null,
   datasetProductModel = model === VinylRecord ? DatasetProduct : model,
+  {
+    now = Date.now,
+    recommendationCandidateCacheTtlMs = RECOMMENDATION_CANDIDATE_CACHE_TTL_MS,
+  } = {},
 ) {
+  const recommendationCandidateCache = {
+    candidates: null,
+    expiresAt: 0,
+    pending: null,
+    revision: 0,
+  };
+  const invalidateRecommendationCandidateCache = () => {
+    recommendationCandidateCache.candidates = null;
+    recommendationCandidateCache.expiresAt = 0;
+    recommendationCandidateCache.pending = null;
+    recommendationCandidateCache.revision += 1;
+  };
   const runMongo = async (operation) => {
     try {
       await connect();
@@ -175,18 +217,39 @@ export function createMongoCatalogRepository(
     }),
 
     listRecommendationCandidates: () => runMongo(async () => {
-      const activeDataset = await activeDatasetFilter();
-      return (
-      await activeCatalogModel(activeDataset).find({
-        deletedAt: null,
-        datasetKey: activeDataset.datasetKey,
-        ...presentationVisibilityFilter(activeDataset.datasetKey),
-      })
-        .sort({ publicId: 1 })
-        .limit(MAX_RECOMMENDATION_CANDIDATES)
-        .lean()
-        .exec()
-      ).map(toPublicProduct);
+      if (
+        recommendationCandidateCache.candidates
+        && now() < recommendationCandidateCache.expiresAt
+      ) return recommendationCandidateCache.candidates;
+      if (recommendationCandidateCache.pending) return recommendationCandidateCache.pending;
+
+      const readRevision = recommendationCandidateCache.revision;
+      const pending = (async () => {
+        const activeDataset = await activeDatasetFilter();
+        const documents = await activeCatalogModel(activeDataset).find({
+          deletedAt: null,
+          datasetKey: activeDataset.datasetKey,
+          ...presentationVisibilityFilter(activeDataset.datasetKey),
+        }, RECOMMENDATION_CANDIDATE_PROJECTION)
+          .sort({ publicId: 1 })
+          .limit(MAX_RECOMMENDATION_CANDIDATES)
+          .lean()
+          .exec();
+        const candidates = documents.map(toPublicProduct);
+        if (recommendationCandidateCache.revision === readRevision) {
+          recommendationCandidateCache.candidates = candidates;
+          recommendationCandidateCache.expiresAt = now() + recommendationCandidateCacheTtlMs;
+        }
+        return candidates;
+      })();
+      recommendationCandidateCache.pending = pending;
+      try {
+        return await pending;
+      } finally {
+        if (recommendationCandidateCache.pending === pending) {
+          recommendationCandidateCache.pending = null;
+        }
+      }
     }),
 
     // --- Administrator surface (BFP-07). Reads include soft-deleted rows when
@@ -285,6 +348,7 @@ export function createMongoCatalogRepository(
       const publicId = counter.value;
       const slug = slugifyProduct({ ...desired, id: publicId });
       const created = await model.create({ ...desired, publicId, slug, deletedAt: null });
+      invalidateRecommendationCandidateCache();
       return toAdminProduct(created);
     }),
 
@@ -307,6 +371,7 @@ export function createMongoCatalogRepository(
         const refreshed = await model.findOne({ publicId }).lean();
         return { status: "conflict", current: refreshed ? toAdminProduct(refreshed) : null };
       }
+      invalidateRecommendationCandidateCache();
       return { status: "ok", product: toAdminProduct(updated) };
     }),
 
@@ -329,6 +394,7 @@ export function createMongoCatalogRepository(
         const refreshed = await model.findOne({ publicId }).lean();
         return { status: "conflict", current: refreshed ? toAdminProduct(refreshed) : null };
       }
+      invalidateRecommendationCandidateCache();
       return { status: "ok", product: toAdminProduct(updated) };
     }),
 
@@ -339,6 +405,7 @@ export function createMongoCatalogRepository(
         { new: true },
       ).lean();
       if (!updated) return { status: "not_found" };
+      invalidateRecommendationCandidateCache();
       return { status: "ok", product: toAdminProduct(updated) };
     }),
 
@@ -346,12 +413,14 @@ export function createMongoCatalogRepository(
       // applyCatalogImport requires a live connection; the repository reuses
       // the transactional bulk-write path owned by the import service.
       const { applyCatalogImport } = await import("../services/catalogImport.js");
-      return applyCatalogImport(preparedRows, {
+      const result = await applyCatalogImport(preparedRows, {
         connection: connection || await connect(),
         model,
         counterModel: Counter,
         allowPartial,
       });
+      invalidateRecommendationCandidateCache();
+      return result;
     }),
   };
 }

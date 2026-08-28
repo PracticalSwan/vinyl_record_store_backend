@@ -125,6 +125,92 @@ test("seed and MongoDB repositories expose the same bounded recommendation candi
   );
 });
 
+test("MongoDB recommendation candidates reuse one short-lived repository read", async () => {
+  let candidateReads = 0;
+  let currentTime = 1_000;
+  const countingModel = {
+    ...fakeModel,
+    find(filter) {
+      candidateReads += 1;
+      return fakeModel.find(filter);
+    },
+  };
+  const mongo = createMongoCatalogRepository(
+    countingModel,
+    async () => {},
+    null,
+    countingModel,
+    { now: () => currentTime, recommendationCandidateCacheTtlMs: 60_000 },
+  );
+
+  const first = await mongo.listRecommendationCandidates();
+  const second = await mongo.listRecommendationCandidates();
+
+  assert.equal(candidateReads, 1);
+  assert.deepEqual(second, first);
+
+  currentTime += 60_001;
+  const refreshed = await mongo.listRecommendationCandidates();
+  assert.equal(candidateReads, 2);
+  assert.deepEqual(refreshed, first);
+});
+
+test("MongoDB recommendation candidate invalidation detaches an older in-flight read", async () => {
+  let candidateReads = 0;
+  let releaseFirstRead;
+  let firstReadStartedResolve;
+  const firstReadStarted = new Promise((resolve) => {
+    firstReadStartedResolve = resolve;
+  });
+  const firstBatch = [documents[0]];
+  const secondBatch = [documents[1]];
+  const firstBatchPromise = new Promise((resolve) => {
+    releaseFirstRead = () => resolve(firstBatch);
+  });
+  const current = { ...documents[0], updatedAt: new Date("2026-08-29T00:00:00.000Z") };
+  const mutationModel = {
+    ...fakeModel,
+    find() {
+      candidateReads += 1;
+      const values = candidateReads === 1 ? firstBatchPromise : Promise.resolve(secondBatch);
+      if (candidateReads === 1) firstReadStartedResolve();
+      return {
+        sort() { return this; },
+        limit() { return this; },
+        lean() { return this; },
+        async exec() { return values; },
+      };
+    },
+    findOne() {
+      return { lean: async () => current };
+    },
+    findOneAndUpdate() {
+      return {
+        lean: async () => ({
+          ...current,
+          title: "Updated title",
+          updatedAt: new Date("2026-08-29T00:00:01.000Z"),
+        }),
+      };
+    },
+  };
+  const mongo = createMongoCatalogRepository(mutationModel, async () => {}, null, mutationModel);
+
+  const olderRead = mongo.listRecommendationCandidates();
+  await firstReadStarted;
+  const update = await mongo.updateProduct(1, { title: "Updated title" });
+  assert.equal(update.status, "ok");
+
+  const postMutationRead = mongo.listRecommendationCandidates();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(candidateReads, 2);
+
+  releaseFirstRead();
+  const [olderCandidates, postMutationCandidates] = await Promise.all([olderRead, postMutationRead]);
+  assert.equal(olderCandidates[0].id, firstBatch[0].publicId);
+  assert.equal(postMutationCandidates[0].id, secondBatch[0].publicId);
+});
+
 test("MongoDB repository connection failures are mapped to a safe 503 error", async () => {
   const mongo = createMongoCatalogRepository(fakeModel, async () => {
     throw new Error("credentials must not escape");

@@ -52,4 +52,4 @@ Inputs are bounded before repository work, regex metacharacters are escaped for 
 - API: `https://groovehaus-api.netlify.app/`; storefront: `https://groovehaus-store.netlify.app/`.
 - Netlify runs the Next.js adapter from `netlify.toml`; artwork cache files use `/tmp` and are disposable.
 - Browser traffic is same-origin at the storefront and `/api/*` is proxied to the API, so signed cookies remain first-party.
-- Production environment overrides select MongoDB/v3 Profile B; committed source defaults remain conservative.
+- Production environment overrides select MongoDB/v3 Profile C; committed source defaults remain conservative. Recommendation candidate reads project only public scoring fields and use a 60-second warm-runtime cache with repository-write invalidation.

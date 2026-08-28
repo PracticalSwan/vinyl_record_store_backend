@@ -1,13 +1,13 @@
 export const TEST_RESIDUE_COLLECTIONS = Object.freeze([
   "interactions",
   "recommendationLogs",
-  "carts",
-  "wishlists",
-  "ratings",
   "guestMerges",
 ]);
 
 export const TEST_USER_SCOPED_RESIDUE_COLLECTIONS = Object.freeze([
+  "carts",
+  "wishlists",
+  "ratings",
   "feedback",
 ]);
 

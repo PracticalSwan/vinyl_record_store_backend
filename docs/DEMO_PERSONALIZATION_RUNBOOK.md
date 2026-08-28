@@ -1,24 +1,26 @@
-# Final Personalization Demo Runbook
+# Personalization Demo Runbook
 
 ## Selected Profile
 
-The final classroom configuration is **Profile B: Selective Personalization** with the MongoDB catalog as the primary data source. It enables the session-owned recommendation endpoint, saved-preference ranking, and exact negative feedback. Behavioral ranking, aggregate popularity, and hybrid ranking stay disabled.
+The current classroom and production configuration is **Profile C: Showcase Hybrid** against the active MongoDB/v3 catalog. It enables the session-owned endpoint, saved preferences, exact feedback, durable behavior, aggregate historical popularity, and `personalized-hybrid-v1`.
 
-This is a controlled feature demonstration, not a production enablement or a claim that the live customer ranker has measured recommendation quality. Source defaults remain fail-closed.
+The hybrid is the existing deterministic three-component method: preference `0.45`, behavior `0.35`, and popularity `0.20`, with truthful lower-mode fallback when a required component is unavailable. These weights are documented classroom assumptions, not learned or validated-optimal parameters. Source defaults remain fail-closed.
 
-## Decision Evidence
+Do not over-engineer, over-complicate, or over-test. Use the existing deterministic components and the bounded checks below. Do not add a new model merely to look advanced.
 
-The read-only 2026-08-13 showcase audit found the following aggregate state:
+## Canonical Showcase State
 
-| Protected showcase | Preferences | Ratings | Wishlist | Cart | Feedback | Usable behavior | Expected selected-profile mode |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Showcase 1 | no | no | no | no | no | no | `cold-start` / `content-demo-v1` |
-| Showcase 2 | no | no | no | no | no | no | `cold-start` / `content-demo-v1` |
-| Showcase 3 | no | no | no | no | no | no | `cold-start` / `content-demo-v1` |
+`src/data/demoUsers.js` is the human-reviewable source of truth and `scripts/seed-demo-users.mjs` is the idempotent state reconciler. The persona label is fixture metadata, not an authorization role; all three identities remain `customer` accounts.
 
-The three protected accounts remain neutral and unchanged. Do not edit them to manufacture a personalized presentation. Register a temporary ordinary customer and save a preference during the demonstration instead.
+| Public ID | Persona | Completed preference | Durable direct signals | Expected Profile C mode |
+| --- | --- | --- | --- | --- |
+| `demo-jazz` | `jazz_listener` | Jazz; Miles Davis and John Coltrane; Vinyl | 3 Jazz ratings, 2 Jazz wishlist items | `personalized-hybrid-v1` |
+| `demo-rock` | `rock_collector` | Rock; Queen and Led Zeppelin; Vinyl | 3 Rock ratings, 2 Rock wishlist items | `personalized-hybrid-v1` |
+| `demo-soul` | `soul_seeker` | Soul; Al Green and Otis Redding; Vinyl | 3 Soul ratings, 2 Soul wishlist items | `personalized-hybrid-v1` |
 
-Profile C was rejected for the final presentation because the protected accounts have no behavioral evidence. Enabling the complete stack would not reliably demonstrate a true hybrid and could blur the boundary between feature integration and measured quality. Popularity is also kept off so the selected profile has a simple, explainable mode ladder.
+The seed keeps carts empty and clears exact feedback so the shared starting state is predictable. Rating and wishlist products contribute to behavior affinity but are removed from the recommendation candidate set, so a known record is not recommended back to its owner.
+
+This state demonstrates implemented behavior only. It is synthetic classroom data, not evaluation evidence and not a bridge from Amazon historical subjects to Groovehaus customers.
 
 ## Exact Environment
 
@@ -32,9 +34,9 @@ PERS_ME_ENDPOINT=true
 PERS_PROFILE_DOMAIN=true
 PERS_PREFERENCE_RANKING=true
 PERS_NEGATIVE_FEEDBACK=true
-PERS_BEHAVIORAL_RANKING=false
-PERS_POPULARITY=false
-PERS_HYBRID=false
+PERS_BEHAVIORAL_RANKING=true
+PERS_POPULARITY=true
+PERS_HYBRID=true
 ```
 
 Set these values in the frontend's uncommitted `.env.local`:
@@ -47,28 +49,30 @@ VITE_PERS_NEGATIVE_FEEDBACK=true
 VITE_TRACKING_ENABLED=true
 ```
 
-These are environment overrides for the classroom session. The committed defaults remain profile, preference, feedback, behavior, popularity, and hybrid off; `/me` remains the independently reversible default-on endpoint.
+These are environment overrides. Committed profile, preference, feedback, behavior, popularity, and hybrid defaults remain off; `/me` remains the independently reversible default-on endpoint.
 
-## Preflight
+## Preflight And Seed
 
 From `vinyl_record_store_backend`:
 
 ```powershell
 npm.cmd run db:ping
 npm.cmd run dataset:verify
-npm.cmd run dataset:evaluation:readiness
-npm.cmd run db:indexes
 npm.cmd run db:clean:test
+npm.cmd run db:seed:users
+npm.cmd run db:seed:users:apply
 ```
 
-The checks must show:
+Require the following observable state:
 
-- MongoDB is reachable;
-- `amazon-reviews-2023-cds-vinyl-5core-v3` is active;
-- 2,305 v3 products, 20,288 v3 historical ratings, 2,387 pseudonymous historical subjects, and 1,708 structurally test-ready subjects;
+- MongoDB is reachable and `amazon-reviews-2023-cds-vinyl-5core-v3` is active;
+- v3 has 2,305 sealed products and 20,288 isolated historical ratings from 2,387 pseudonymous subjects;
 - v2 remains the immediate rollback release and v1 remains the identity/base release;
-- no `e2e_` residue is pending;
-- the three protected showcase customers remain present.
+- the seed dry-run targets exactly three profiles, nine ratings, six wishlist items, and no skipped identities;
+- the apply result reports three profiles, nine ratings, and six wishlist items;
+- the cleanup dry-run reports no `e2e_` residue before presentation.
+
+The cleanup policy fully clears only test-only `interactions`, `recommendationLogs`, and `guestMerges`. It removes carts, wishlists, ratings, and feedback only for matched `e2e_` users, preserving showcase and ordinary-customer durable state.
 
 Do not continue in a silently substituted seed mode. After startup, `GET http://localhost:3000/api/health` must report `catalogMode: "mongodb"` and a successful database status. A MongoDB configuration or connection failure must remain visibly unavailable rather than falling back to seed.
 
@@ -91,86 +95,60 @@ Do not continue in a silently substituted seed mode. After startup, `GET http://
 
 ## Presentation Flow
 
-### Anonymous and protected-showcase checks
+1. Open Home while signed out. With aggregate evidence available, expect `Popularity picks` backed by `popularity-v1`.
+2. Sign in as `jazzlistener`, open Recommendations, and expect:
+   - mode `personalized-hybrid`;
+   - algorithm `personalized-hybrid-v1`;
+   - visible label `Personalized picks`;
+   - Jazz as the dominant returned genre;
+   - wishlist count `2`;
+   - none of the five canonical Jazz signal records returned.
+3. Repeat for `rockcollector` and `soulseeker`; Rock and Soul should respectively be the dominant returned genres.
+4. Check explanations. They must describe actual preference or behavior matches and must not expose component weights, private rows, subject IDs, or excluded IDs.
+5. Use `Not interested`, confirm `Removed from recommendations.`, and verify focus moves to `Undo`. Undo must restore the original control and focus.
+6. Use `Already own`, confirm neutral ownership wording, then undo. Exact feedback suppresses only that item.
+7. Clear the pseudonymous usage-data preference. Passive interaction delivery and recommendation logging must stop; direct preference, wishlist, rating, cart, feedback, and Undo actions remain available.
+8. Sign out and verify the UI returns to the anonymous popularity state without a stale customer list.
 
-1. Open Home while signed out. The ranking label should be `Anonymous fallback`; popularity is intentionally disabled.
-2. Sign in to any protected showcase customer. Its empty profile should truthfully show `Session-owned cold-start`, not preference, behavior, popularity, or hybrid.
-3. Sign out. Home and Recommendations must return to anonymous-safe state with no stale customer list.
+Administrators remain outside the customer-personalization domain. `GET /api/recommendations/me` must return `403 FORBIDDEN` for an administrator session.
 
-### Selective personalization
+## Bounded Browser Verification
 
-1. Register a new temporary ordinary customer.
-2. Complete onboarding and save at least one favorite genre, such as Jazz.
-3. Open Recommendations. Expect:
-   - mode `preference-profile`;
-   - algorithm `preference-profile-v1`;
-   - visible label `Saved preferences`;
-   - backend-owned item reasons such as `Matches your Jazz preference.`
-4. Open Home. Expect `Saved preference profile` and the same session-owned mode.
-5. Add or remove a wishlist item and rating as direct customer actions if desired. They remain functional but do not enable behavioral ranking in this profile.
-
-### Exact feedback and Undo
-
-1. Choose `Not interested` on one displayed recommendation.
-2. Wait for the server-confirmed state `Removed from recommendations.` Focus must move to `Undo`.
-3. Fetch Recommendations normally again and confirm only that exact product is excluded.
-4. Select `Undo`; after the server confirms deletion, the original feedback control must be restored and focused.
-5. Choose `Already own`. Expect `Marked as already owned.` with no dislike wording and focus on `Undo`.
-6. Undo again. These controls express exact item ownership/interest only; they do not suppress an artist or genre.
-
-### Privacy opt-out and administration
-
-1. Clear `Help improve Groovehaus with pseudonymous usage data` in the footer or account preferences.
-2. Confirm passive interaction delivery and recommendation-request logging stop. Direct preference, wishlist, rating, cart, feedback, and Undo actions remain available.
-3. Sign in as the configured administrator only when needed for the administration smoke. `GET /api/recommendations/me` must return `403 FORBIDDEN`; administrators never receive a customer recommendation profile.
-
-## Exact Browser Verification Command
-
-The repository harness maps the selected profile to `E2E_ENABLE_PERS_FIRST_BATCH=1`. It creates invented temporary customers, never edits protected showcases, and invokes the approved cleanup in global teardown.
+The focused showcase flow signs into all three protected users without changing their canonical state, disables passive tracking, captures one screenshot per persona, and invokes approved cleanup in global teardown:
 
 ```powershell
-$env:E2E_ENABLE_PERS_FIRST_BATCH='1'
+$env:E2E_ENABLE_PERS_INTEGRATION='1'
 $env:E2E_PERS_CATALOG_DATA_SOURCE='mongodb'
-npm.cmd run test:e2e:seed -- tests/e2e/personalization.spec.js tests/e2e/recommendation-contract.spec.js
+npm.cmd run test:e2e -- tests/e2e/showcase-personalization.spec.js --project=chromium-desktop
 ```
 
-The run covers desktop and 375x667 Chromium plus tablet, Firefox, and WebKit smoke using the same live v3 configuration. It verifies the route/privacy contract, loaded Home and Recommendations states, exact feedback, Undo focus, serious/critical axe checks, and horizontal-overflow checks. After any write-capable run, confirm cleanup:
+Use the broader existing `personalization.spec.js` and `recommendation-contract.spec.js` only when the changed boundary warrants mutation, accessibility, or full route-contract coverage. Do not run the full matrix merely for presentation rehearsal.
+
+After any write-capable browser run, verify cleanup from the backend:
 
 ```powershell
 npm.cmd run db:clean:test
 ```
 
-## Emergency Seed Path
+## Performance Boundary
 
-If Atlas is unavailable, stop both servers and explicitly set:
+MongoDB recommendation-candidate reads use a scoring-field projection, coalesce concurrent reads, and keep a 60-second warm-runtime cache. Repository-owned catalog create/update/delete/restore/import operations invalidate it immediately; a dataset activation performed by CLI becomes visible after the bounded TTL or a new runtime. This improves warm requests without changing ranking or promising zero cold-start latency.
 
-```text
-CATALOG_DATA_SOURCE=seed
-PERS_PROFILE_DOMAIN=false
-PERS_PREFERENCE_RANKING=false
-PERS_NEGATIVE_FEEDBACK=false
-PERS_BEHAVIORAL_RANKING=false
-PERS_POPULARITY=false
-PERS_HYBRID=false
-```
+## Emergency Seed Path And Rollback
 
-Set the frontend profile and feedback flags to `false`, then restart backend before frontend. Verify `/api/health` reports `catalogMode: "seed"` and the 116-record bundled catalog loads.
+If Atlas is unavailable, stop both servers and explicitly set `CATALOG_DATA_SOURCE=seed` plus every default-off PERS flag to `false`. Set the frontend profile and feedback flags to `false`, then restart backend before frontend. Verify `/api/health` reports `catalogMode: "seed"` and the 116-record bundled catalog loads.
 
-The seed path is an anonymous/catalog and restricted `demo-profile` emergency demonstration. Ordinary registration, MongoDB showcase login, persistent account state, v3 research records, and MongoDB popularity are unavailable when the database itself is unavailable. Do not present it as equivalent to the primary selective-personalization flow.
+The seed path is an anonymous/catalog and restricted `demo-profile` emergency demonstration. Ordinary registration, MongoDB showcase login, persistent account state, v3 research records, and MongoDB popularity are unavailable. Do not present it as equivalent to Profile C.
 
-## Rollback
-
-No code or data rollback is required. Stop both servers, set all default-off PERS flags to `false`, retain `PERS_ME_ENDPOINT=true` if the session-owned cold-start route is desired, and restart backend before frontend. To return to the fully database-independent catalog, explicitly set `CATALOG_DATA_SOURCE=seed`.
-
-Existing preferences and feedback are retained but inert while their flags are off. Do not delete customer or dataset data as part of configuration rollback. Use only `npm.cmd run db:clean:test:apply` for documented test-residue cleanup.
+For a ranking rollback while Atlas remains available, set the default-off PERS flags to `false`, retain `PERS_ME_ENDPOINT=true` if the session-owned cold-start route is desired, and restart. Canonical preferences, ratings, wishlist items, and feedback remain stored but inert. Do not delete customer or dataset data as part of rollback.
 
 ## Claim Boundaries
 
-Permitted presentation statements:
+Permitted statements:
 
-- the application implements and functionally verifies session-owned preference ranking, exact feedback, opt-out, cold-start, popularity, behavior, and hybrid components;
-- this selected profile deliberately demonstrates preference ranking and exact feedback only;
+- the application implements and functionally verifies session-owned preference, behavior, aggregate-popularity, exact-feedback, and true-hybrid orchestration;
+- the three protected accounts contain small role-aligned synthetic classroom profiles and durable direct signals;
 - the historical benchmark evaluated deterministic random, positive historical popularity, positive-seed content, and one observed-only biased matrix-factorization candidate;
 - content was strongest descriptively on the conditional historical test cohort, while biased MF was a negative offline-only result.
 
-Do not claim that the live preference, behavior, or hybrid rankers were measured by the Amazon experiment, that content is statistically superior, that Amazon pseudonyms personalize signed-in customers, or that passing regression tests establishes production recommendation quality. DATA-15, source defaults, real orders, payments, deployment, and historical/live identity isolation remain unchanged.
+Do not claim that the live preference, behavior, or hybrid rankers were quality-evaluated by the Amazon experiment, that content is statistically superior, that Amazon pseudonyms personalize signed-in customers, that fixed hybrid weights are learned, or that passing behavior tests proves production recommendation quality. The historical final test is permanently consumed and must not be rerun.
