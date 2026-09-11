@@ -7,19 +7,26 @@ import {
   rankByBehavior,
 } from "./behavioralProfile.js";
 import {
+  ITEM_COLLABORATIVE_VERSION,
+  rankByItemCollaborative,
+} from "./itemCollaborative.js";
+import {
   POPULARITY_RANKING_VERSION,
   rankByPopularity,
 } from "./popularity.js";
 
-export const HYBRID_RANKING_VERSION = "personalized-hybrid-v1";
+export const LEGACY_HYBRID_RANKING_VERSION = "personalized-hybrid-v1";
+export const HYBRID_RANKING_VERSION = "weighted-hybrid-v2";
 
 export const HYBRID_COMPONENT_WEIGHTS = Object.freeze({
-  preference: 0.45,
-  behavior: 0.35,
-  popularity: 0.20,
+  preference: 0.405,
+  behavior: 0.315,
+  collaborative: 0.10,
+  popularity: 0.18,
 });
 
-const COMPONENT_ORDER = Object.freeze(["preference", "behavior", "popularity"]);
+const PERSONALIZED_COMPONENT_ORDER = Object.freeze(["preference", "behavior", "collaborative"]);
+const COMPONENT_ORDER = Object.freeze([...PERSONALIZED_COMPONENT_ORDER, "popularity"]);
 const clamp = (value) => Math.max(0, Math.min(1, value));
 const key = (value) => String(value ?? "").trim().toLowerCase();
 
@@ -63,33 +70,31 @@ function validateAvailableComponents(candidates, components) {
 }
 
 function selectedMode(components) {
-  const preferenceAvailable = Boolean(components.preference?.available);
-  const behaviorAvailable = Boolean(components.behavior?.available);
+  const personalized = PERSONALIZED_COMPONENT_ORDER.filter((name) => Boolean(components[name]?.available));
   const popularityAvailable = Boolean(components.popularity?.available);
-  if (preferenceAvailable && behaviorAvailable) {
+  if (personalized.length >= 2) {
+    const collaborativeAvailable = personalized.includes("collaborative");
     return {
       mode: "personalized-hybrid",
-      algorithmVersion: HYBRID_RANKING_VERSION,
+      algorithmVersion: collaborativeAvailable
+        ? HYBRID_RANKING_VERSION
+        : LEGACY_HYBRID_RANKING_VERSION,
       selectedComponent: "hybrid",
-      componentNames: popularityAvailable
-        ? ["preference", "behavior", "popularity"]
-        : ["preference", "behavior"],
+      componentNames: popularityAvailable ? [...personalized, "popularity"] : personalized,
     };
   }
-  if (preferenceAvailable) {
+  if (personalized.length === 1) {
+    const selectedComponent = personalized[0];
+    const metadata = {
+      preference: { mode: "preference-profile", version: PREFERENCE_RANKING_VERSION },
+      behavior: { mode: "behavior-profile", version: BEHAVIOR_RANKING_VERSION },
+      collaborative: { mode: "item-collaborative", version: ITEM_COLLABORATIVE_VERSION },
+    }[selectedComponent];
     return {
-      mode: "preference-profile",
-      algorithmVersion: PREFERENCE_RANKING_VERSION,
-      selectedComponent: "preference",
-      componentNames: ["preference"],
-    };
-  }
-  if (behaviorAvailable) {
-    return {
-      mode: "behavior-profile",
-      algorithmVersion: BEHAVIOR_RANKING_VERSION,
-      selectedComponent: "behavior",
-      componentNames: ["behavior"],
+      mode: metadata.mode,
+      algorithmVersion: metadata.version,
+      selectedComponent,
+      componentNames: [selectedComponent],
     };
   }
   if (popularityAvailable) {
@@ -149,10 +154,10 @@ function copyComponentScores(candidates, component, componentName) {
 
 export function combineRecommendationScores(
   candidates,
-  { preference = {}, behavior = {}, popularity = {} } = {},
+  { preference = {}, behavior = {}, collaborative = {}, popularity = {} } = {},
 ) {
   assertCandidates(candidates);
-  const components = { preference, behavior, popularity };
+  const components = { preference, behavior, collaborative, popularity };
   validateAvailableComponents(candidates, components);
   const selection = selectedMode(components);
   if (!selection.selectedComponent) {
@@ -201,7 +206,7 @@ function rankTrueHybrid(candidates, combination, limit) {
       product,
       score: entry.score,
       reasons: entry.reasons,
-      algorithmVersion: HYBRID_RANKING_VERSION,
+      algorithmVersion: combination.algorithmVersion,
     };
   }).sort((a, b) => (
     b.score - a.score
@@ -222,12 +227,12 @@ function rankTrueHybrid(candidates, combination, limit) {
 
 export function rankHybrid(
   candidates,
-  { preference = {}, behavior = {}, popularity = {} } = {},
+  { preference = {}, behavior = {}, collaborative = {}, popularity = {} } = {},
   { limit = candidates?.length || 0 } = {},
 ) {
   assertCandidates(candidates);
   if (!Number.isInteger(limit) || limit < 0) throw new TypeError("Limit must be a non-negative integer.");
-  const components = { preference, behavior, popularity };
+  const components = { preference, behavior, collaborative, popularity };
   const combination = combineRecommendationScores(candidates, components);
   if (!combination.available) {
     return { ...combination, scoredCandidates: [], recommendations: [] };
@@ -238,6 +243,10 @@ export function rankHybrid(
   }
   if (combination.selectedComponent === "behavior") {
     const ranked = rankByBehavior(candidates, behavior, { limit });
+    return { ...combination, scoredCandidates: ranked.scoredCandidates, recommendations: ranked.recommendations };
+  }
+  if (combination.selectedComponent === "collaborative") {
+    const ranked = rankByItemCollaborative(candidates, collaborative, { limit });
     return { ...combination, scoredCandidates: ranked.scoredCandidates, recommendations: ranked.recommendations };
   }
   if (combination.selectedComponent === "popularity") {

@@ -36,3 +36,7 @@ export function personalizationPopularityEnabled(environment = process.env) {
 export function personalizationHybridEnabled(environment = process.env) {
   return booleanFeature(environment.PERS_HYBRID, false);
 }
+
+export function personalizationItemCollaborativeEnabled(environment = process.env) {
+  return booleanFeature(environment.PERS_ITEM_CF, false);
+}

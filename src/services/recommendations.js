@@ -9,12 +9,14 @@ import {
 import {
   personalizationBehavioralRankingEnabled,
   personalizationHybridEnabled,
+  personalizationItemCollaborativeEnabled,
   personalizationNegativeFeedbackEnabled,
   personalizationPopularityEnabled,
   personalizationPreferenceRankingEnabled,
   personalizationProfileDomainEnabled,
 } from "../lib/features.js";
 import { eventRepository } from "../repositories/eventRepository.js";
+import { historicalCollaborativeRepository } from "../repositories/historicalCollaborativeRepository.js";
 import { historicalPopularityRepository } from "../repositories/historicalPopularityRepository.js";
 import { getProductRecord } from "./catalog.js";
 import { buildUserRecommendationProfile } from "./recommendationProfile.js";
@@ -84,13 +86,19 @@ export async function serveUserRecommendations(subject, limit, context, options 
     && personalizationNegativeFeedbackEnabled(environment);
   const behaviorRankingEnabled = profileEnabled
     && personalizationBehavioralRankingEnabled(environment);
+  const itemCollaborativeEnabled = profileEnabled
+    && personalizationItemCollaborativeEnabled(environment);
   const popularityEnabled = personalizationPopularityEnabled(environment);
-  const hybridEnabled = preferenceRankingEnabled
-    && behaviorRankingEnabled
+  const hybridEnabled = profileEnabled
     && personalizationHybridEnabled(environment);
   const profile = profileEnabled
     ? options.profile || (
-        subject.kind === "registered" && (preferenceRankingEnabled || feedbackEnabled || behaviorRankingEnabled)
+        subject.kind === "registered" && (
+          preferenceRankingEnabled
+          || feedbackEnabled
+          || behaviorRankingEnabled
+          || itemCollaborativeEnabled
+        )
           ? await buildUserRecommendationProfile(subject, {
               trackingAllowed: context.trackingAllowed !== false,
               feedbackAllowed: feedbackEnabled,
@@ -109,24 +117,33 @@ export async function serveUserRecommendations(subject, limit, context, options 
     preferenceRankingEnabled,
     feedbackEnabled,
     behaviorRankingEnabled,
+    itemCollaborativeEnabled,
     popularityEnabled,
     hybridEnabled,
     trackingEnabled: context.trackingAllowed !== false,
     now,
   });
   const popularityRepository = options.popularityRepository || historicalPopularityRepository;
-  const popularityAggregates = prepared.popularityNeeded && prepared.datasetKey
-    ? await popularityRepository.listByDatasetKey(prepared.datasetKey)
-    : [];
+  const collaborativeRepository = options.collaborativeRepository || historicalCollaborativeRepository;
+  const [popularityAggregates, collaborativeEvidence] = await Promise.all([
+    prepared.popularityNeeded && prepared.datasetKey
+      ? popularityRepository.listByDatasetKey(prepared.datasetKey)
+      : [],
+    prepared.collaborativeNeeded && prepared.datasetKey
+      ? collaborativeRepository.listItemEvidence(prepared.datasetKey, prepared.collaborativeAnchors)
+      : { supports: [], pairs: [] },
+  ]);
   const result = await recommendForUser(subject, limit, {
     ...options,
     candidates,
     prepared,
     profile,
     popularityAggregates,
+    collaborativeEvidence,
     preferenceRankingEnabled,
     feedbackEnabled,
     behaviorRankingEnabled,
+    itemCollaborativeEnabled,
     popularityEnabled,
     hybridEnabled,
     trackingEnabled: context.trackingAllowed !== false,

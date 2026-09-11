@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   HYBRID_COMPONENT_WEIGHTS,
   HYBRID_RANKING_VERSION,
+  LEGACY_HYBRID_RANKING_VERSION,
   combineRecommendationScores,
   rankHybrid,
 } from "../src/lib/recommender/hybrid.js";
@@ -49,22 +50,38 @@ const popularity = component([
   [3, 1, ["Popular."]],
   [4, 0, []],
 ]);
+const collaborative = component([
+  [1, 0.25, ["Collaborative one."]],
+  [2, 1, ["Collaborative two."]],
+  [3, 0.5, ["Collaborative three."]],
+  [4, 0, []],
+]);
 
-test("hybrid weights are fixed versioned assumptions and exact three-component math is bounded", () => {
+test("hybrid weights are fixed versioned assumptions and legacy three-component math is preserved without CF", () => {
   assert.deepEqual(HYBRID_COMPONENT_WEIGHTS, {
-    preference: 0.45,
-    behavior: 0.35,
-    popularity: 0.20,
+    preference: 0.405,
+    behavior: 0.315,
+    collaborative: 0.10,
+    popularity: 0.18,
   });
   assert.ok(Object.isFrozen(HYBRID_COMPONENT_WEIGHTS));
   const result = combineRecommendationScores(candidates, { preference, behavior, popularity });
   assert.equal(result.mode, "personalized-hybrid");
-  assert.equal(result.algorithmVersion, HYBRID_RANKING_VERSION);
-  assert.equal(result.scoresByProductId.get(1).score, 0.675);
+  assert.equal(result.algorithmVersion, LEGACY_HYBRID_RANKING_VERSION);
+  assert.ok(Math.abs(result.scoresByProductId.get(1).score - 0.675) < 1e-12);
   assert.ok(Math.abs(result.scoresByProductId.get(2).score - 0.45) < 1e-12);
   assert.deepEqual(result.scoresByProductId.get(1).reasons, ["Preference one.", "Behavior one."]);
   assert.deepEqual(result.scoresByProductId.get(2).reasons, ["Behavior two.", "Popular."]);
   assert.ok([...result.scoresByProductId.values()].every((entry) => entry.score >= 0 && entry.score <= 1));
+
+  const professorHybrid = combineRecommendationScores(candidates, {
+    preference,
+    behavior,
+    collaborative,
+    popularity,
+  });
+  assert.equal(professorHybrid.mode, "personalized-hybrid");
+  assert.equal(professorHybrid.algorithmVersion, HYBRID_RANKING_VERSION);
 });
 
 test("preference and behavior renormalize once when popularity is absent without a second min-max pass", () => {
@@ -75,14 +92,14 @@ test("preference and behavior renormalize once when popularity is absent without
     popularity: { available: false },
   });
   assert.equal(result.mode, "personalized-hybrid");
-  assert.equal(result.scoresByProductId.get(1).score, 0.2);
+  assert.ok(Math.abs(result.scoresByProductId.get(1).score - 0.2) < 1e-12);
 
   const renormalized = combineRecommendationScores(candidates, {
     preference,
     behavior,
     popularity: { available: false },
   });
-  assert.equal(renormalized.scoresByProductId.get(1).score, 0.78125);
+  assert.ok(Math.abs(renormalized.scoresByProductId.get(1).score - 0.78125) < 1e-12);
 });
 
 test("hybrid requires both personalized components and lower modes keep pure scores, reasons, and versions", () => {
@@ -143,6 +160,7 @@ test("true hybrid sorting uses public ID ties and applies the artist cap only af
   const ranked = rankHybrid(candidates, {
     preference: ties,
     behavior: ties,
+    collaborative: ties,
     popularity: ties,
   }, { limit: 4 });
   assert.deepEqual(ranked.scoredCandidates.map((item) => item.product.id), [1, 2, 3, 4]);

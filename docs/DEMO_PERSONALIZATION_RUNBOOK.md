@@ -2,9 +2,9 @@
 
 ## Selected Profile
 
-The current classroom and production configuration is **Profile C: Showcase Hybrid** against the active MongoDB/v3 catalog. It enables the session-owned endpoint, saved preferences, exact feedback, durable behavior, aggregate historical popularity, and `personalized-hybrid-v1`.
+The current classroom and production configuration is **Profile C: Showcase Hybrid** against the active MongoDB/v3 catalog. It enables the session-owned endpoint, saved preferences, exact feedback, durable behavior, aggregate historical popularity, and `weighted-hybrid-v2`.
 
-The hybrid is the existing deterministic three-component method: preference `0.45`, behavior `0.35`, and popularity `0.20`, with truthful lower-mode fallback when a required component is unavailable. These weights are documented classroom assumptions, not learned or validated-optimal parameters. Source defaults remain fail-closed.
+The professor-compliant live path adds `item-cf-v1` Item-Based Collaborative Filtering to `weighted-hybrid-v2`. With all signals available the fixed weights are preference `0.405`, behavior `0.315`, Item-CF `0.10`, and popularity `0.18`. Item-CF requires at least two historical co-positive listeners and applies significance shrinkage; if collaborative evidence is unavailable, the remaining weights renormalize exactly to the former `0.45 / 0.35 / 0.20` blend. These are documented classroom assumptions, not learned or validated-optimal parameters. Source defaults remain fail-closed.
 
 Do not over-engineer, over-complicate, or over-test. Use the existing deterministic components and the bounded checks below. Do not add a new model merely to look advanced.
 
@@ -14,9 +14,9 @@ Do not over-engineer, over-complicate, or over-test. Use the existing determinis
 
 | Public ID | Persona | Completed preference | Durable direct signals | Expected Profile C mode |
 | --- | --- | --- | --- | --- |
-| `demo-jazz` | `jazz_listener` | Jazz; Miles Davis and John Coltrane; Vinyl | 3 Jazz ratings, 2 Jazz wishlist items | `personalized-hybrid-v1` |
-| `demo-rock` | `rock_collector` | Rock; Queen and Led Zeppelin; Vinyl | 3 Rock ratings, 2 Rock wishlist items | `personalized-hybrid-v1` |
-| `demo-soul` | `soul_seeker` | Soul; Al Green and Otis Redding; Vinyl | 3 Soul ratings, 2 Soul wishlist items | `personalized-hybrid-v1` |
+| `demo-jazz` | `jazz_listener` | Jazz; Miles Davis and John Coltrane; Vinyl | 3 Jazz ratings, 2 Jazz wishlist items | `weighted-hybrid-v2` |
+| `demo-rock` | `rock_collector` | Rock; Queen and Led Zeppelin; Vinyl | 3 Rock ratings, 2 Rock wishlist items | `weighted-hybrid-v2` |
+| `demo-soul` | `soul_seeker` | Soul; Al Green and Otis Redding; Vinyl | 3 Soul ratings, 2 Soul wishlist items | `weighted-hybrid-v2` |
 
 The seed keeps carts empty and clears exact feedback so the shared starting state is predictable. Rating and wishlist products contribute to behavior affinity but are removed from the recommendation candidate set, so a known record is not recommended back to its owner.
 
@@ -36,6 +36,7 @@ PERS_PREFERENCE_RANKING=true
 PERS_NEGATIVE_FEEDBACK=true
 PERS_BEHAVIORAL_RANKING=true
 PERS_POPULARITY=true
+PERS_ITEM_CF=true
 PERS_HYBRID=true
 ```
 
@@ -98,7 +99,7 @@ Do not continue in a silently substituted seed mode. After startup, `GET http://
 1. Open Home while signed out. With aggregate evidence available, expect `Popularity picks` backed by `popularity-v1`.
 2. Sign in as `jazzlistener`, open Recommendations, and expect:
    - mode `personalized-hybrid`;
-   - algorithm `personalized-hybrid-v1`;
+   - algorithm `weighted-hybrid-v2`;
    - visible label `Personalized picks`;
    - Jazz as the dominant returned genre;
    - wishlist count `2`;

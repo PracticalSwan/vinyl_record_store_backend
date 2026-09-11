@@ -4,9 +4,11 @@ This is the backend source of truth for the Vinyl Record Store Recommender Syste
 
 ## Current State
 
-The backend is a Next.js 16.3.1 integration service. Seed mode serves the 116-record curated catalog without a database. MongoDB mode currently serves immutable Amazon Reviews 2023 v3 research data from `datasetProducts` while retaining v1, v2, and all 116 legacy records for non-destructive rollback. The service imports controlled catalog data, exposes approved artwork mappings plus proxy and local delivery paths, produces explainable content-based recommendations, provides signed sessions and customer-state mutations, ingests interactions, records served recommendation lists, exposes a role-gated administrator catalog-management surface, and generates privacy-safe evaluation-readiness reports.
+The backend is a Next.js 16.3.5 integration service. Seed mode serves the 116-record curated catalog without a database. MongoDB mode currently serves immutable Amazon Reviews 2023 v3 research data from `datasetProducts` while retaining v1, v2, and all 116 legacy records for non-destructive rollback. The service imports controlled catalog data, exposes approved artwork mappings plus proxy and local delivery paths, produces explainable content-based recommendations, provides signed sessions and customer-state mutations, ingests interactions, records served recommendation lists, exposes a role-gated administrator catalog-management surface, and generates privacy-safe evaluation-readiness reports.
 
 Production deployment is GitHub-linked Netlify at `https://groovehaus-api.netlify.app/`, built from the sole `master` branch. The companion storefront is `https://groovehaus-store.netlify.app/` and proxies browser `/api/*` traffic same-origin. Production selects MongoDB/v3 Profile C by environment; committed source defaults remain unchanged.
+
+As of 2026-09-12, the professor-compliant Profile C path adds `item-cf-v1` Item-Based Collaborative Filtering and `weighted-hybrid-v2`. Item-CF uses positive account anchors and aggregate co-positive evidence from historical `train` + `validation` rows only, requires at least two co-positive users, applies shrinkage 5, and fails closed when support is insufficient. The weighted hybrid uses preference `0.405`, behavior `0.315`, collaborative `0.10`, and popularity `0.18`, renormalizing over available components. The permanently consumed historical final test remains untouched. See `docs/PROFESSOR_RECOMMENDER_COMPLIANCE.md`.
 
 ## Implemented Scope
 

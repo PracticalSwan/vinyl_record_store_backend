@@ -24,12 +24,13 @@ This file records current completion and deferred scope. It does not authorize c
 - NEXT-04: explicit MongoDB/v3 Profile B classroom configuration, demonstrating preference ranking and exact feedback while behavior, popularity, and hybrid remain disabled; committed defaults remain unchanged.
 - NEXT-05: final backend/frontend/browser/accessibility/failure/data-preservation regression and zero-residue cleanup, with exact evidence in the root `FINAL_RELEASE_READINESS_REPORT.md`.
 - 2026-08-29 maintenance: supersede only the live classroom/production profile with Profile C; reconcile Jazz/Rock/Soul showcase preferences plus durable ratings/wishlist state, enable the existing behavior/popularity/hybrid stages by environment, exclude known signal items, and add bounded warm-runtime candidate caching. Historical NEXT evidence, source defaults, and DATA-15 remain unchanged.
+- 2026-09-12 professor-compliance release: add default-off `item-cf-v1` Item-Based CF over aggregate `train` + `validation` co-positive evidence and `weighted-hybrid-v2`, with sparse-evidence fallback, truthful version labels, 10% CF cap, and no final-test reread.
 - Post-NEXT production hardening: Netlify runtime/cache correctness, presentation deduplication (2,259 visible from 2,305 sealed source rows), 1,300 visible artwork mappings, source-metric Admin labels, narrow-mobile layout fixes, Git-linked deploys, and branch/worktree cleanup are complete.
 
 ## Deferred And Not Started
 
 - A live ranking-quality conclusion: live evidence remains `insufficient-evidence`. Historical NEXT-01 validation is separate offline-academic evidence and does not validate live personalization.
 - Backend order APIs, real payments, broad scraping, custom-domain/advanced observability work, and any infrastructure beyond the current GitHub-linked Netlify deployment.
-- Source-default ranking enablement and any live collaborative/learned integration remain separate decisions. Production uses explicit Profile C environment overrides for the existing deterministic preference, behavior, aggregate-popularity, exact-feedback, and hybrid stages. The final historical test attempt is permanently consumed and must not be rerun or tuned against; BFP-05 remains a historical placeholder and is not reused.
+- Source-default ranking enablement and additional learned models remain separate decisions. Production Profile C now explicitly enables the bounded professor-required Item-Based CF plus preference, behavior, aggregate popularity, exact feedback, and weighted hybrid by environment; source defaults remain off. The final historical test attempt is permanently consumed and must not be rerun or tuned against; BFP-05 remains a historical placeholder and is not reused.
 
 Detailed plans and the cross-repository order are in `FUTURE_IMPLEMENTATION_PLAN.md`. Deferred items require a separate explicit task.

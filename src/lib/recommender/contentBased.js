@@ -10,6 +10,12 @@ import {
   rankHybrid,
 } from "./hybrid.js";
 import {
+  ITEM_COLLABORATIVE_VERSION,
+  buildItemCollaborativeAnchors,
+  rankByItemCollaborative,
+  scoreItemCollaborativeCandidates,
+} from "./itemCollaborative.js";
+import {
   POPULARITY_RANKING_VERSION,
   getCandidateDatasetKey,
   rankByPopularity,
@@ -185,6 +191,7 @@ export function prepareUserRecommendation(
     preferenceRankingEnabled = false,
     feedbackEnabled = false,
     behaviorRankingEnabled = false,
+    itemCollaborativeEnabled = false,
     popularityEnabled = false,
     hybridEnabled = false,
     trackingEnabled = true,
@@ -237,13 +244,21 @@ export function prepareUserRecommendation(
     if (scoreResult.available) components.behavior = scoreResult;
   }
 
+  const collaborativeAnchors = subject.kind === "registered" && itemCollaborativeEnabled && resolvedProfile
+    ? buildItemCollaborativeAnchors(resolvedProfile)
+    : [];
+  const collaborativeNeeded = collaborativeAnchors.length > 0 && candidates.length > 0;
+  const personalizedPotentialCount = Number(components.preference.available)
+    + Number(components.behavior.available)
+    + Number(collaborativeNeeded);
   const popularityNeeded = ["anonymous", "registered"].includes(subject.kind)
     && popularityEnabled
     && candidates.length > 0
     && (
-      (!components.preference.available && !components.behavior.available)
-      || (hybridEnabled && components.preference.available && components.behavior.available)
+      personalizedPotentialCount === 0
+      || (hybridEnabled && personalizedPotentialCount >= 2)
     );
+  const datasetNeeded = popularityNeeded || collaborativeNeeded;
 
   return {
     feedbackResult,
@@ -251,7 +266,9 @@ export function prepareUserRecommendation(
     candidates,
     components,
     popularityNeeded,
-    datasetKey: popularityNeeded ? getCandidateDatasetKey(candidates) : null,
+    collaborativeNeeded,
+    collaborativeAnchors,
+    datasetKey: datasetNeeded ? getCandidateDatasetKey(candidates) : null,
   };
 }
 
@@ -266,9 +283,11 @@ export async function recommendForUser(
     preferenceRankingEnabled = false,
     feedbackEnabled = false,
     behaviorRankingEnabled = false,
+    itemCollaborativeEnabled = false,
     popularityEnabled = false,
     hybridEnabled = false,
     popularityAggregates = [],
+    collaborativeEvidence = { supports: [], pairs: [] },
     trackingEnabled = true,
     now = new Date(),
   } = {},
@@ -336,6 +355,7 @@ export async function recommendForUser(
     preferenceRankingEnabled,
     feedbackEnabled,
     behaviorRankingEnabled,
+    itemCollaborativeEnabled,
     popularityEnabled,
     hybridEnabled,
     trackingEnabled,
@@ -345,8 +365,14 @@ export async function recommendForUser(
   const components = {
     preference: preparedState.components.preference,
     behavior: preparedState.components.behavior,
+    collaborative: { available: false },
     popularity: { available: false },
   };
+
+  if (preparedState.collaborativeNeeded) {
+    const scoreResult = scoreItemCollaborativeCandidates(candidates, profile || {}, collaborativeEvidence);
+    if (scoreResult.available) components.collaborative = scoreResult;
+  }
 
   if (preparedState.popularityNeeded && preparedState.datasetKey) {
     const scoreResult = scorePopularityCandidates(candidates, popularityAggregates);
@@ -369,22 +395,30 @@ export async function recommendForUser(
     popularity: [
       "Results use aggregate ratings from the active research dataset.",
     ],
+    "item-collaborative": [
+      "Results use item-to-item relationships learned from other listeners' positive historical ratings.",
+      "Only aggregate co-like evidence is used; historical listener identities never enter the response.",
+    ],
     "personalized-hybrid": [
-      "Results combine saved preferences with behavioral evidence.",
-      ...(components.popularity.available ? ["Aggregate research ratings provide a bounded third signal."] : []),
+      "Results use a fixed weighted hybrid over the personalized signals available for this account.",
+      ...(components.collaborative.available ? ["Item-based collaborative filtering contributes when at least two historical listeners support a neighbor relationship."] : []),
+      ...(components.popularity.available ? ["Aggregate research ratings provide a bounded popularity signal."] : []),
       ...(feedbackEnabled ? ["Negative feedback removes only the exact products you marked."] : []),
     ],
   };
 
+  const availablePersonalizedCount = Number(components.preference.available)
+    + Number(components.behavior.available)
+    + Number(components.collaborative.available);
   if (
     subject.kind === "registered"
     && hybridEnabled
-    && components.preference.available
-    && components.behavior.available
+    && availablePersonalizedCount >= 2
   ) {
     const ranked = rankHybrid(candidates, {
       preference: components.preference,
       behavior: components.behavior,
+      collaborative: components.collaborative,
       popularity: popularityEnabled ? components.popularity : { available: false },
     }, { limit });
     return {
@@ -392,7 +426,7 @@ export async function recommendForUser(
       mode: "personalized-hybrid",
       profileSummary: pureProfileSummary["personalized-hybrid"],
       recommendations: ranked.recommendations,
-      algorithmVersion: HYBRID_RANKING_VERSION,
+      algorithmVersion: ranked.algorithmVersion,
     };
   }
 
@@ -415,6 +449,17 @@ export async function recommendForUser(
       profileSummary: pureProfileSummary["behavior-profile"],
       recommendations: ranked.recommendations,
       algorithmVersion: BEHAVIOR_RANKING_VERSION,
+    };
+  }
+
+  if (subject.kind === "registered" && components.collaborative.available) {
+    const ranked = rankByItemCollaborative(candidates, components.collaborative, { limit });
+    return {
+      ...baseResponse,
+      mode: "item-collaborative",
+      profileSummary: pureProfileSummary["item-collaborative"],
+      recommendations: ranked.recommendations,
+      algorithmVersion: ITEM_COLLABORATIVE_VERSION,
     };
   }
 

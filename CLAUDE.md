@@ -8,12 +8,12 @@ This is a subtree instruction file. Read the global instructions and the project
 
 The backend is an implemented integration and authenticated customer-state service, not a planning-only Next.js starter.
 
-- Next.js 16.3.1, React 19.2.4, Tailwind 4, and JavaScript modules.
+- Next.js 16.3.5, React 19.2.4, Tailwind 4, and JavaScript modules.
 - Routes for health, product listing/detail, search, product similarity, user recommendations, authentication, profile/preferences, interactions, wishlist, cart, ratings, guest merge, and account deletion.
 - The reviewed 116-record local seed remains the no-database default and legacy fallback. Explicit `CATALOG_DATA_SOURCE=mongodb` follows immutable active `amazon-reviews-2023-cds-vinyl-5core-v3` in `datasetProducts`; v2 is the immediate rollback release, while v1 and the legacy catalog remain the identity/legacy base.
 - Mongoose models, persistence repositories, signed sessions, authenticated customer writes, an idempotent seed migration, and live index verification are implemented.
 - Deterministic content-based recommendations with explanations, stock preference, exclusions, diversity limits, and an algorithm version.
-- PERS-00 through PERS-09 are implemented. PERS-04 through PERS-08 remain behind default-off flags: the session-owned `/api/recommendations/me` path supports exact-item feedback and the `preference-profile-v1`, `behavior-profile-v1`, `popularity-v1`, and `personalized-hybrid-v1` branches. `content-demo-v1` remains the default and rollback path; PERS-09 adds integration, privacy/failure regression, and documentation closure without enabling ranking flags.
+- PERS-00 through PERS-09 are implemented behind default-off flags. The session-owned `/api/recommendations/me` path supports exact-item feedback plus `preference-profile-v1`, `behavior-profile-v1`, `popularity-v1`, the legacy `personalized-hybrid-v1`, and professor-compliant `item-cf-v1` / `weighted-hybrid-v2` branches. `weighted-hybrid-v2` is emitted only when Item-Based CF actually contributes; otherwise the equivalent legacy blend keeps `personalized-hybrid-v1`. `content-demo-v1` remains the default and rollback path.
 - MongoDB-mode recommendation request logging records exact ordered lists, reasons, surfaces, modes, versions, exclusions, and 90-day expiry; seed mode and usage opt-out suppress it.
 - Preview-first CSV/JSON catalog ingestion supports atomic apply, source ownership, duplicate/conflict detection, optional MusicBrainz/Cover Art Archive enrichment, release-bound artwork, release-group fallback, local cache, and field provenance. The bundled catalog has one human-reviewed manifest entry and approved hotlink for every record.
 - The offline evaluator builds pseudonymized leakage-safe datasets, compares random/popularity/content-based rankings only above the evidence threshold, and otherwise writes aggregate counts and captured-field coverage without quality claims.
@@ -58,10 +58,12 @@ Read `../AGENT_MEMORY.md` at session start and append a dated entry at session e
 - Keep route handlers thin and errors safe; never expose stack traces or secrets.
 - Product responses must not expose seed-only recommendation reasons.
 - Exclude source and known-profile records from recommendations, prefer available records, and keep explanations tied to actual matching fields.
-- Label user results as `demo-profile`, `cold-start`, `preference-profile`, `behavior-profile`, `popularity`, `personalized-hybrid`, or `anonymous-fallback` as returned. Exact feedback remains a server-owned exclusion; never imply measured recommendation quality or enablement when the new flags are off.
+- Label user results as `demo-profile`, `cold-start`, `preference-profile`, `behavior-profile`, `item-collaborative`, `popularity`, `personalized-hybrid`, or `anonymous-fallback` as returned. Exact feedback remains a server-owned exclusion; never imply measured recommendation quality or enablement when the new flags are off.
 - Do not report recommendation quality metrics without leakage-safe held-out interactions and baselines. Behavior tests are not offline quality findings.
 - Below 20 eligible subjects with 5 final positive products each, the evaluator must emit an explicit non-conclusion with aggregate captured-field coverage only.
 - Use the project `recommender-evaluation` skill whenever computing or reporting ranking or beyond-accuracy metrics.
+- Professor-compliant production uses `item-cf-v1` Item-Based CF behind default-off `PERS_ITEM_CF` and `weighted-hybrid-v2`; collaborative evidence must fail closed when minimum support is absent and must never read the permanently consumed historical test split.
+- CodeGraph is initialized per child Git repository. Prefer it for symbols, callers/callees, API-to-service-to-scorer flow, frontend consumers, and blast radius; verify exact behavior with direct reads/tests. Never commit `.codegraph/` cache state.
 
 ## Integration And Environment
 

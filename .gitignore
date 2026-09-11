@@ -18,6 +18,7 @@ build/
 coverage/
 .nyc_output/
 .cache/
+.codegraph/
 .vercel/
 .netlify/
 *.tsbuildinfo

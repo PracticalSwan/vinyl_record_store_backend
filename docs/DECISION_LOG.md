@@ -2,6 +2,14 @@
 
 These decisions define the consolidated backend baseline.
 
+## BDEC-019: Use Item-Based CF + Weighted Hybrid For Professor Compliance
+
+Date: 2026-09-12
+
+Decision: Enable real `item-cf-v1` Item-Based Collaborative Filtering as the required Batch-1 algorithm and `weighted-hybrid-v2` as the required Batch-2 algorithm. Item-CF requires co-positive support >= 2 with shrinkage 5 and reads historical `train` + `validation` only. Its all-signal hybrid weight is capped at 0.10; preference/behavior/popularity receive 0.405/0.315/0.18 and renormalize when CF is unavailable.
+
+Rationale: Atlas support evidence showed usable but sparse item-item overlap. User-Based CF would be less stable, KNN would duplicate existing content similarity, context/location collection was unjustified, and the prior biased-MF result was weak and is not a listed Batch-1 choice. The 10% cap makes CF active and demonstrable without letting sparse historical neighbors dominate stronger account-owned evidence. The historical final holdout remains permanently consumed and is not reused for this decision.
+
 ## BDEC-001: Keep Next.js And JavaScript
 
 Date: 2026-07-02
